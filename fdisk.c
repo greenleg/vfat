@@ -7,20 +7,16 @@
 
 #include "fdisk.h"
 
-struct fdisk *fdisk_create(const char* fname)
+void fdisk_create(const char* fname, struct fdisk *disk)
 {
-    int fd = creat(fname, S_IRUSR | S_IWUSR);
-    struct fdisk *disk = malloc(sizeof(struct fdisk));
-    disk->fd = fd;
-    return disk;
+    int fd = creat(fname, S_IRUSR | S_IWUSR);    
+    disk->fd = fd;    
 }
 
-struct fdisk *fdisk_open(const char* fname)
+void fdisk_open(const char* fname, struct fdisk *disk)
 {
-    int fd = open(fname, O_RDWR, S_IRUSR | S_IWUSR);
-    struct fdisk *disk = malloc(sizeof(struct fdisk));
-    disk->fd = fd;
-    return disk;
+    int fd = open(fname, O_RDWR, S_IRUSR | S_IWUSR);    
+    disk->fd = fd;    
 }
 
 void fdisk_close(struct fdisk *disk)

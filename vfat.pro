@@ -7,13 +7,14 @@ CONFIG -= qt
 
 SOURCES += main.c \
     vbr.c \
-    sector.c \
     test/testvbr.c \
-    fdisk.c
+    fdisk.c \
+    binaryreader.c
 
 HEADERS += \
-    sector.h \
     vbr.h \
     minunit.h \
     fdisk.h \
-    test/testsuite.h
+    test/testsuite.h \
+    binaryreader.h \
+    fat.h
