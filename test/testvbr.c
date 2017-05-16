@@ -14,7 +14,7 @@ MU_TEST(test_vbr_format)
 
     MU_ASSERT_INT_EQ(2048, br.volume_length);
     MU_ASSERT_INT_EQ(512,  vbr_get_bytes_per_sector(&br));
-    MU_ASSERT_INT_EQ(1,    vbr_get_sector_per_cluster(&br));
+    MU_ASSERT_INT_EQ(1,    vbr_get_sectors_per_cluster(&br));
     MU_ASSERT_INT_EQ(2031, br.cluster_count);
     MU_ASSERT_INT_EQ(1,    br.fat_offset);
     MU_ASSERT_INT_EQ(16,   br.fat_length);
@@ -41,7 +41,7 @@ MU_TEST(test_vbr_format_and_save)
 
     MU_ASSERT_INT_EQ(2048, br.volume_length);
     MU_ASSERT_INT_EQ(512,  vbr_get_bytes_per_sector(&br));
-    MU_ASSERT_INT_EQ(1,    vbr_get_sector_per_cluster(&br));
+    MU_ASSERT_INT_EQ(1,    vbr_get_sectors_per_cluster(&br));
     MU_ASSERT_INT_EQ(2031, br.cluster_count);
     MU_ASSERT_INT_EQ(1,    br.fat_offset);
     MU_ASSERT_INT_EQ(16,   br.fat_length);

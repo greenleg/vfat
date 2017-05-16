@@ -14,7 +14,7 @@
 #define VBR_CLUSTERCOUNT_OFFSET 92
 #define VBR_ROOTDIRFIRSTCLUSTER_OFFSET 96
 #define VBR_BYTESPERSECTOR_OFFSET 108
-#define VBR_SECTORPERCLUSTER_OFFSET 109
+#define VBR_SECTORSPERCLUSTER_OFFSET 109
 
 static void vbr_readbuf(uint8_t *buf, struct vbr *vbr)
 {
@@ -25,7 +25,7 @@ static void vbr_readbuf(uint8_t *buf, struct vbr *vbr)
     vbr->cluster_count = read_u32(buf, VBR_CLUSTERCOUNT_OFFSET);
     vbr->root_dir_first_cluster = read_u32(buf, VBR_ROOTDIRFIRSTCLUSTER_OFFSET);
     vbr->bytes_per_sector = read_u8(buf, VBR_BYTESPERSECTOR_OFFSET);
-    vbr->sector_per_cluster = read_u8(buf, VBR_SECTORPERCLUSTER_OFFSET);
+    vbr->sectors_per_cluster = read_u8(buf, VBR_SECTORSPERCLUSTER_OFFSET);
 }
 
 static void vbr_writebuf(struct vbr *vbr, uint8_t *buf)
@@ -37,7 +37,7 @@ static void vbr_writebuf(struct vbr *vbr, uint8_t *buf)
     write_u32(buf, VBR_CLUSTERCOUNT_OFFSET, vbr->cluster_count);
     write_u32(buf, VBR_ROOTDIRFIRSTCLUSTER_OFFSET, vbr->root_dir_first_cluster);
     write_u8(buf, VBR_BYTESPERSECTOR_OFFSET, vbr->bytes_per_sector);
-    write_u8(buf, VBR_SECTORPERCLUSTER_OFFSET, vbr->sector_per_cluster);
+    write_u8(buf, VBR_SECTORSPERCLUSTER_OFFSET, vbr->sectors_per_cluster);
 }
 
 void vbr_read(struct fdisk *disk, struct vbr *vbr)
@@ -54,18 +54,19 @@ void vbr_write(struct vbr *vbr, struct fdisk *disk)
     fdisk_write(disk, buf, 0, VBR_SIZE);
 }
 
-void vbr_format(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sector_per_cluster)
+void vbr_format(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sectors_per_cluster)
 {
     vbr_set_bytes_per_sector(vbr, bytes_per_sector);
-    vbr_set_sector_per_cluster(vbr, sector_per_cluster);
+    vbr_set_sectors_per_cluster(vbr, sectors_per_cluster);
 
+    /* Bytes Per Sector, Sectors Per Cluster should be a power of two */
     bytes_per_sector = vbr_get_bytes_per_sector(vbr);
-    sector_per_cluster = vbr_get_sector_per_cluster(vbr);
+    sectors_per_cluster = vbr_get_sectors_per_cluster(vbr);
 
     vbr->volume_length = volume_size / bytes_per_sector;
     vbr->fat_offset = 1;
 
-    vbr->cluster_count = (uint32_t) ((vbr->volume_length - 1) / (4.0 / bytes_per_sector + sector_per_cluster));
+    vbr->cluster_count = (uint32_t) ((vbr->volume_length - 1) / (4.0 / bytes_per_sector + sectors_per_cluster));
     vbr->fat_length = (uint32_t)ceil((4.0 * vbr->cluster_count) / bytes_per_sector);
     vbr->cluster_heap_offset = vbr->fat_offset + vbr->fat_length;
     vbr->root_dir_first_cluster = 2;
@@ -81,12 +82,12 @@ void vbr_set_bytes_per_sector(struct vbr *vbr, uint16_t val)
     vbr->bytes_per_sector = log2(val);
 }
 
-uint16_t vbr_get_sector_per_cluster(struct vbr *vbr)
+uint16_t vbr_get_sectors_per_cluster(struct vbr *vbr)
 {
-    return 1 << (vbr->sector_per_cluster);
+    return 1 << (vbr->sectors_per_cluster);
 }
 
-void vbr_set_sector_per_cluster(struct vbr *vbr, uint16_t val)
+void vbr_set_sectors_per_cluster(struct vbr *vbr, uint16_t val)
 {
-    vbr->sector_per_cluster = log2(val);
+    vbr->sectors_per_cluster = log2(val);
 }
