@@ -38,7 +38,7 @@ struct vbr
 
 void vbr_read(struct fdisk *disk, struct vbr *vbr);
 void vbr_write(struct vbr *vbr, struct fdisk *disk);
-void vbr_format(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sector_per_cluster);
+void vbr_create(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sector_per_cluster);
 
 uint16_t vbr_get_bytes_per_sector(struct vbr *vbr);
 void     vbr_set_bytes_per_sector(struct vbr *vbr, uint16_t val);

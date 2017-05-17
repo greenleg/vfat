@@ -1,11 +1,12 @@
+#include <stdlib.h>
+#include <string.h>
 #include "fat.h"
 
 static uint32_t fat_alloc_cluster(struct fat *fat)
 {
-    const uint32_t last_cluster = fat->vbr->cluster_count + FAT_FIRST_CLUSTER;
     uint32_t cluster;
 
-    for (cluster = fat->last_alloc_cluster + 1; cluster < last_cluster; ++cluster) {
+    for (cluster = fat->last_alloc_cluster + 1; cluster < fat->vbr->cluster_count; ++cluster) {
         if (fat->entries[cluster] == FAT_FREE) {
             fat->entries[cluster] = FAT_EOF;
             fat->last_alloc_cluster = cluster;
@@ -85,4 +86,50 @@ void fat_set_eof(struct fat* fat, uint32_t cluster)
 void fat_set_free(struct fat* fat, uint32_t cluster)
 {
     fat->entries[cluster] = FAT_FREE;
+}
+
+void fat_create(struct vbr *vbr, struct fat *fat)
+{
+    fat->vbr = vbr;
+    fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
+    fat->entries = malloc(sizeof(uint32_t) * vbr->cluster_count);
+    memset((void*)fat->entries, 0, sizeof(uint32_t) * vbr->cluster_count);
+    fat->entries[0] = FAT_MEDIA_DESCRIPTOR;
+    fat->entries[1] = FAT_EOF;
+}
+
+void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat)
+{
+    uint32_t fat_offset_in_bytes = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
+
+    fat->vbr = vbr;
+    fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
+    fdisk_read(disk, (uint8_t*)fat->entries, fat_offset_in_bytes, sizeof(uint32_t) * vbr->cluster_count);
+}
+
+void fat_write(struct fat *fat, struct fdisk *disk)
+{
+    struct vbr *vbr = fat->vbr;
+    uint32_t fat_offset_in_bytes = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
+
+    fdisk_write(disk, (uint8_t*)fat->entries, fat_offset_in_bytes, sizeof(uint32_t) * vbr->cluster_count);
+}
+
+void fat_destruct(struct fat *fat)
+{
+    free(fat->entries);
+}
+
+uint32_t fat_get_free_clusters(struct fat *fat)
+{
+    uint32_t cluster;
+    uint32_t cnt = 0;
+
+    for (cluster = FAT_FIRST_CLUSTER; cluster < fat->vbr->cluster_count; ++cluster) {
+        if (fat->entries[cluster] == FAT_FREE) {
+            ++cnt;
+        }
+    }
+
+    return cnt;
 }

@@ -7,6 +7,7 @@
 #include <sys/resource.h>
 #include <sys/times.h>
 #include <string.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <math.h>
 
@@ -32,8 +33,15 @@ static double minunit_cpu_timer = 0;
 /*  Last message */
 static char minunit_last_message[MINUNIT_MESSAGE_LEN];
 
+/*  Test setup and teardown function pointers */
+static void (*minunit_setup)() = NULL;
+static void (*minunit_teardown)() = NULL;
+
 /*  Definitions */
 #define MU_TEST(method_name) static void method_name()
+#define MU_TEST_SETUP(method_name) static void method_name()
+#define MU_TEST_TEARDOWN(method_name) static void method_name()
+#define MU_TEST_SUITE(suite_name) void suite_name()
 
 #define MU__SAFE_BLOCK(block) do {\
     block\
@@ -49,8 +57,25 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
     minunit_cpu_timer = mu_timer_cpu();\
 )
 
+/*  Run test suite and unset setup and teardown functions */
+#define MU_RUN_SUITE(suite_name) MU__SAFE_BLOCK(\
+    suite_name();\
+    minunit_setup = NULL;\
+    minunit_teardown = NULL;\
+)
+
+/*  Configure setup and teardown functions */
+#define MU_SUITE_CONFIGURE(setup_func, teardown_func) MU__SAFE_BLOCK(\
+    minunit_setup = setup_func;\
+    minunit_teardown = teardown_func;\
+)
+
 /*  Test runner */
 #define MU_RUN_TEST(test) MU__SAFE_BLOCK(\
+    if (minunit_setup) {\
+        (*minunit_setup)();\
+    }\
+    \
     minunit_status = 0;\
     test();\
     ++minunit_run;\
@@ -58,7 +83,11 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
         ++minunit_fail;\
         printf("F\n%s\n", minunit_last_message);\
     }\
+    \
     fflush(stdout);\
+    if (minunit_teardown) {\
+        (*minunit_teardown)();\
+    }\
 )
 
 #define MU_PRINT_TEST_INFO() MU__SAFE_BLOCK(\
@@ -67,10 +96,10 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
 
 /*  Report */
 #define MU_REPORT() MU__SAFE_BLOCK(\
-    printf("\n\n%d tests, %d assertions, %d failures\n", minunit_run, minunit_assert, minunit_fail);\
     double minunit_end_real_timer = mu_timer_real();\
     double minunit_end_cpu_timer = mu_timer_cpu();\
-    printf("\nFinished in %.8f seconds (real) %.8f seconds (proc)\n\n",\
+    printf("\n\n%d tests, %d assertions, %d failures\n", minunit_run, minunit_assert, minunit_fail);\
+    printf("\nFinished in %.8f seconds (real) %.8f seconds (CPU)\n\n",\
         minunit_end_real_timer - minunit_real_timer,\
         minunit_end_cpu_timer - minunit_cpu_timer);\
 )
@@ -106,9 +135,11 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
 )
 
 #define MU_ASSERT_INT_EQ(expected, actual) MU__SAFE_BLOCK(\
+    int minunit_tmp_e;\
+    int minunit_tmp_a;\
     ++minunit_assert;\
-    int minunit_tmp_e = (expected);\
-    int minunit_tmp_a = (actual);\
+    minunit_tmp_e = (expected);\
+    minunit_tmp_a = (actual);\
     if (minunit_tmp_e != minunit_tmp_a) {\
         snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: %d expected but was %d", __func__, __FILE__, __LINE__, minunit_tmp_e, minunit_tmp_a);\
         minunit_status = 1;\
@@ -118,10 +149,27 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
     }\
 )
 
-#define MU_ASSERT_DOUBLE_EQ(expected, result) MU__SAFE_BLOCK(\
+#define MU_ASSERT_U32_EQ(expected, actual) MU__SAFE_BLOCK(\
+    uint32_t minunit_tmp_e;\
+    uint32_t minunit_tmp_a;\
     ++minunit_assert;\
-    double minunit_tmp_e = (expected);\
-    double minunit_tmp_r = (result);\
+    minunit_tmp_e = (expected);\
+    minunit_tmp_a = (actual);\
+    if (minunit_tmp_e != minunit_tmp_a) {\
+        snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: %d expected but was %d", __func__, __FILE__, __LINE__, minunit_tmp_e, minunit_tmp_a);\
+        minunit_status = 1;\
+        return;\
+    } else {\
+        minunit_status = 0;\
+    }\
+)
+
+#define MU_ASSERT_DOUBLE_EQ(expected, actual) MU__SAFE_BLOCK(\
+    double minunit_tmp_e;\
+    double minunit_tmp_r;\
+    ++minunit_assert;\
+    minunit_tmp_e = (expected);\
+    minunit_tmp_r = (actual);\
     if (fabs(minunit_tmp_e - minunit_tmp_r) > MINUNIT_EPSILON) {\
         int minunit_significant_figures = 1 - log10(MINUNIT_EPSILON);\
         snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: %.*g expected but was %.*g", __func__, __FILE__, __LINE__, minunit_significant_figures, minunit_tmp_e, minunit_significant_figures, minunit_tmp_r);\
@@ -132,16 +180,20 @@ static char minunit_last_message[MINUNIT_MESSAGE_LEN];
     }\
 )
 
-#define MU_ASSERT_STRING_EQ(expected, result) MU__SAFE_BLOCK(\
+#define MU_ASSERT_STRING_EQ(expected, actual) MU__SAFE_BLOCK(\
+    const char *minunit_tmp_e;\
+    const char *minunit_tmp_r;\
     ++minunit_assert;\
-    const char* minunit_tmp_e = (expected);\
-    const char* minunit_tmp_r = (result);\
+    minunit_tmp_e = (expected);\
+    minunit_tmp_r = (actual);\
     if (!minunit_tmp_e) {\
         minunit_tmp_e = "<null>";\
     }\
+    \
     if (!minunit_tmp_r) {\
         minunit_tmp_r = "<null>";\
     }\
+    \
     if(strcmp(minunit_tmp_e, minunit_tmp_r)) {\
         snprintf(minunit_last_message, MINUNIT_MESSAGE_LEN, "%s failed:\n\t%s:%d: '%s' expected but was '%s'", __func__, __FILE__, __LINE__, minunit_tmp_e, minunit_tmp_r);\
         minunit_status = 1;\

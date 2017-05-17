@@ -10,7 +10,8 @@ SOURCES += main.c \
     test/testvbr.c \
     fdisk.c \
     binaryreader.c \
-    fat.c
+    fat.c \
+    test/testfat.c
 
 HEADERS += \
     vbr.h \

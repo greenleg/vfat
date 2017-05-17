@@ -37,6 +37,8 @@ uint32_t fat_get_chain_length(struct fat *fat, uint32_t start_cluster);
 void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint8_t *chain);
 void fat_set_eof(struct fat* fat, uint32_t cluster);
 void fat_set_free(struct fat* fat, uint32_t cluster);
+uint32_t fat_get_free_clusters(struct fat *fat);
 
+void fat_destruct(struct fat *fat);
 
 #endif /* VFAT_FAT_H */

@@ -54,7 +54,7 @@ void vbr_write(struct vbr *vbr, struct fdisk *disk)
     fdisk_write(disk, buf, 0, VBR_SIZE);
 }
 
-void vbr_format(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sectors_per_cluster)
+void vbr_create(struct vbr *vbr, uint64_t volume_size, uint16_t bytes_per_sector, uint16_t sectors_per_cluster)
 {
     vbr_set_bytes_per_sector(vbr, bytes_per_sector);
     vbr_set_sectors_per_cluster(vbr, sectors_per_cluster);

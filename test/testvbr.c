@@ -5,12 +5,12 @@
 #include "minunit.h"
 #include "testsuite.h"
 
-MU_TEST(test_vbr_format)
+MU_TEST(test_vbr_create)
 {
     MU_PRINT_TEST_INFO();
 
     struct vbr br;
-    vbr_format(&br, 1024 * 1024, 512, 1);
+    vbr_create(&br, 1024 * 1024, 512, 1);
 
     MU_ASSERT_INT_EQ(2048, br.volume_length);
     MU_ASSERT_INT_EQ(512,  vbr_get_bytes_per_sector(&br));
@@ -22,7 +22,7 @@ MU_TEST(test_vbr_format)
     MU_ASSERT_INT_EQ(2,    br.root_dir_first_cluster);
 }
 
-MU_TEST(test_vbr_format_and_save)
+MU_TEST(test_vbr_create_and_save)
 {
     MU_PRINT_TEST_INFO();
 
@@ -31,7 +31,7 @@ MU_TEST(test_vbr_format_and_save)
     struct vbr br;
 
     fdisk_create(disk_fname, &disk);
-    vbr_format(&br, 1024 * 1024, 512, 1);
+    vbr_create(&br, 1024 * 1024, 512, 1);
     vbr_write(&br, &disk);
 
     fdisk_close(&disk);
@@ -52,8 +52,8 @@ MU_TEST(test_vbr_format_and_save)
     remove(disk_fname);
 }
 
-void run_vbr_suite()
+MU_TEST_SUITE(vbr_test_suite)
 {
-    MU_RUN_TEST(test_vbr_format);
-    MU_RUN_TEST(test_vbr_format_and_save);
+    MU_RUN_TEST(test_vbr_create);
+    MU_RUN_TEST(test_vbr_create_and_save);
 }
