@@ -20,6 +20,9 @@
 #define FAT_FREE                 0x00000000
 #define FAT_FIRST_CLUSTER        2
 
+/* Error codes */
+#define E_FAT_FULL 0
+
 struct fat
 {
     struct vbr *vbr;
@@ -34,10 +37,10 @@ void fat_write(struct fat *fat, struct fdisk *disk);
 uint32_t fat_alloc_chain(struct fat *fat, uint32_t length);
 void fat_append_to_chain(struct fat *fat, uint32_t start_cluster, uint32_t new_cluster);
 uint32_t fat_get_chain_length(struct fat *fat, uint32_t start_cluster);
-void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint8_t *chain);
+void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint32_t *chain);
 void fat_set_eof(struct fat* fat, uint32_t cluster);
 void fat_set_free(struct fat* fat, uint32_t cluster);
-uint32_t fat_get_free_clusters(struct fat *fat);
+uint32_t fat_get_free_cluster_count(struct fat *fat);
 
 void fat_destruct(struct fat *fat);
 

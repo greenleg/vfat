@@ -23,7 +23,7 @@ static uint32_t fat_alloc_cluster(struct fat *fat)
     }
 
     /* TODO: Error handling with appropriate status, e.g. E_FAT_FULL */
-    return 0;
+    return E_FAT_FULL;
 }
 
 uint32_t fat_alloc_chain(struct fat *fat, uint32_t length)
@@ -66,7 +66,7 @@ uint32_t fat_get_chain_length(struct fat *fat, uint32_t start_cluster)
     return len;
 }
 
-void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint8_t *chain)
+void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint32_t *chain)
 {
     uint32_t cluster = start_cluster;
     int i = 0;
@@ -104,7 +104,8 @@ void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat)
 
     fat->vbr = vbr;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
-    fdisk_read(disk, (uint8_t*)fat->entries, fat_offset_in_bytes, sizeof(uint32_t) * vbr->cluster_count);
+    fat->entries = malloc(sizeof(uint32_t) * vbr->cluster_count);
+    fdisk_read(disk, (uint8_t *)fat->entries, fat_offset_in_bytes, sizeof(uint32_t) * vbr->cluster_count);
 }
 
 void fat_write(struct fat *fat, struct fdisk *disk)
@@ -120,7 +121,7 @@ void fat_destruct(struct fat *fat)
     free(fat->entries);
 }
 
-uint32_t fat_get_free_clusters(struct fat *fat)
+uint32_t fat_get_free_cluster_count(struct fat *fat)
 {
     uint32_t cluster;
     uint32_t cnt = 0;

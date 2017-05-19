@@ -11,7 +11,9 @@ SOURCES += main.c \
     fdisk.c \
     binaryreader.c \
     fat.c \
-    test/testfat.c
+    test/testfat.c \
+    clusterchain.c \
+    test/testclusterchain.c
 
 HEADERS += \
     vbr.h \
@@ -19,4 +21,5 @@ HEADERS += \
     fdisk.h \
     test/testsuite.h \
     binaryreader.h \
-    fat.h
+    fat.h \
+    clusterchain.h
