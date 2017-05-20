@@ -92,7 +92,7 @@ void vbr_set_sectors_per_cluster(struct vbr *vbr, uint16_t val)
     vbr->sectors_per_cluster_pow2 = log2(val);
 }
 
-uint32_t vbr_get_cluster_size(struct vbr * vbr)
+uint32_t vbr_get_bytes_per_cluster(struct vbr * vbr)
 {
     return 1 << (vbr->bytes_per_sector_pow2 + vbr->sectors_per_cluster_pow2);
 }

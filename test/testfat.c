@@ -126,9 +126,12 @@ MU_TEST(test_fat_get_free_cluster_count2)
 MU_TEST_SUITE(fat_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
+    MU_RESET();
 
     MU_RUN_TEST(test_fat_read);    
     MU_RUN_TEST(test_fat_alloc_cluster);
     MU_RUN_TEST(test_fat_get_free_cluster_count);
     MU_RUN_TEST(test_fat_get_free_cluster_count2);
+
+    MU_REPORT();
 }

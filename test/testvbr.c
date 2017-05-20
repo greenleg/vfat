@@ -54,6 +54,10 @@ MU_TEST(test_vbr_create_and_save)
 
 MU_TEST_SUITE(vbr_test_suite)
 {
+    MU_RESET();
+
     MU_RUN_TEST(test_vbr_create);
     MU_RUN_TEST(test_vbr_create_and_save);
+
+    MU_REPORT();
 }

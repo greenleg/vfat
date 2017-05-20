@@ -9,6 +9,13 @@ uint8_t read_u8(uint8_t *data, uint32_t offset)
     return data[offset];
 }
 
+uint16_t read_u16(uint8_t *data, uint32_t offset)
+{
+    uint32_t b0 = data[offset + 0];
+    uint32_t b1 = data[offset + 1];
+    return (b1 << 8) | b0;
+}
+
 uint32_t read_u32(uint8_t *data, uint32_t offset)
 {
     uint32_t b0 = data[offset + 0];
@@ -34,6 +41,12 @@ uint64_t read_u64(uint8_t *data, uint32_t offset)
 void write_u8(uint8_t *data, uint32_t offset, uint8_t val)
 {
     data[offset] = val;
+}
+
+void write_u16(uint8_t *data, uint32_t offset, uint16_t val)
+{
+    data[offset + 0] = val & 0xFF;
+    data[offset + 1] = (val >> 8) & 0xFF;
 }
 
 void write_u32(uint8_t *data, uint32_t offset, uint32_t val)

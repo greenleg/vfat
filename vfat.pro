@@ -13,7 +13,9 @@ SOURCES += main.c \
     fat.c \
     test/testfat.c \
     clusterchain.c \
-    test/testclusterchain.c
+    test/testclusterchain.c \
+    filedirectoryentry.c \
+    streamextdirectoryentry.c
 
 HEADERS += \
     vbr.h \
@@ -22,4 +24,7 @@ HEADERS += \
     test/testsuite.h \
     binaryreader.h \
     fat.h \
-    clusterchain.h
+    clusterchain.h \
+    common.h \
+    filedirectoryentry.h \
+    streamextdirectoryentry.h

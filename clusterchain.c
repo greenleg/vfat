@@ -6,13 +6,27 @@
 
 static uint64_t get_dev_offset(struct vbr *vbr, uint32_t cluster, uint32_t cluster_offset)
 {
-    uint32_t cluster_size = vbr_get_cluster_size(vbr);
+    uint32_t cluster_size = vbr_get_bytes_per_cluster(vbr);
     return vbr->cluster_heap_offset + cluster * cluster_size + cluster_offset;
 }
 
+uint64_t cluster_chain_get_length(struct cluster_chain *cc)
+{
+    if (cc->start_cluster == 0) {
+        return 0;
+    }
+
+    return fat_get_chain_length(cc->fat, cc->start_cluster);
+}
+
+
 uint64_t cluster_chain_get_length_on_disk(struct cluster_chain *cc)
 {
-    uint32_t cluster_size = vbr_get_cluster_size(cc->fat->vbr);
+    if (cc->start_cluster == 0) {
+        return 0;
+    }
+
+    uint32_t cluster_size = vbr_get_bytes_per_cluster(cc->fat->vbr);
     uint32_t len = fat_get_chain_length(cc->fat, cc->start_cluster);
 
     return len * cluster_size;
@@ -20,11 +34,18 @@ uint64_t cluster_chain_get_length_on_disk(struct cluster_chain *cc)
 
 uint32_t cluster_chain_set_size(struct cluster_chain *cc, uint32_t size)
 {
-    uint32_t cluster_size = vbr_get_cluster_size(cc->fat->vbr);
+    uint32_t cluster_size = vbr_get_bytes_per_cluster(cc->fat->vbr);
     uint32_t nr_clusters = (size + cluster_size - 1) / cluster_size;
     cluster_chain_set_length(cc, nr_clusters);
 
     return cluster_size * nr_clusters;
+}
+
+void cluster_chain_create(struct cluster_chain *cc, struct fat *fat, uint32_t length)
+{
+    cc->fat = fat;
+    cc->start_cluster = 0;
+    cluster_chain_set_length(cc, length);
 }
 
 void cluster_chain_read_data(struct fdisk *disk, struct cluster_chain *cc, uint32_t offset, uint32_t nbytes, uint8_t *dst)
@@ -35,7 +56,7 @@ void cluster_chain_read_data(struct fdisk *disk, struct cluster_chain *cc, uint3
 
     struct fat *fat = cc->fat;
     struct vbr *vbr = fat->vbr;
-    uint32_t cluster_size = vbr_get_cluster_size(vbr);
+    uint32_t cluster_size = vbr_get_bytes_per_cluster(vbr);
     uint32_t chain_idx;
     uint32_t n;
 
@@ -71,7 +92,7 @@ void cluster_chain_write_data(struct fdisk *disk, struct cluster_chain *cc, uint
 
     struct fat *fat = cc->fat;
     struct vbr *vbr = fat->vbr;
-    uint32_t cluster_size = vbr_get_cluster_size(vbr);
+    uint32_t cluster_size = vbr_get_bytes_per_cluster(vbr);
     uint32_t min_size = offset + nbytes;
     uint32_t chain_idx;
     uint32_t n;
