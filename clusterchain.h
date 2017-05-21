@@ -6,18 +6,18 @@
 #include "fdisk.h"
 #include "fat.h"
 
-struct cluster_chain
+struct cch
 {
-    uint32_t start_cluster;
+    u32 start_cluster;
     struct fat *fat;
 };
 
-void cluster_chain_read_data(struct fdisk *disk, struct cluster_chain *cc, uint32_t offset, uint32_t nbytes, uint8_t *dst);
-void cluster_chain_write_data(struct fdisk *disk, struct cluster_chain *cc, uint32_t offset, uint32_t nbytes, uint8_t *src);
-uint64_t cluster_chain_get_length(struct cluster_chain *cc);
-uint64_t cluster_chain_get_length_on_disk(struct cluster_chain *cc);
-void cluster_chain_set_length(struct cluster_chain *cc, uint32_t length);
-uint32_t cluster_chain_set_size(struct cluster_chain *cc, uint32_t size);
-void cluster_chain_create(struct cluster_chain *cc, struct fat *fat, uint32_t length);
+void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *dst);
+void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *src);
+u32  cch_getlen(struct cch *cc);
+u64  cch_getsize(struct cch *cc);
+void cch_setlen(struct cch *cc, uint32_t len);
+u32  cch_setsize(struct cch *cc, u32 size);
+void cch_create(struct cch *cc, struct fat *fat, u32 len);
 
 #endif /* VFAT_CLUSTER_CHAIN_H */

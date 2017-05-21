@@ -25,7 +25,7 @@ struct vbr
     u32 cluster_count;
 
     /* Cluster address of the Root Directory */
-    u32 root_dir_first_cluster;
+    u32 rootdir_first_cluster;
 
     /* This is a power of 2. Range: min of 29 = 512 byte cluster size, and a max of 212 = 4096. */
     u8 bytes_per_sector_pow2;

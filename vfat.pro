@@ -14,8 +14,10 @@ SOURCES += main.c \
     test/testfat.c \
     clusterchain.c \
     test/testclusterchain.c \
-    filedirectoryentry.c \
-    streamextdirectoryentry.c
+    cchdir.c \
+    filedirentry.c \
+    test/testcchdir.c \
+    arraylist.c
 
 HEADERS += \
     vbr.h \
@@ -26,5 +28,6 @@ HEADERS += \
     fat.h \
     clusterchain.h \
     common.h \
-    filedirectoryentry.h \
-    streamextdirectoryentry.h
+    filedirentry.h \
+    arraylist.h \
+    cchdir.h

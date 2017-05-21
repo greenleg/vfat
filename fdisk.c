@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
+#include "common.h"
 #include "fdisk.h"
 
 void fdisk_create(const char* fname, struct fdisk *disk)
@@ -24,13 +25,13 @@ void fdisk_close(struct fdisk *disk)
     close(disk->fd);
 }
 
-void fdisk_read(struct fdisk *disk, uint8_t *buf, off_t offset, size_t count)
+void fdisk_read(struct fdisk *disk, u8 *buf, off_t offset, size_t count)
 {
     lseek(disk->fd, offset, SEEK_SET);
     read(disk->fd, buf, count);
 }
 
-void fdisk_write(struct fdisk *disk, uint8_t *buf, off_t offset, size_t count)
+void fdisk_write(struct fdisk *disk, u8 *buf, off_t offset, size_t count)
 {
     lseek(disk->fd, offset, SEEK_SET);
     write(disk->fd, buf, count);

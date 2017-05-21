@@ -2,14 +2,15 @@
 #define VFAT_BINARYREADER_H
 
 #include <stdint.h>
+#include "common.h"
 
-uint8_t  read_u8(uint8_t *data, uint32_t offset);
-uint16_t read_u16(uint8_t *data, uint32_t offset);
-uint32_t read_u32(uint8_t *data, uint32_t offset);
-uint64_t read_u64(uint8_t *data, uint32_t offset);
-void     write_u8(uint8_t *data, uint32_t offset, uint8_t val);
-void     write_u16(uint8_t *data, uint32_t offset, uint16_t val);
-void     write_u32(uint8_t *data, uint32_t offset, uint32_t val);
-void     write_u64(uint8_t *data, uint32_t offset, uint64_t val);
+u8  read_u8(u8 *data, u32 offset);
+u16 read_u16(u8 *data, u32 offset);
+u32 read_u32(u8 *data, u32 offset);
+u64 read_u64(u8 *data, u32 offset);
+void     write_u8(u8 *data, u32 offset, u8 val);
+void     write_u16(u8 *data, u32 offset, u16 val);
+void     write_u32(u8 *data, u32 offset, u32 val);
+void     write_u64(u8 *data, u32 offset, u64 val);
 
 #endif /* VFAT_BINARYREADER_H */

@@ -19,7 +19,7 @@ MU_TEST(test_vbr_create)
     MU_ASSERT_INT_EQ(1,    br.fat_offset);
     MU_ASSERT_INT_EQ(16,   br.fat_length);
     MU_ASSERT_INT_EQ(17,   br.cluster_heap_offset);
-    MU_ASSERT_INT_EQ(2,    br.root_dir_first_cluster);
+    MU_ASSERT_INT_EQ(2,    br.rootdir_first_cluster);
 }
 
 MU_TEST(test_vbr_create_and_save)
@@ -46,7 +46,7 @@ MU_TEST(test_vbr_create_and_save)
     MU_ASSERT_INT_EQ(1,    br.fat_offset);
     MU_ASSERT_INT_EQ(16,   br.fat_length);
     MU_ASSERT_INT_EQ(17,   br.cluster_heap_offset);
-    MU_ASSERT_INT_EQ(2,    br.root_dir_first_cluster);
+    MU_ASSERT_INT_EQ(2,    br.rootdir_first_cluster);
 
     fdisk_close(&disk);
     remove(disk_fname);
