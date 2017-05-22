@@ -12,12 +12,12 @@ SOURCES += main.c \
     binaryreader.c \
     fat.c \
     test/testfat.c \
-    clusterchain.c \
-    test/testclusterchain.c \
     cchdir.c \
-    filedirentry.c \
-    test/testcchdir.c \
-    arraylist.c
+    test/testcchdir.c \    
+    alist.c \
+    cch.c \
+    test/testcch.c \
+    lfnde.c
 
 HEADERS += \
     vbr.h \
@@ -26,8 +26,8 @@ HEADERS += \
     test/testsuite.h \
     binaryreader.h \
     fat.h \
-    clusterchain.h \
     common.h \
-    filedirentry.h \
-    arraylist.h \
-    cchdir.h
+    cchdir.h \    
+    alist.h \
+    cch.h \
+    lfnde.h

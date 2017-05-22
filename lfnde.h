@@ -1,6 +1,7 @@
-#ifndef VFAT_FILE_DIRECTORY_ENTRY_H
-#define VFAT_FILE_DIRECTORY_ENTRY_H
+#ifndef VFAT_LFNDE_H
+#define VFAT_LFNDE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "common.h"
@@ -45,7 +46,7 @@ struct lfnde
 {
     struct fde *fde;
     struct sede *sede;
-    struct fnede **fnede_list;
+    struct alist *fnede_list;
 };
 
 void lfnde_readbuf(u8 *buf, struct lfnde *e);
@@ -53,8 +54,9 @@ void lfnde_writebuf(struct lfnde *e, u8 *buf);
 u32  lfnde_getlen(struct lfnde *e);
 void lfnde_getname(struct lfnde *e, char *name);
 void lfnde_setname(struct lfnde *e, const char *name);
-u8 lfnde_isfile(struct lfnde *e);
-/*u8 lfnde_getentrycnt(struct lfnde *e);*/
+bool lfnde_isfile(struct lfnde *e);
+u16 lfnde_count(struct lfnde *e);
+void lfnde_free(struct lfnde *e);
 
 
-#endif /* VFAT_FILE_DIRECTORY_ENTRY_H */
+#endif /* VFAT_LFNDE_H */

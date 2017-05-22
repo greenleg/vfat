@@ -1,7 +1,9 @@
 #include "common.h"
 #include "minunit.h"
-#include "clusterchain.h"
+#include "alist.h"
+#include "cch.h"
 #include "cchdir.h"
+#include "lfnde.h"
 
 static const char*  G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
@@ -23,6 +25,7 @@ MU_TEST_SETUP(setup)
     cchdir_createroot(&fat, &dir);
     cchdir_write(&dir, &disk);
 
+    cchdir_free(&dir);
     fdisk_close(&disk);
 }
 
@@ -44,21 +47,20 @@ MU_TEST(test_add_entry)
     vbr_read(&disk, &br);
     fat_read(&disk, &br, &fat);
 
-    cchdir_createroot(&fat, &dir);
-    cchdir_readroot(&disk, &dir);
+    cchdir_readroot(&disk, &fat, &dir);
 
-    MU_ASSERT_U32_EQ(0, dir.entries->cnt);
+    MU_ASSERT_U32_EQ(0, alist_count(dir.entries));
 
+    struct lfnde e;
+    //cchdir_create("some name", true);
+    cchdir_add(&dir, &e);
+    MU_ASSERT_U32_EQ(1, alist_count(dir.entries));
 
-    /*        FatDirectoryEntry* e = FatDirectoryEntry::create(false);
-            dir->addEntry(e);
-            assert(dir->getEntryCount() == 1);
-            delete e;*/
-
+    cchdir_free(&dir);
     fdisk_close(&disk);
 }
 
-MU_TEST_SUITE(cch_test_suite)
+MU_TEST_SUITE(cchdir_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
     MU_RESET();

@@ -3,7 +3,8 @@
 #include <assert.h>
 
 #include "binaryreader.h"
-#include "filedirentry.h"
+#include "alist.h"
+#include "lfnde.h"
 
 #define FDE_ENTRYTYPE_OFFSET 0
 #define FDE_SECONDARYCOUNT_OFFSET 1
@@ -74,30 +75,57 @@ void fnede_writebuf(struct fnede *e, u8 *buf)
     memcpy(buf, e->name, FNEDE_FILENAME_OFFSET);
 }
 
+void lfnde_free(struct lfnde *e)
+{
+    free(e->fde);
+    free(e->sede);
+    alist_free(e->fnede_list);
+    free(e->fnede_list);
+}
+
+u16 lfnde_count(struct lfnde *e)
+{
+    return 1 + e->fde->secondary_count;
+}
+
 void lfnde_readbuf(u8 *buf, struct lfnde *e)
 {
     assert(buf[0] == FILE_DIR_ENTRY);
     e->fde = malloc(sizeof(struct fde));
     fde_readbuf(buf, e->fde);
-
     buf += FAT_DIR_ENTRY_SIZE;
 
-    e->sede = malloc(sizeof(struct sede));
     assert(buf[0] == STREAMEXT_DIR_ENTRY);
+    e->sede = malloc(sizeof(struct sede));
     sede_readbuf(buf, e->sede);
-
     buf += FAT_DIR_ENTRY_SIZE;
 
-    u32 fnede_cnt = e->fde->secondary_count - 1;
-    u32 i;
+    struct fnede fnede;
+    u8 i;
 
-    e->fnede_list = malloc(sizeof(struct fnede) * fnede_cnt);
+    e->fnede_list = malloc(sizeof(struct alist));
+    alist_create(e->fnede_list, sizeof(struct fnede));
 
-    for (i = 0; i < fnede_cnt; ++i) {
+    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
         assert(buf[0] == FILENAMEEXT_DIR_ENTRY);
-        e->fnede_list[i] = malloc(sizeof(struct fnede));
-        fnede_readbuf(buf, e->fnede_list[i]);
+        fnede_readbuf(buf, &fnede);
+        alist_add(e->fnede_list, &fnede);
+        buf += FAT_DIR_ENTRY_SIZE;
+    }
+}
 
+void lfnde_writebuf(struct lfnde *e, u8 *buf)
+{
+    fde_writebuf(e->fde, buf);
+    buf += FAT_DIR_ENTRY_SIZE;
+
+    sede_writebuf(e->sede, buf);
+    buf += FAT_DIR_ENTRY_SIZE;
+
+    u8 i;
+    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
+        assert(buf[0] == FILENAMEEXT_DIR_ENTRY);
+        fnede_writebuf(alist_get(e->fnede_list, i), buf);
         buf += FAT_DIR_ENTRY_SIZE;
     }
 }

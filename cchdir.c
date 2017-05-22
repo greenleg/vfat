@@ -1,13 +1,13 @@
-#include "arraylist.h"
+#include "alist.h"
 #include "fat.h"
 #include "cchdir.h"
-#include "filedirentry.h"
+#include "lfnde.h"
 
 static void cchdir_read_entries(struct cchdir *dir, u8 *buf)
 {
     u32 offset = 0;
     u8 entry_type;
-    struct lfnde* e;
+    struct lfnde e;
     u32 i;
 
     for (i = 0; i < dir->capacity; ++i) {
@@ -16,55 +16,77 @@ static void cchdir_read_entries(struct cchdir *dir, u8 *buf)
             break;
         }
 
-        e = malloc(sizeof(struct lfnde));
-        lfnde_readbuf(buf + offset, e);
-        alist_add(dir->entries, e);
-        offset += (1 + e->fde->secondary_count) * FAT_DIR_ENTRY_SIZE;
+        lfnde_readbuf(buf + offset, &e);
+        alist_add(dir->entries, &e);
+        offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
     }
 }
 
-void cchdir_write(struct cchdir* dir, struct fdisk *disk)
+static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
 {
+    u32 offset = 0;
+    u32 i;
 
+    for (i = 0; i < alist_count(dir->entries); ++i) {
+        struct lfnde *e = alist_get(dir->entries, i);
+        lfnde_writebuf(e, buf + offset);
+        offset += lfnde_count(e) * FAT_DIR_ENTRY_SIZE;
+    }
+
+    if (offset < bufsize) {
+        // Write the end-of-list marker.
+        buf[offset] = NO_DIR_ENTRY;
+        offset += 1;
+    }
+
+    // offset is equal to number of the actually written bytes.
+    return offset;
 }
 
-void cchdir_read(struct fdisk *disk, struct cchdir* dir)
-{
-
-}
-
-void cchdir_createroot(struct fat *fat, struct cchdir *dir)
-{
-    struct vbr *br = fat->vbr;
-    struct cch cc;
-    cch_create(&cc, fat, 1);
-    br->rootdir_first_cluster = cc.start_cluster;
-
-    struct alist list;
-    alist_create(&list, sizeof(struct lfnde *), 0);
-
-    dir->chain = &cc;
-    dir->is_root = 1;
-    dir->capacity = cch_getsize(&cc) / FAT_DIR_ENTRY_SIZE;
-    dir->entries = &list;
-}
-
-void cchdir_readroot(struct fdisk *disk, struct fat *fat, struct cchdir *dir)
+void cchdir_read(struct fdisk *disk, struct fat *fat, struct cchdir* dir, u32 first_cluster, bool root)
 {
     struct cch *cc = malloc(sizeof(struct cch));
     cc->fat = fat;
-    cc->start_cluster = fat->vbr->rootdir_first_cluster;
+    cc->start_cluster = first_cluster;
 
     u64 size = cch_getsize(cc);
     u8 buf[size];
     cch_readdata(disk, cc, 0, size, buf);
 
     dir->chain = cc;
-    dir->is_root = 1;
+    dir->root = root;
     dir->capacity = size / FAT_DIR_ENTRY_SIZE;
-    alist_create(dir->entries, sizeof(struct lfnde *), dir->capacity);
+    dir->entries = malloc(sizeof(struct alist));
+    alist_create(dir->entries, sizeof(struct lfnde));
 
     cchdir_read_entries(dir, buf);
+}
+
+void cchdir_write(struct cchdir* dir, struct fdisk *disk)
+{
+    u32 nbytes = dir->capacity * FAT_DIR_ENTRY_SIZE;
+    u8 buf[nbytes];
+    u32 realbytes = cchdir_write_entries(dir, buf, nbytes);
+    cch_writedata(disk, dir->chain, 0, realbytes, buf);
+}
+
+void cchdir_createroot(struct fat *fat, struct cchdir *dir)
+{
+    struct vbr *br = fat->vbr;
+    struct cch *cc = malloc(sizeof(struct cch));
+    cch_create(cc, fat, 1);
+    br->rootdir_first_cluster = cc->start_cluster;
+
+    dir->chain = cc;
+    dir->root = true;
+    dir->capacity = cch_getsize(cc) / FAT_DIR_ENTRY_SIZE;
+    dir->entries = malloc(sizeof(struct alist));
+    alist_create(dir->entries, sizeof(struct lfnde));
+}
+
+void cchdir_readroot(struct fdisk *disk, struct fat *fat, struct cchdir *dir)
+{
+    cchdir_read(disk, fat, dir, fat->vbr->rootdir_first_cluster, true);
 }
 
 void cchdir_changesize(struct cchdir *dir, u32 entry_cnt)
@@ -76,10 +98,23 @@ void cchdir_changesize(struct cchdir *dir, u32 entry_cnt)
 
 void cchdir_add(struct cchdir *dir, struct lfnde *e)
 {
-    u32 new_entry_cnt = dir->entries->cnt + (1 + e->fde->secondary_count);
-    if (new_entry_cnt > dir->capacity) {
-        cchdir_changesize(dir, new_entry_cnt);
+    u32 new_count = alist_count(dir->entries) + (1 + e->fde->secondary_count);
+    if (new_count > dir->capacity) {
+        cchdir_changesize(dir, new_count);
     }
 
     alist_add(dir->entries, e);
+}
+
+void cchdir_free(struct cchdir *dir)
+{
+    u32 i;
+    for (i = 0; i < alist_count(dir->entries); ++i) {
+        struct lfnde *e = alist_get(dir->entries, i);
+        lfnde_free(e);
+    }
+
+    alist_free(dir->entries);
+    free(dir->entries);
+    free(dir->chain);
 }

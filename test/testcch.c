@@ -1,6 +1,6 @@
 #include "common.h"
 #include "minunit.h"
-#include "clusterchain.h"
+#include "cch.h"
 
 static const char*  G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
@@ -179,7 +179,7 @@ MU_TEST(test_get_length_on_disk)
     fdisk_close(&disk);
 }
 
-MU_TEST_SUITE(cluster_chain_test_suite)
+MU_TEST_SUITE(cch_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
     MU_RESET();

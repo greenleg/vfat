@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "clusterchain.h"
+#include "cch.h"
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
