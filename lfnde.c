@@ -23,7 +23,7 @@
 #define FNEDE_SECODARYFLAGS_OFFSET 1
 #define FNEDE_FILENAME_OFFSET 2
 
-void fde_readbuf(u8 *buf, struct fde *e)
+static void fde_readbuf(u8 *buf, struct fde *e)
 {
     e->entry_type = read_u8(buf, FDE_ENTRYTYPE_OFFSET);
     e->secondary_count = read_u8(buf, FDE_SECONDARYCOUNT_OFFSET);
@@ -33,7 +33,7 @@ void fde_readbuf(u8 *buf, struct fde *e)
     e->last_accessed = read_u32(buf, FDE_LASTACCESSED_OFFSET);
 }
 
-void fde_writebuf(struct fde *e, u8 *buf)
+static void fde_writebuf(struct fde *e, u8 *buf)
 {
     write_u8(buf, FDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, FDE_SECONDARYCOUNT_OFFSET, e->secondary_count);
@@ -43,7 +43,7 @@ void fde_writebuf(struct fde *e, u8 *buf)
     write_u32(buf, FDE_LASTACCESSED_OFFSET, e->last_accessed);
 }
 
-void sede_readbuf(u8 *buf, struct sede *e)
+static void sede_readbuf(u8 *buf, struct sede *e)
 {
     e->entry_type = read_u8(buf, SEDE_ENTRYTYPE_OFFSET);
     e->secondary_flags = read_u8(buf, SEDE_SECONDARYFLAGS_OFFSET);
@@ -52,7 +52,7 @@ void sede_readbuf(u8 *buf, struct sede *e)
     e->data_length = read_u64(buf, SEDE_DATALENGTH_OFFSET);
 }
 
-void sede_writebuf(struct sede *e, u8 *buf)
+static void sede_writebuf(struct sede *e, u8 *buf)
 {
     write_u8(buf, SEDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, SEDE_SECONDARYFLAGS_OFFSET, e->secondary_flags);
@@ -61,31 +61,39 @@ void sede_writebuf(struct sede *e, u8 *buf)
     write_u64(buf, SEDE_DATALENGTH_OFFSET, e->data_length);
 }
 
-void fnede_readbuf(u8 *buf, struct fnede *e)
+static void fnede_readbuf(u8 *buf, struct fnede *e)
 {
     e->entry_type = read_u8(buf, FNEDE_ENTRYTYPE_OFFSET);
     e->secondary_flags = read_u8(buf, FNEDE_SECODARYFLAGS_OFFSET);
     memcpy(e->name, buf, FNEDE_FILENAME_OFFSET);
 }
 
-void fnede_writebuf(struct fnede *e, u8 *buf)
+static void fnede_writebuf(struct fnede *e, u8 *buf)
 {
     write_u8(buf, FNEDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, FNEDE_SECODARYFLAGS_OFFSET, e->secondary_flags);
     memcpy(buf, e->name, FNEDE_FILENAME_OFFSET);
 }
 
-void lfnde_free(struct lfnde *e)
+void lfnde_destruct(struct lfnde *e)
 {
     free(e->fde);
     free(e->sede);
-    alist_free(e->fnede_list);
+    alist_destruct(e->fnede_list);
     free(e->fnede_list);
 }
 
 u16 lfnde_count(struct lfnde *e)
 {
     return 1 + e->fde->secondary_count;
+}
+
+void lfnde_create(struct lfnde *e)
+{
+    e->fde = malloc(sizeof(struct fde));
+    e->sede = malloc(sizeof(struct sede));
+    e->fnede_list = malloc(sizeof(struct alist));
+    alist_create(e->fnede_list, sizeof(struct fnede));
 }
 
 void lfnde_readbuf(u8 *buf, struct lfnde *e)
@@ -122,10 +130,11 @@ void lfnde_writebuf(struct lfnde *e, u8 *buf)
     sede_writebuf(e->sede, buf);
     buf += FAT_DIR_ENTRY_SIZE;
 
+    struct fnede fnede;
     u8 i;
-    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
-        assert(buf[0] == FILENAMEEXT_DIR_ENTRY);
-        fnede_writebuf(alist_get(e->fnede_list, i), buf);
+    for (i = 0; i < e->fde->secondary_count - 1; ++i) {        
+        alist_get(e->fnede_list, i, &fnede);
+        fnede_writebuf(&fnede, buf);
         buf += FAT_DIR_ENTRY_SIZE;
     }
 }

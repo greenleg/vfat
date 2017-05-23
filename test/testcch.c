@@ -49,7 +49,7 @@ MU_TEST(test_read_data_with_offset)
 
     cch_writedata(&disk, &cc, 0, 1025, write_buf);
 
-    MU_ASSERT_U32_EQ(3, fat_get_chain_length(&fat, cc.start_cluster));
+    MU_ASSERT_U32_EQ(3, fat_getchainlen(&fat, cc.start_cluster));
 
     u8 read_buf[1020];
     cch_readdata(&disk, &cc, 5, 1020, read_buf);
@@ -128,7 +128,7 @@ void test_get_free_cluster_count()
     fdisk_close(&disk);
 }
 
-MU_TEST(test_set_size)
+MU_TEST(test_setsize)
 {
     MU_PRINT_TEST_INFO();
 
@@ -158,7 +158,7 @@ MU_TEST(test_set_size)
     fdisk_close(&disk);
 }
 
-MU_TEST(test_get_length_on_disk)
+MU_TEST(test_getsize)
 {
     MU_PRINT_TEST_INFO();
 
@@ -187,8 +187,8 @@ MU_TEST_SUITE(cch_test_suite)
     MU_RUN_TEST(test_read_data_with_offset);
     MU_RUN_TEST(test_write_data);
     MU_RUN_TEST(test_get_free_cluster_count);
-    MU_RUN_TEST(test_set_size);
-    MU_RUN_TEST(test_get_length_on_disk);
+    MU_RUN_TEST(test_setsize);
+    MU_RUN_TEST(test_getsize);
 
     MU_REPORT();
 }

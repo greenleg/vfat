@@ -27,10 +27,11 @@ static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
     u32 offset = 0;
     u32 i;
 
+    struct lfnde e;
     for (i = 0; i < alist_count(dir->entries); ++i) {
-        struct lfnde *e = alist_get(dir->entries, i);
-        lfnde_writebuf(e, buf + offset);
-        offset += lfnde_count(e) * FAT_DIR_ENTRY_SIZE;
+        alist_get(dir->entries, i, &e);
+        lfnde_writebuf(&e, buf + offset);
+        offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
     }
 
     if (offset < bufsize) {
@@ -96,7 +97,7 @@ void cchdir_changesize(struct cchdir *dir, u32 entry_cnt)
     dir->capacity = new_size / FAT_DIR_ENTRY_SIZE;
 }
 
-void cchdir_add(struct cchdir *dir, struct lfnde *e)
+void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
 {
     u32 new_count = alist_count(dir->entries) + (1 + e->fde->secondary_count);
     if (new_count > dir->capacity) {
@@ -106,15 +107,28 @@ void cchdir_add(struct cchdir *dir, struct lfnde *e)
     alist_add(dir->entries, e);
 }
 
-void cchdir_free(struct cchdir *dir)
+void cchdir_getentry(struct cchdir *dir, u32 idx, struct lfnde *e)
 {
+    alist_get(dir->entries, idx, e);
+}
+
+void cchdir_removeentry(struct cchdir *dir, u32 idx)
+{
+    alist_remove(dir->entries, idx);
+    cchdir_changesize(dir, alist_count(dir->entries));
+}
+
+void cchdir_destruct(struct cchdir *dir)
+{
+    struct lfnde e;
     u32 i;
+
     for (i = 0; i < alist_count(dir->entries); ++i) {
-        struct lfnde *e = alist_get(dir->entries, i);
-        lfnde_free(e);
+        alist_get(dir->entries, i, &e);
+        lfnde_destruct(&e);
     }
 
-    alist_free(dir->entries);
+    alist_destruct(dir->entries);
     free(dir->entries);
     free(dir->chain);
 }

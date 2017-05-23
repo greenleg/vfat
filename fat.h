@@ -26,21 +26,21 @@
 struct fat
 {
     struct vbr *vbr;
-    uint32_t *entries;
-    uint32_t last_alloc_cluster;
+    u32 *entries;
+    u32 last_alloc_cluster;
 };
 
 void fat_create(struct vbr *vbr, struct fat *fat);
 void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat);
 void fat_write(struct fat *fat, struct fdisk *disk);
 
-uint32_t fat_alloc_chain(struct fat *fat, uint32_t length);
-void fat_append_to_chain(struct fat *fat, uint32_t start_cluster, uint32_t new_cluster);
-uint32_t fat_get_chain_length(struct fat *fat, uint32_t start_cluster);
-void fat_get_chain(struct fat *fat, uint32_t start_cluster, uint32_t *chain);
-void fat_set_eof(struct fat* fat, uint32_t cluster);
-void fat_set_free(struct fat* fat, uint32_t cluster);
-uint32_t fat_get_free_cluster_count(struct fat *fat);
+u32 fat_alloc_chain(struct fat *fat, u32 length);
+void fat_append_to_chain(struct fat *fat, u32 start_cluster, u32 new_cluster);
+u32 fat_getchainlen(struct fat *fat, u32 start_cluster);
+void fat_getchain(struct fat *fat, u32 start_cluster, u32 *chain);
+void fat_seteof(struct fat* fat, u32 cluster);
+void fat_setfree(struct fat* fat, u32 cluster);
+u32 fat_get_free_cluster_count(struct fat *fat);
 
 void fat_destruct(struct fat *fat);
 

@@ -49,6 +49,7 @@ struct lfnde
     struct alist *fnede_list;
 };
 
+void lfnde_create(struct lfnde *e);
 void lfnde_readbuf(u8 *buf, struct lfnde *e);
 void lfnde_writebuf(struct lfnde *e, u8 *buf);
 u32  lfnde_getlen(struct lfnde *e);
@@ -56,7 +57,7 @@ void lfnde_getname(struct lfnde *e, char *name);
 void lfnde_setname(struct lfnde *e, const char *name);
 bool lfnde_isfile(struct lfnde *e);
 u16 lfnde_count(struct lfnde *e);
-void lfnde_free(struct lfnde *e);
+void lfnde_destruct(struct lfnde *e);
 
 
 #endif /* VFAT_LFNDE_H */

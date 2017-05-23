@@ -4,7 +4,7 @@
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-static u64 get_dev_offset(struct vbr *vbr, u32 cluster, u32 cluster_offset)
+static u64 getdevofs(struct vbr *vbr, u32 cluster, u32 cluster_offset)
 {
     u32 cluster_size = vbr_get_bytes_per_cluster(vbr);
     return vbr->cluster_heap_offset + cluster * cluster_size + cluster_offset;
@@ -16,17 +16,13 @@ u32 cch_getlen(struct cch *cc)
         return 0;
     }
 
-    return fat_get_chain_length(cc->fat, cc->start_cluster);
+    return fat_getchainlen(cc->fat, cc->start_cluster);
 }
 
 u64 cch_getsize(struct cch *cc)
 {
-    if (cc->start_cluster == 0) {
-        return 0;
-    }
-
+    u32 clus_cnt = cch_getlen(cc);
     u32 clus_size = vbr_get_bytes_per_cluster(cc->fat->vbr);
-    u32 clus_cnt = fat_get_chain_length(cc->fat, cc->start_cluster);
 
     return clus_cnt * clus_size;
 }
@@ -59,8 +55,8 @@ void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8
     u32 chain_idx;
     u32 n;
 
-    u32 chain[fat_get_chain_length(fat, cc->start_cluster)];
-    fat_get_chain(fat, cc->start_cluster, chain);
+    u32 chain[fat_getchainlen(fat, cc->start_cluster)];
+    fat_getchain(fat, cc->start_cluster, chain);
 
     chain_idx = (offset / cluster_size);
     n = nbytes;
@@ -68,7 +64,7 @@ void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8
     if (offset % cluster_size != 0) {
         u32 cluster_offset = (offset % cluster_size);
         u32 size = MIN(cluster_size - cluster_offset, n);
-        fdisk_read(disk, dst, get_dev_offset(vbr, chain[chain_idx], cluster_offset), size);
+        fdisk_read(disk, dst, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
         dst += size;
         n -= size;
         ++chain_idx;
@@ -76,7 +72,7 @@ void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8
 
     while (n > 0) {
         u32 size = MIN(cluster_size, n);
-        fdisk_read(disk, dst, get_dev_offset(vbr, chain[chain_idx], 0), size);
+        fdisk_read(disk, dst, getdevofs(vbr, chain[chain_idx], 0), size);
         dst += size;
         n -= size;
         ++chain_idx;
@@ -102,8 +98,8 @@ void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u
         cch_setsize(cc, min_size); // growing the chain
     }
 
-    u32 chain[fat_get_chain_length(fat, cc->start_cluster)];
-    fat_get_chain(fat, cc->start_cluster, chain);
+    u32 chain[fat_getchainlen(fat, cc->start_cluster)];
+    fat_getchain(fat, cc->start_cluster, chain);
 
     chain_idx = (offset / cluster_size);
     n = nbytes;
@@ -111,7 +107,7 @@ void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u
     if (offset % cluster_size != 0) {
         cluster_offset = (offset % cluster_size);
         size = MIN(cluster_size - cluster_offset, n);
-        fdisk_write(disk, src, get_dev_offset(vbr, chain[chain_idx], cluster_offset), size);
+        fdisk_write(disk, src, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
         src += size;
         n -= size;
         ++chain_idx;
@@ -119,7 +115,7 @@ void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u
 
     while (n > 0) {
         size = MIN(cluster_size, n);
-        fdisk_write(disk, src, get_dev_offset(vbr, chain[chain_idx], 0), size);
+        fdisk_write(disk, src, getdevofs(vbr, chain[chain_idx], 0), size);
         src += size;
         n -= size;
         ++chain_idx;
@@ -138,13 +134,13 @@ void cch_setlen(struct cch *cc, u32 nr_clusters)
         return;
     }
 
-    u32 len = fat_get_chain_length(cc->fat, cc->start_cluster);
+    u32 len = fat_getchainlen(cc->fat, cc->start_cluster);
     if (nr_clusters == len) {
         return;
     }
 
     u32 chain[len];
-    fat_get_chain(cc->fat, cc->start_cluster, chain);
+    fat_getchain(cc->fat, cc->start_cluster, chain);
     if (nr_clusters > len) {
         /* grow the chain */
         u32 new_chain_start_cluster = fat_alloc_chain(cc->fat, nr_clusters - len);
@@ -153,13 +149,13 @@ void cch_setlen(struct cch *cc, u32 nr_clusters)
         /* shrink the chain */
         u32 i;
         if (nr_clusters > 0) {
-            fat_set_eof(cc->fat, chain[nr_clusters - 1]);
+            fat_seteof(cc->fat, chain[nr_clusters - 1]);
             for (i = nr_clusters; i < len; ++i) {
-                fat_set_free(cc->fat, chain[i]);
+                fat_setfree(cc->fat, chain[i]);
             }
         } else {
             for (i = 0; i < len; ++i) {
-                fat_set_free(cc->fat, chain[i]);
+                fat_setfree(cc->fat, chain[i]);
             }
 
             cc->start_cluster = 0;

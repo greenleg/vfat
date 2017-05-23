@@ -7,7 +7,7 @@
 static void alist_realloc(struct alist *list, u32 new_capacity)
 {
     void *new_items = malloc(list->item_size * new_capacity);
-    memcpy(new_items, list->items, list->cnt);
+    memcpy(new_items, list->items, list->item_size * list->cnt);
     free(list->items);
     list->items = new_items;
 }
@@ -27,7 +27,7 @@ void alist_add(struct alist *list, void *item)
         alist_realloc(list, list->capacity);
     }
 
-    memcpy(list->items + list->cnt, item, list->item_size);
+    memcpy(list->items + list->item_size * list->cnt, item, list->item_size);
     ++(list->cnt);
 }
 
@@ -39,21 +39,20 @@ void alist_remove(struct alist *list, u32 idx)
         list->capacity >>= 1;
         void *new_items = malloc(list->item_size * list->capacity);
         // We can pass zero bytes in memcpy in C99
-        memcpy(new_items, list->items, idx);
-        memcpy(new_items + idx, list->items + idx + 1, list->cnt - idx - 1);
+        memcpy(new_items, list->items, list->item_size * idx);
+        memcpy(new_items + list->item_size * idx, list->items + list->item_size * (idx + 1), list->item_size * (list->cnt - idx - 1));
         free(list->items);
         list->items = new_items;
     } else {
-        memmove(list->items + idx, list->items + idx + 1, list->cnt - idx - 1);
+        memmove(list->items + list->item_size * idx, list->items + list->item_size * (idx + 1), list->item_size * (list->cnt - idx - 1));
     }
 
     --(list->cnt);
 }
 
-void *alist_get(struct alist *list, u32 idx)
+void alist_get(struct alist *list, u32 idx, void *item)
 {
-    //return &(list->items[idx]);
-    return list + idx;
+    memcpy(item, list->items + idx, list->item_size);
 }
 
 u32 alist_count(struct alist *list)
@@ -61,7 +60,7 @@ u32 alist_count(struct alist *list)
     return list->cnt;
 }
 
-void alist_free(struct alist *list)
+void alist_destruct(struct alist *list)
 {
     free(list->items);
 }
