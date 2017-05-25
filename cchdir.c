@@ -3,6 +3,11 @@
 #include "cchdir.h"
 #include "lfnde.h"
 
+static void check_unique_name(/*in*/ const char *name)
+{
+    // TODO:
+}
+
 static void cchdir_read_entries(struct cchdir *dir, u8 *buf)
 {
     u32 offset = 0;
@@ -71,6 +76,15 @@ void cchdir_write(struct cchdir* dir, struct fdisk *disk)
     cch_writedata(disk, dir->chain, 0, realbytes, buf);
 }
 
+void cchdir_create(struct cch *cc, struct cchdir *dir)
+{
+    dir->chain = cc;
+    dir->root = false;
+    dir->capacity = cch_getsize(cc) / FAT_DIR_ENTRY_SIZE;
+    dir->entries = malloc(sizeof(struct alist));
+    alist_create(dir->entries, sizeof(struct lfnde));
+}
+
 void cchdir_createroot(struct fat *fat, struct cchdir *dir)
 {
     struct vbr *br = fat->vbr;
@@ -112,10 +126,71 @@ void cchdir_getentry(struct cchdir *dir, u32 idx, struct lfnde *e)
     alist_get(dir->entries, idx, e);
 }
 
+int cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e)
+{
+    u32 i;
+    char namebuf[256];
+    for (i = 0; i < alist_count(dir->entries); ++i) {
+        alist_get(dir->entries, i, e);
+        lfnde_getname(e, namebuf);
+        if (strcmp(name, namebuf) == 0) {
+            break;
+        }
+    }
+
+    /* not found */
+    return -1;
+}
+
 void cchdir_removeentry(struct cchdir *dir, u32 idx)
 {
     alist_remove(dir->entries, idx);
     cchdir_changesize(dir, alist_count(dir->entries));
+}
+
+void cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde)
+{
+    struct lfnde dot;
+    struct lfnde dotdot;
+    struct fat *fat = parentdir->chain->fat;
+
+    struct cch *cc = malloc(sizeof(struct cch));
+    cch_create(cc, fat, 1);
+
+    lfnde_create(subde);
+    lfnde_setisdir(subde, true);
+    lfnde_setstartcluster(subde, cc->start_cluster);
+
+    cchdir_create(cc, subdir);
+
+    /* Add "." entry */
+    lfnde_create(&dot);
+    lfnde_setname(&dot, ".");
+    lfnde_setisdir(&dot, true);
+    lfnde_setstartcluster(&dot, subdir->chain->start_cluster);
+    // TODO: copy date/time fields from entry to dot;
+    cchdir_addentry(subdir, &dot);
+
+    /* Add ".." entry */
+    lfnde_create(&dotdot);
+    lfnde_setname(&dotdot, "..");
+    lfnde_setisdir(&dotdot, true);
+    lfnde_setstartcluster(&dotdot, parentdir->chain->start_cluster);
+    // TODO: copy date/time fields from entry to dotdot;
+    cchdir_addentry(subdir, &dotdot);
+
+    //cchdir_write(subdir, disk);
+}
+
+void cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+{
+    check_unique_name(name);
+
+    struct cchdir subdir;
+    cchdir_createsubdir(dir, &subdir, e);
+    lfnde_setname(e, name);
+
+    cchdir_addentry(dir, e);
 }
 
 void cchdir_destruct(struct cchdir *dir)

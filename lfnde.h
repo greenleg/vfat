@@ -14,7 +14,8 @@
 #define FILENAMEEXT_DIR_ENTRY 0xC1
 #define NO_DIR_ENTRY 0x00
 
-#define FNEDE_FILENAME_LENGTH 30
+#define FNEDE_NAME_LENGTH 30
+#define FNEDE_UNAME_LENGTH 15
 
 struct fde
 {
@@ -39,7 +40,7 @@ struct fnede
 {
     u8 entry_type;
     u8 secondary_flags;
-    u8 name[FNEDE_FILENAME_LENGTH];
+    u16 name[FNEDE_UNAME_LENGTH];
 };
 
 struct lfnde
@@ -54,8 +55,11 @@ void lfnde_readbuf(u8 *buf, struct lfnde *e);
 void lfnde_writebuf(struct lfnde *e, u8 *buf);
 u32  lfnde_getlen(struct lfnde *e);
 void lfnde_getname(struct lfnde *e, char *name);
-void lfnde_setname(struct lfnde *e, const char *name);
-bool lfnde_isfile(struct lfnde *e);
+void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name);
+bool lfnde_isdir(/*in*/ struct lfnde *e);
+bool lfnde_isfile(/*in*/ struct lfnde *e);
+void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val);
+void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster);
 u16 lfnde_count(struct lfnde *e);
 void lfnde_destruct(struct lfnde *e);
 

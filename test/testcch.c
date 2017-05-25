@@ -2,7 +2,7 @@
 #include "minunit.h"
 #include "cch.h"
 
-static const char*  G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
+static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
 MU_TEST_SETUP(setup)
 {

@@ -5,7 +5,7 @@
 #include "cchdir.h"
 #include "lfnde.h"
 
-static const char*  G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
+static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
 MU_TEST_SETUP(setup)
 {
@@ -98,6 +98,38 @@ MU_TEST(test_add_remove_entries)
     fdisk_close(&disk);
 }
 
+MU_TEST(test_add_subdir)
+{
+    MU_PRINT_TEST_INFO();
+
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    const char *name = "A nice directory";
+    struct lfnde e;
+    struct lfnde d;
+
+    cchdir_adddir(&root, name, &e);
+    cchdir_findentry(&root, name, &d);
+
+    char namebuf[32];
+    lfnde_getname(&e, namebuf);
+    MU_ASSERT_STRING_EQ(name, namebuf);
+    lfnde_getname(&d, namebuf);
+    MU_ASSERT_STRING_EQ(name, namebuf);
+
+    //cchdir_destruct(&e);
+    //cchdir_destruct(&e);
+    cchdir_destruct(&root);
+    fdisk_close(&disk);
+}
 
 MU_TEST_SUITE(cchdir_test_suite)
 {
@@ -106,6 +138,7 @@ MU_TEST_SUITE(cchdir_test_suite)
 
     MU_RUN_TEST(test_add_entry);
     MU_RUN_TEST(test_add_remove_entries);
+    MU_RUN_TEST(test_add_subdir);
 
     MU_REPORT();
 }

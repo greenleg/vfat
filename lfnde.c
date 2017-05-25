@@ -23,6 +23,19 @@
 #define FNEDE_SECODARYFLAGS_OFFSET 1
 #define FNEDE_FILENAME_OFFSET 2
 
+/*
+ * Attribute Offset Size Mask
+ * --------------------------
+ * Reserved2 6      10
+ * Archive   5      1    0x20
+ * Directory 4      1    0x10
+ * Reserved1 3      1
+ * System    2      1    0x04
+ * Hidden    1      1    0x02
+ * Read-Only 0      1    0x01
+ */
+#define DIRECTORY_MASK 0x10
+
 static void fde_readbuf(u8 *buf, struct fde *e)
 {
     e->entry_type = read_u8(buf, FDE_ENTRYTYPE_OFFSET);
@@ -137,4 +150,82 @@ void lfnde_writebuf(struct lfnde *e, u8 *buf)
         fnede_writebuf(&fnede, buf);
         buf += FAT_DIR_ENTRY_SIZE;
     }
+}
+
+bool lfnde_isdir(/*in*/ struct lfnde *e)
+{
+    u16 attr = e->fde->attributes;
+    return (attr & DIRECTORY_MASK) != 0;
+}
+
+bool lfnde_isfile(/*in*/ struct lfnde *e)
+{
+    u16 attr = e->fde->attributes;
+    return (attr & DIRECTORY_MASK) == 0;
+}
+
+void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val)
+{
+    u16 attr = e->fde->attributes;
+    if (val) {
+        attr |= DIRECTORY_MASK;
+    } else {
+        attr &= ~DIRECTORY_MASK;
+    }
+
+    e->fde->attributes = attr;
+}
+
+void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)
+{
+    e->sede->first_cluster = start_cluster;
+}
+
+void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name)
+{
+    u8 len = e->sede->name_length;
+    u8 char_idx = 0;
+    u8 fnede_idx;
+    u8 fnede_ofs;
+    struct fnede fnede;
+
+    for(char_idx = 0; char_idx < len; ++char_idx) {
+        fnede_idx = char_idx / FNEDE_UNAME_LENGTH;
+        fnede_ofs = char_idx % FNEDE_UNAME_LENGTH;
+        alist_get(e->fnede_list, fnede_idx, &fnede);
+        name[char_idx] = (char) fnede.name[fnede_ofs];
+    }
+
+    name[char_idx] = '\0';
+}
+
+void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
+{
+    struct fnede fnede;
+    u8 len = strlen(name);
+    u8 fnede_cnt = alist_count(e->fnede_list);
+    u8 new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
+    u8 i, char_idx, fnede_idx, fnede_ofs;
+
+    if (new_fnede_cnt > fnede_cnt) {
+        // grow list
+        for (i = 0; i < new_fnede_cnt - fnede_cnt; ++i) {
+            alist_add(e->fnede_list, &fnede);
+        }
+    } else if (new_fnede_cnt < fnede_cnt) {
+        // shrink list
+        for (i = 0; i < fnede_cnt - new_fnede_cnt; ++i) {
+            alist_remove(e->fnede_list, 0);
+        }
+    }
+
+    // Fill
+    for(char_idx = 0; char_idx < len; ++char_idx) {
+        fnede_idx = char_idx / FNEDE_UNAME_LENGTH;
+        fnede_ofs = char_idx % FNEDE_UNAME_LENGTH;
+        alist_get(e->fnede_list, fnede_idx, &fnede);
+        fnede.name[fnede_ofs] = name[char_idx];
+    }
+
+    e->sede->name_length = len;
 }
