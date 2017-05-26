@@ -125,8 +125,42 @@ MU_TEST(test_add_subdir)
     lfnde_getname(&d, namebuf);
     MU_ASSERT_STRING_EQ(name, namebuf);
 
-    //cchdir_destruct(&e);
-    //cchdir_destruct(&e);
+    cchdir_destruct(&root);
+    fdisk_close(&disk);
+}
+
+MU_TEST(test_add_too_many_directories)
+{
+    MU_PRINT_TEST_INFO();
+
+    u32 count = 0;
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    char namebuf[255];
+    u32 free_before_add;
+    struct lfnde e;
+    int res;
+
+    do {
+        free_before_add = fat_get_free_cluster_count(&fat);
+
+        sprintf(namebuf, "this is test directory with index %d", count++);
+        res = cchdir_adddir(&root, namebuf, &e);
+
+        if (res == -1) {
+            MU_ASSERT_U32_EQ(free_before_add, fat_get_free_cluster_count(&fat));
+            break;
+        }
+    } while (true);
+
     cchdir_destruct(&root);
     fdisk_close(&disk);
 }
@@ -139,6 +173,7 @@ MU_TEST_SUITE(cchdir_test_suite)
     MU_RUN_TEST(test_add_entry);
     MU_RUN_TEST(test_add_remove_entries);
     MU_RUN_TEST(test_add_subdir);
+    MU_RUN_TEST(test_add_too_many_directories);
 
     MU_REPORT();
 }

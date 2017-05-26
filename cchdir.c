@@ -134,7 +134,7 @@ int cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*
         alist_get(dir->entries, i, e);
         lfnde_getname(e, namebuf);
         if (strcmp(name, namebuf) == 0) {
-            break;
+            return 0;
         }
     }
 
@@ -182,7 +182,7 @@ void cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
     //cchdir_write(subdir, disk);
 }
 
-void cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+int cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
 {
     check_unique_name(name);
 
@@ -191,9 +191,11 @@ void cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ s
     lfnde_setname(e, name);
 
     cchdir_addentry(dir, e);
+
+    return 0;
 }
 
-void cchdir_destruct(struct cchdir *dir)
+void cchdir_destruct(/*in*/ struct cchdir *dir)
 {
     struct lfnde e;
     u32 i;

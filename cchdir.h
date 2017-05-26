@@ -28,7 +28,7 @@ void cchdir_getentry(struct cchdir *dir, u32 idx, struct lfnde *e);
 int cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e);
 void cchdir_removeentry(struct cchdir *dir, u32 idx);
 void cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde);
-void cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
+int cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
 void cchdir_destruct(struct cchdir *dir);
 
 #endif /* VFAT_CCHDIR_H */

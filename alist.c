@@ -52,7 +52,7 @@ void alist_remove(struct alist *list, u32 idx)
 
 void alist_get(struct alist *list, u32 idx, void *item)
 {
-    memcpy(item, list->items + idx, list->item_size);
+    memcpy(item, list->items + list->item_size * idx, list->item_size);
 }
 
 u32 alist_count(struct alist *list)

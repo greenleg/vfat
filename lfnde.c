@@ -184,19 +184,28 @@ void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)
 void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name)
 {
     u8 len = e->sede->name_length;
-    u8 char_idx = 0;
+    u8 char_idx;
+    u8 fnede_cnt = (len + FNEDE_UNAME_LENGTH - 1) / FNEDE_UNAME_LENGTH;
     u8 fnede_idx;
-    u8 fnede_ofs;
     struct fnede fnede;
+    u8 i;
 
-    for(char_idx = 0; char_idx < len; ++char_idx) {
-        fnede_idx = char_idx / FNEDE_UNAME_LENGTH;
-        fnede_ofs = char_idx % FNEDE_UNAME_LENGTH;
+    char_idx = 0;
+    for (fnede_idx = 0; fnede_idx < fnede_cnt - 1; ++fnede_idx) {
         alist_get(e->fnede_list, fnede_idx, &fnede);
-        name[char_idx] = (char) fnede.name[fnede_ofs];
+        for (i = 0; i < FNEDE_UNAME_LENGTH; ++i) {
+            name[char_idx + i] = fnede.name[i];
+        }
+
+        char_idx += FNEDE_UNAME_LENGTH;
     }
 
-    name[char_idx] = '\0';
+    alist_get(e->fnede_list, fnede_idx, &fnede);
+    for (i = 0; i < len - char_idx; ++i) {
+        name[char_idx + i] = fnede.name[i];
+    }
+
+    name[len] = '\0';
 }
 
 void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
@@ -205,27 +214,29 @@ void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
     u8 len = strlen(name);
     u8 fnede_cnt = alist_count(e->fnede_list);
     u8 new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
-    u8 i, char_idx, fnede_idx, fnede_ofs;
+    u8 i, char_idx, fnede_idx;
 
-    if (new_fnede_cnt > fnede_cnt) {
-        // grow list
-        for (i = 0; i < new_fnede_cnt - fnede_cnt; ++i) {
-            alist_add(e->fnede_list, &fnede);
-        }
-    } else if (new_fnede_cnt < fnede_cnt) {
-        // shrink list
-        for (i = 0; i < fnede_cnt - new_fnede_cnt; ++i) {
-            alist_remove(e->fnede_list, 0);
-        }
+    // Clear list
+    for (i = 0; i < fnede_cnt; ++i) {
+        alist_remove(e->fnede_list, 0);
     }
 
-    // Fill
-    for(char_idx = 0; char_idx < len; ++char_idx) {
-        fnede_idx = char_idx / FNEDE_UNAME_LENGTH;
-        fnede_ofs = char_idx % FNEDE_UNAME_LENGTH;
-        alist_get(e->fnede_list, fnede_idx, &fnede);
-        fnede.name[fnede_ofs] = name[char_idx];
+    // Fill list with the new values
+    char_idx = 0;
+    for (fnede_idx = 0; fnede_idx < new_fnede_cnt - 1; ++fnede_idx) {
+        for (i = 0; i < FNEDE_UNAME_LENGTH; ++i) {
+            fnede.name[i] = name[char_idx + i];
+        }
+
+        char_idx += FNEDE_UNAME_LENGTH;
+        alist_add(e->fnede_list, &fnede);
     }
 
+    // Special case for the last item
+    for (i = 0; i < len - char_idx; ++i) {
+        fnede.name[i] = name[char_idx + i];
+    }
+
+    alist_add(e->fnede_list, &fnede);
     e->sede->name_length = len;
 }
