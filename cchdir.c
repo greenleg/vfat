@@ -49,6 +49,28 @@ static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
     return offset;
 }
 
+void cchdir_formatdev(/*in*/ struct fdisk *dev,
+                      /*in*/ u64 vol_size,
+                      /*in*/ u16 bytes_per_sect,
+                      /*in*/ u16 sect_per_clus)
+{
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    vbr_create(&br, vol_size, bytes_per_sect, sect_per_clus);
+    vbr_write(&br, dev);
+
+    fat_create(&br, &fat);
+    cchdir_createroot(&fat, &root);
+
+    cchdir_write(&root, dev);
+    fat_write(&fat, dev);
+
+    cchdir_destruct(&root);
+    fat_destruct(&fat);
+}
+
 void cchdir_read(struct fdisk *disk, struct fat *fat, struct cchdir* dir, u32 first_cluster, bool root)
 {
     struct cch *cc = malloc(sizeof(struct cch));
@@ -113,7 +135,15 @@ void cchdir_changesize(struct cchdir *dir, u32 entry_cnt)
 
 void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
 {
-    u32 new_count = alist_count(dir->entries) + (1 + e->fde->secondary_count);
+    u32 new_count = 1 + e->fde->secondary_count;
+    u32 i;
+
+    struct lfnde entry;
+    for (i = 0; i < alist_count(dir->entries); ++i) {
+        alist_get(dir->entries, i, &entry);
+        new_count += 1 + entry.fde->secondary_count;
+    }
+
     if (new_count > dir->capacity) {
         cchdir_changesize(dir, new_count);
     }
@@ -121,25 +151,45 @@ void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
     alist_add(dir->entries, e);
 }
 
-void cchdir_getentry(struct cchdir *dir, u32 idx, struct lfnde *e)
+void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ u32 idx, /*out*/ struct lfnde *e)
 {
     alist_get(dir->entries, idx, e);
 }
 
-int cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e)
 {
     u32 i;
     char namebuf[256];
+
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, e);
         lfnde_getname(e, namebuf);
         if (strcmp(name, namebuf) == 0) {
-            return 0;
+            return true;
         }
     }
 
     /* not found */
-    return -1;
+    return false;
+}
+
+bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ u32 *idx)
+{
+    u32 i;
+    char namebuf[256];
+    struct lfnde e;
+
+    for (i = 0; i < alist_count(dir->entries); ++i) {
+        alist_get(dir->entries, i, &e);
+        lfnde_getname(&e, namebuf);
+        if (strcmp(name, namebuf) == 0) {
+            *idx = i;
+            return true;
+        }
+    }
+
+    /* not found */
+    return false;
 }
 
 void cchdir_removeentry(struct cchdir *dir, u32 idx)
@@ -148,14 +198,16 @@ void cchdir_removeentry(struct cchdir *dir, u32 idx)
     cchdir_changesize(dir, alist_count(dir->entries));
 }
 
-void cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde)
+bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde)
 {
     struct lfnde dot;
     struct lfnde dotdot;
     struct fat *fat = parentdir->chain->fat;
 
     struct cch *cc = malloc(sizeof(struct cch));
-    cch_create(cc, fat, 1);
+    if (!cch_create(cc, fat, 1)) {
+        return false;
+    }
 
     lfnde_create(subde);
     lfnde_setisdir(subde, true);
@@ -180,19 +232,44 @@ void cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
     cchdir_addentry(subdir, &dotdot);
 
     //cchdir_write(subdir, disk);
+    return true;
 }
 
-int cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
 {
     check_unique_name(name);
 
     struct cchdir subdir;
-    cchdir_createsubdir(dir, &subdir, e);
-    lfnde_setname(e, name);
+    if (!cchdir_createsubdir(dir, &subdir, e)) {
+        return false;
+    }
 
+    lfnde_setname(e, name);
     cchdir_addentry(dir, e);
 
-    return 0;
+    return true;
+}
+
+bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
+{
+    struct lfnde e;
+    struct cch cc;
+    u32 idx;
+
+    if (!cchdir_findentryidx(dir, name, &idx)) {
+        return false;
+    }
+
+    cchdir_getentry(dir, idx, &e);
+
+    cc.fat = dir->chain->fat;
+    cc.start_cluster = e.sede->first_cluster;
+    if (!cch_setlen(&cc, 0)) {
+        return false;
+    }
+
+    cchdir_removeentry(dir, idx);
+    return true;
 }
 
 void cchdir_destruct(/*in*/ struct cchdir *dir)

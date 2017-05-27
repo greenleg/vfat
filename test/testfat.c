@@ -36,7 +36,7 @@ MU_TEST(test_fat_read)
     struct fdisk disk;
     struct vbr br;
     struct fat fat;
-    uint32_t i;
+    u32 i;
 
     fdisk_open(G_DISK_FNAME, &disk);
     vbr_read(&disk, &br);
@@ -69,7 +69,8 @@ MU_TEST(test_fat_alloc_cluster)
     vbr_read(&disk, &br);
     fat_read(&disk, &br, &fat);
 
-    uint32_t new_cluster = fat_alloc_chain(&fat, 1);
+    u32 new_cluster;
+    MU_ASSERT(fat_alloc_chain(&fat, 1, &new_cluster) == true);
     MU_ASSERT_U32_EQ(new_cluster, fat.last_alloc_cluster);
 
     fat_destruct(&fat);
@@ -101,8 +102,9 @@ MU_TEST(test_fat_get_free_cluster_count2)
     struct fdisk disk;
     struct vbr br;
     struct fat fat;
-    uint32_t max;
-    uint32_t i;
+    u32 max;
+    u32 i;
+    u32 cluster;
 
     fdisk_open(G_DISK_FNAME, &disk);
     vbr_read(&disk, &br);
@@ -111,13 +113,14 @@ MU_TEST(test_fat_get_free_cluster_count2)
     max = fat_get_free_cluster_count(&fat);
     for (i = max; i > 0; --i) {
         MU_ASSERT_U32_EQ(i, fat_get_free_cluster_count(&fat));
-        MU_ASSERT(fat_alloc_chain(&fat, 1) != E_FAT_FULL);
+        MU_ASSERT(fat_alloc_chain(&fat, 1, &cluster) == true);
     }
 
     MU_ASSERT_U32_EQ(0, fat_get_free_cluster_count(&fat));
 
     /* Allocated too many clusters */
-    MU_ASSERT_U32_EQ(E_FAT_FULL, fat_alloc_chain(&fat, 1));
+    MU_ASSERT(fat_alloc_chain(&fat, 1, &cluster) == false);
+    MU_ASSERT_INT_EQ(EFATFULL, vfat_errno);
 
     fat_destruct(&fat);
     fdisk_close(&disk);

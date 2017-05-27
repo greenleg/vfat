@@ -107,6 +107,9 @@ void lfnde_create(struct lfnde *e)
     e->sede = malloc(sizeof(struct sede));
     e->fnede_list = malloc(sizeof(struct alist));
     alist_create(e->fnede_list, sizeof(struct fnede));
+
+    e->fde->secondary_count = 1;
+    e->sede->name_length = 0;
 }
 
 void lfnde_readbuf(u8 *buf, struct lfnde *e)
@@ -239,4 +242,5 @@ void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
 
     alist_add(e->fnede_list, &fnede);
     e->sede->name_length = len;
+    e->fde->secondary_count = new_fnede_cnt + 1;
 }

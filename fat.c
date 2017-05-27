@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+#include "common.h"
 #include "fat.h"
 
-static u32 fat_alloc_cluster(struct fat *fat)
+static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ u32 *cluster)
 {
     u32 clus;
 
@@ -10,7 +12,8 @@ static u32 fat_alloc_cluster(struct fat *fat)
         if (fat->entries[clus] == FAT_FREE) {
             fat->entries[clus] = FAT_EOF;
             fat->last_alloc_cluster = clus;
-            return clus;
+            *cluster = clus;
+            return true;
         }
     }
 
@@ -18,33 +21,42 @@ static u32 fat_alloc_cluster(struct fat *fat)
         if (fat->entries[clus] == FAT_FREE) {
             fat->entries[clus] = FAT_EOF;
             fat->last_alloc_cluster = clus;
-            return clus;
+            *cluster = clus;
+            return true;
         }
     }
 
-    /* TODO: Error handling with appropriate status, e.g. E_FAT_FULL */
-    return E_FAT_FULL;
+    vfat_errno = EFATFULL;
+    return false;
 }
 
-u32 fat_alloc_chain(struct fat *fat, u32 length)
+bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *start_cluster)
 {
-    const u32 start_cluster = fat_alloc_cluster(fat);
-    u32 cluster = start_cluster;
-    u32 new_cluster;
+    u32 cluster, new_cluster;
     u32 i;
 
-    for (i = 1; i < length; ++i) {
-        new_cluster = fat_alloc_cluster(fat);
+    if (!fat_alloc_cluster(fat, start_cluster)) {
+        // vfat_errno contains an error code
+        return false;
+    }
+
+    cluster = *start_cluster;
+    for (i = 1; i < length; ++i) {        
+        if (!fat_alloc_cluster(fat, &new_cluster)) {
+            // vfat_errno contains an error code
+            return false;
+        }
+
         fat->entries[cluster] = new_cluster;
         cluster = new_cluster;
     }
 
-    return start_cluster;
+    return true;
 }
 
-void fat_append_to_chain(struct fat *fat, u32 start_cluster, u32 new_cluster)
+void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u32 new_cluster)
 {
-    uint32_t cluster = start_cluster;
+    u32 cluster = start_cluster;
 
     while (fat->entries[cluster] != FAT_EOF) {
         cluster = fat->entries[cluster];
@@ -56,11 +68,7 @@ void fat_append_to_chain(struct fat *fat, u32 start_cluster, u32 new_cluster)
 u32 fat_getchainlen(struct fat *fat, u32 start_cluster)
 {
     u32 cluster = start_cluster;
-    int len = 1;
-
-    /*if (fat->entries[cluster] == FAT_FREE) {
-        return 0;
-    }*/
+    u32 len = 1;
 
     while (fat->entries[cluster] != FAT_EOF) {
         cluster = fat->entries[cluster];
@@ -104,20 +112,19 @@ void fat_create(struct vbr *vbr, struct fat *fat)
 
 void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat)
 {
-    u32 fat_offset_in_bytes = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
+    u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
 
     fat->vbr = vbr;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
     fat->entries = malloc(sizeof(u32) * vbr->cluster_count);
-    fdisk_read(disk, (u8 *)fat->entries, fat_offset_in_bytes, sizeof(u32) * vbr->cluster_count);
+    fdisk_read(disk, (u8 *)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
 }
 
 void fat_write(struct fat *fat, struct fdisk *disk)
 {
     struct vbr *vbr = fat->vbr;
-    u32 fat_offset_in_bytes = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
-
-    fdisk_write(disk, (u8*)fat->entries, fat_offset_in_bytes, sizeof(u32) * vbr->cluster_count);
+    u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
+    fdisk_write(disk, (u8*)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
 }
 
 void fat_destruct(struct fat *fat)

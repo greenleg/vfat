@@ -36,11 +36,11 @@ u32 cch_setsize(struct cch *cc, u32 size)
     return clus_size * clus_cnt;
 }
 
-void cch_create(struct cch *cc, struct fat *fat, u32 length)
+bool cch_create(/*in*/ struct cch *cc, /*in*/ struct fat *fat, /*in*/ u32 length)
 {
     cc->fat = fat;
     cc->start_cluster = 0;
-    cch_setlen(cc, length);
+    return cch_setlen(cc, length);
 }
 
 void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *dst)
@@ -122,29 +122,32 @@ void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u
     }
 }
 
-void cch_setlen(struct cch *cc, u32 nr_clusters)
+bool cch_setlen(/*in*/ struct cch *cc, /*in*/ u32 nr_clusters)
 {
     if (cc->start_cluster == 0 && nr_clusters == 0) {
         /* nothing to do */
-        return;
+        return true;
     }
 
     if (cc->start_cluster == 0 && nr_clusters > 0) {
-        cc->start_cluster = fat_alloc_chain(cc->fat, nr_clusters);
-        return;
+        return fat_alloc_chain(cc->fat, nr_clusters, &(cc->start_cluster));
     }
 
     u32 len = fat_getchainlen(cc->fat, cc->start_cluster);
     if (nr_clusters == len) {
-        return;
+        return true;
     }
 
     u32 chain[len];
     fat_getchain(cc->fat, cc->start_cluster, chain);
     if (nr_clusters > len) {
         /* grow the chain */
-        u32 new_chain_start_cluster = fat_alloc_chain(cc->fat, nr_clusters - len);
-        fat_append_to_chain(cc->fat, cc->start_cluster, new_chain_start_cluster);
+        u32 new_chain_start_cluster;
+        if (!fat_alloc_chain(cc->fat, nr_clusters - len, &new_chain_start_cluster)) {
+            return false;
+        }
+
+        fat_append_chain(cc->fat, cc->start_cluster, new_chain_start_cluster);
     } else {
         /* shrink the chain */
         u32 i;
@@ -161,4 +164,6 @@ void cch_setlen(struct cch *cc, u32 nr_clusters)
             cc->start_cluster = 0;
         }
     }
+
+    return true;
 }

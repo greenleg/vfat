@@ -2,6 +2,7 @@
 #define VFAT_FAT_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "vbr.h"
 
 /*
@@ -20,8 +21,8 @@
 #define FAT_FREE                 0x00000000
 #define FAT_FIRST_CLUSTER        2
 
-/* Error codes */
-#define E_FAT_FULL 0
+/* FAT error codes */
+#define EFATFULL -1
 
 struct fat
 {
@@ -34,8 +35,8 @@ void fat_create(struct vbr *vbr, struct fat *fat);
 void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat);
 void fat_write(struct fat *fat, struct fdisk *disk);
 
-u32 fat_alloc_chain(struct fat *fat, u32 length);
-void fat_append_to_chain(struct fat *fat, u32 start_cluster, u32 new_cluster);
+bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *start_cluster);
+void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u32 new_cluster);
 u32 fat_getchainlen(struct fat *fat, u32 start_cluster);
 void fat_getchain(struct fat *fat, u32 start_cluster, u32 *chain);
 void fat_seteof(struct fat* fat, u32 cluster);
