@@ -21,9 +21,6 @@
 #define FAT_FREE                 0x00000000
 #define FAT_FIRST_CLUSTER        2
 
-/* FAT error codes */
-#define EFATFULL -1
-
 struct fat
 {
     struct vbr *vbr;

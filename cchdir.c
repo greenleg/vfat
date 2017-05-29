@@ -3,9 +3,15 @@
 #include "cchdir.h"
 #include "lfnde.h"
 
-static void check_unique_name(/*in*/ const char *name)
+static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
-    // TODO:
+    struct lfnde e;
+    if (cchdir_findentry(dir, name, &e)) {
+        vfat_errno = EALREADYEXISTS;
+        return false;
+    }
+
+    return true;
 }
 
 static void cchdir_read_entries(struct cchdir *dir, u8 *buf)
@@ -126,26 +132,34 @@ void cchdir_readroot(struct fdisk *disk, struct fat *fat, struct cchdir *dir)
     cchdir_read(disk, fat, dir, fat->vbr->rootdir_first_cluster, true);
 }
 
-void cchdir_changesize(struct cchdir *dir, u32 entry_cnt)
+void cchdir_changesize(struct cchdir *dir, u32 fat32_entry_cnt)
 {
-    u32 size = entry_cnt * FAT_DIR_ENTRY_SIZE;
+    u32 size = fat32_entry_cnt * FAT_DIR_ENTRY_SIZE;
     u32 new_size = cch_setsize(dir->chain, size);
     dir->capacity = new_size / FAT_DIR_ENTRY_SIZE;
 }
 
-void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
+static u32 get_fat32_entry_cnt(struct cchdir *dir)
 {
-    u32 new_count = 1 + e->fde->secondary_count;
     u32 i;
+    u32 n = 0;
+    struct lfnde e;
 
-    struct lfnde entry;
     for (i = 0; i < alist_count(dir->entries); ++i) {
-        alist_get(dir->entries, i, &entry);
-        new_count += 1 + entry.fde->secondary_count;
+        alist_get(dir->entries, i, &e);
+        n += 1 + e.fde->secondary_count;
     }
 
-    if (new_count > dir->capacity) {
-        cchdir_changesize(dir, new_count);
+    return n;
+}
+
+void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
+{
+    u32 new_cnt = get_fat32_entry_cnt(dir);
+    new_cnt += 1 + e->fde->secondary_count;
+
+    if (new_cnt > dir->capacity) {
+        cchdir_changesize(dir, new_cnt);
     }
 
     alist_add(dir->entries, e);
@@ -194,8 +208,15 @@ bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*
 
 void cchdir_removeentry(struct cchdir *dir, u32 idx)
 {
+    u32 new_cnt;
+
     alist_remove(dir->entries, idx);
-    cchdir_changesize(dir, alist_count(dir->entries));
+    new_cnt = get_fat32_entry_cnt(dir);
+    if (new_cnt > 0) {
+        cchdir_changesize(dir, new_cnt);
+    } else {
+        cchdir_changesize(dir, 1); // Empty directory consists of 1 cluster
+    }
 }
 
 bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde)
@@ -237,7 +258,9 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
 
 bool cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
 {
-    check_unique_name(name);
+    if (!check_unique_name(dir, name)) {
+        return false;
+    }
 
     struct cchdir subdir;
     if (!cchdir_createsubdir(dir, &subdir, e)) {

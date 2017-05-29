@@ -15,4 +15,10 @@ typedef int64_t i64;
 
 i32 vfat_errno;
 
+/* FAT error codes */
+#define EFATFULL -1
+
+/* Other error codes */
+#define EALREADYEXISTS -2
+
 #endif /* VFAT_COMMON_H */

@@ -182,6 +182,30 @@ MU_TEST(test_remove_dir)
     fdisk_close(&disk);
 }
 
+MU_TEST(test_unique_dir_name)
+{
+    MU_PRINT_TEST_INFO();
+
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    struct lfnde e;
+
+    MU_ASSERT(cchdir_adddir(&root, "TestDir#0000", &e) == true);
+    MU_ASSERT(cchdir_adddir(&root, "TestDir#0000", &e) == false);
+    MU_ASSERT_INT_EQ(EALREADYEXISTS, vfat_errno);
+
+    cchdir_destruct(&root);
+    fdisk_close(&disk);
+}
+
 MU_TEST_SUITE(cchdir_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
@@ -192,6 +216,7 @@ MU_TEST_SUITE(cchdir_test_suite)
     MU_RUN_TEST(test_add_subdir);
     MU_RUN_TEST(test_add_too_many_directories);
     MU_RUN_TEST(test_remove_dir);
+    MU_RUN_TEST(test_unique_dir_name);
 
     MU_REPORT();
 }
