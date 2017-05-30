@@ -17,7 +17,8 @@ SOURCES += main.c \
     alist.c \
     cch.c \
     test/testcch.c \
-    lfnde.c
+    lfnde.c \
+    cchfile.c
 
 HEADERS += \
     vbr.h \
@@ -30,4 +31,5 @@ HEADERS += \
     cchdir.h \    
     alist.h \
     cch.h \
-    lfnde.h
+    lfnde.h \
+    cchfile.h
