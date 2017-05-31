@@ -1,6 +1,8 @@
+#include <errno.h>
+#include <stdlib.h>
+
 #include "cchfile.h"
 #include "lfnde.h"
-#include "errno.h"
 
 /*
  * Returns the length of this file in bytes. This is the length that
@@ -15,7 +17,7 @@ void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ u32 len)
 {
     cch_setsize(file->chain, len);
     lfnde_setstartcluster(file->entry, file->chain->start_cluster);
-    file->entry->sede->data_length = len;
+    lfnde_setdatalen(file->entry, len);
 }
 
 /*
@@ -53,4 +55,9 @@ void cchfile_write(/*in*/ struct fdisk *dev,
     }
 
     cch_writedata(dev, file->chain, offset, nbytes, buf);
+}
+
+void cchfile_destruct(/*in*/ struct cchfile *file)
+{
+    free(file->chain);
 }

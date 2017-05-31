@@ -53,7 +53,7 @@ struct lfnde
 void lfnde_create(struct lfnde *e);
 void lfnde_readbuf(u8 *buf, struct lfnde *e);
 void lfnde_writebuf(struct lfnde *e, u8 *buf);
-u32  lfnde_getlen(struct lfnde *e);
+void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len);
 void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name);
 void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name);
 bool lfnde_isdir(/*in*/ struct lfnde *e);

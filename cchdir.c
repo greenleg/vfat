@@ -1,6 +1,7 @@
 #include "alist.h"
 #include "fat.h"
 #include "cchdir.h"
+#include "cchfile.h"
 #include "lfnde.h"
 
 static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name)
@@ -293,6 +294,31 @@ bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 
     cchdir_removeentry(dir, idx);
     return true;
+}
+
+bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+{
+    if (!check_unique_name(dir, name)) {
+        return false;
+    }
+
+    lfnde_create(e);
+    lfnde_setname(e, name);
+    lfnde_setisdir(e, false);
+    lfnde_setdatalen(e, 0);
+    cchdir_addentry(dir, e);
+
+    return true;
+}
+
+void cchdir_getfile(/*in*/ struct cchdir *dir, /*in*/ struct lfnde *e, /*out*/ struct cchfile *file)
+{
+    struct cch *cc = malloc(sizeof(struct cch));
+    cc->fat = dir->chain->fat;
+    cc->start_cluster = e->sede->first_cluster;
+
+    file->chain = cc;
+    file->entry = e;
 }
 
 void cchdir_destruct(/*in*/ struct cchdir *dir)

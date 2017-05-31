@@ -108,8 +108,10 @@ void lfnde_create(struct lfnde *e)
     e->fnede_list = malloc(sizeof(struct alist));
     alist_create(e->fnede_list, sizeof(struct fnede));
 
+    // Set valid default values.
     e->fde->secondary_count = 1;
     e->sede->name_length = 0;
+    e->sede->first_cluster = 0;
 }
 
 void lfnde_readbuf(u8 *buf, struct lfnde *e)
@@ -177,6 +179,11 @@ void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val)
     }
 
     e->fde->attributes = attr;
+}
+
+void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len)
+{
+    e->sede->data_length = len;
 }
 
 void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)

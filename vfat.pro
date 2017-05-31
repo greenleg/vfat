@@ -18,7 +18,8 @@ SOURCES += main.c \
     cch.c \
     test/testcch.c \
     lfnde.c \
-    cchfile.c
+    cchfile.c \
+    test/testcchfile.c
 
 HEADERS += \
     vbr.h \

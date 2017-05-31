@@ -32,4 +32,6 @@ void cchfile_write(/*in*/ struct fdisk *dev,
                    /*in*/ u32 nbytes,
                    /*in*/ u8 *buf);
 
+void cchfile_destruct(/*in*/ struct cchfile *file);
+
 #endif
