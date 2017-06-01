@@ -181,9 +181,19 @@ void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val)
     e->fde->attributes = attr;
 }
 
+u64 lfnde_getdatalen(/*in*/ struct lfnde *e)
+{
+    return e->sede->data_length;
+}
+
 void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len)
 {
     e->sede->data_length = len;
+}
+
+u32 lfnde_getstartcluster(/*in*/ struct lfnde *e)
+{
+    return e->sede->first_cluster;
 }
 
 void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)

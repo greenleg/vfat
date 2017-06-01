@@ -1,3 +1,5 @@
+#include <assert.h>
+
 #include "alist.h"
 #include "fat.h"
 #include "cchdir.h"
@@ -319,6 +321,50 @@ void cchdir_getfile(/*in*/ struct cchdir *dir, /*in*/ struct lfnde *e, /*out*/ s
 
     file->chain = cc;
     file->entry = e;
+}
+
+bool cchdir_move(/*in*/ struct cchdir *src,
+                 /*in*/ struct lfnde *e,
+                 /*in*/ struct cchdir *dst,
+                 /*in*/ const char *new_name)
+{
+    if (!check_unique_name(dst, new_name)) {
+        return false;
+    }
+
+    u32 idx;
+    char old_name[256];
+    lfnde_getname(e, old_name);
+    cchdir_findentryidx(src, old_name, &idx);
+
+    cchdir_removeentry(src, idx);
+    lfnde_setname(e, new_name);
+    cchdir_addentry(dst, e);
+
+    if (lfnde_isdir(e)) {
+        struct cch cc;
+        cch_create(&cc, src->chain->fat, 0);
+        cch_setsize(&cc, lfnde_getdatalen(e));
+
+        struct cchdir subdir;
+        cchdir_create(&cc, &subdir);
+
+        struct lfnde dotdot;
+        cchdir_findentry(&subdir, "..", &dotdot);
+        assert(lfnde_getstartcluster(&dotdot) == src->chain->start_cluster);
+        lfnde_setstartcluster(&dotdot, dst->chain->start_cluster);
+
+        // TODO: Write subdir to disk
+
+        cchdir_destruct(&subdir);
+    }
+
+    return true;
+}
+
+bool cchdir_setname(/*in*/ struct cchdir *dir, /*in*/ struct lfnde *e, /*in*/ const char *name)
+{
+    return cchdir_move(dir, e, dir, name);
 }
 
 void cchdir_destruct(/*in*/ struct cchdir *dir)

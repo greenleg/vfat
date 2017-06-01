@@ -38,6 +38,13 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
 bool cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
 bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
 void cchdir_getfile(/*in*/ struct cchdir *dir, /*in*/ struct lfnde *e, /*out*/ struct cchfile *file);
+
+bool cchdir_move(/*in*/ struct cchdir *src,
+                 /*in*/ struct lfnde *e,
+                 /*in*/ struct cchdir *dst,
+                 /*in*/ const char *new_name);
+
+bool cchdir_setname(/*in*/ struct cchdir *dir, /*in*/ struct lfnde *e, /*in*/ const char *name);
 void cchdir_destruct(struct cchdir *dir);
 
 #endif /* VFAT_CCHDIR_H */

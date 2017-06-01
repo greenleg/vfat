@@ -53,12 +53,14 @@ struct lfnde
 void lfnde_create(struct lfnde *e);
 void lfnde_readbuf(u8 *buf, struct lfnde *e);
 void lfnde_writebuf(struct lfnde *e, u8 *buf);
+u64 lfnde_getdatalen(/*in*/ struct lfnde *e);
 void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len);
 void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name);
 void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name);
 bool lfnde_isdir(/*in*/ struct lfnde *e);
 bool lfnde_isfile(/*in*/ struct lfnde *e);
 void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val);
+u32 lfnde_getstartcluster(/*in*/ struct lfnde *e);
 void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster);
 u16 lfnde_count(struct lfnde *e);
 void lfnde_destruct(struct lfnde *e);

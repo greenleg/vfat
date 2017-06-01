@@ -1,3 +1,5 @@
+#include <errno.h>
+
 #include "common.h"
 #include "minunit.h"
 #include "alist.h"
@@ -93,10 +95,14 @@ MU_TEST(test_read_write)
         MU_ASSERT_U32_EQ(i % 256, readbuf[i]);
     }
 
+    // Read too long
+    MU_ASSERT(cchfile_read(&disk, &file, 0, len + 1, readbuf) == false);
+    MU_ASSERT_INT_EQ(EIO, vfat_errno);
+
     cchfile_destruct(&file);
     cchdir_destruct(&root);
     fdisk_close(&disk);
-}
+}    
 
 MU_TEST_SUITE(cchfile_test_suite)
 {
