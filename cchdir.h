@@ -35,11 +35,15 @@ bool cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out
 void cchdir_removeentry(struct cchdir *dir, u32 idx);
 bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name);
 bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde);
-bool cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
+
+bool cchdir_adddir(/*in*/ struct cchdir *dir,
+                   /*in*/ const char *name,
+                   /*out*/ struct lfnde *subde,
+                   /*out*/ struct cchdir *subdir);
+
 bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e);
 
-void cchdir_getfile(/*in*/ struct fdisk *dev,
-                    /*in*/ struct cchdir *dir,
+void cchdir_getfile(/*in*/ struct cchdir *dir,
                     /*in*/ struct lfnde *e,
                     /*out*/ struct cchfile *file);
 

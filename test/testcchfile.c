@@ -44,7 +44,7 @@ MU_TEST(test_set_length)
     struct cchfile file;
 
     cchdir_addfile(&root, "index.htm", &e);
-    cchdir_getfile(&disk, &root, &e, &file);
+    cchdir_getfile(&root, &e, &file);
 
     MU_ASSERT_U32_EQ(0, cchfile_getlen(&file));
     cchfile_setlen(&file, 100);
@@ -74,7 +74,7 @@ MU_TEST(test_read_write)
     struct cchfile file;
 
     cchdir_addfile(&root, "dump.bin", &e);
-    cchdir_getfile(&disk, &root, &e, &file);
+    cchdir_getfile(&root, &e, &file);
 
     u32 i;
     u32 len = 10000;

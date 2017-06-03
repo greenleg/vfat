@@ -263,19 +263,21 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
     return true;
 }
 
-bool cchdir_adddir(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_adddir(/*in*/ struct cchdir *dir,
+                   /*in*/ const char *name,
+                   /*out*/ struct lfnde *subde,
+                   /*out*/ struct cchdir *subdir)
 {
     if (!check_unique_name(dir, name)) {
         return false;
     }
 
-    struct cchdir subdir;
-    if (!cchdir_createsubdir(dir, &subdir, e)) {
+    if (!cchdir_createsubdir(dir, subdir, subde)) {
         return false;
     }
 
-    lfnde_setname(e, name);
-    cchdir_addentry(dir, e);
+    lfnde_setname(subde, name);
+    cchdir_addentry(dir, subde);
 
     return true;
 }
@@ -318,8 +320,7 @@ bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ 
     return true;
 }
 
-void cchdir_getfile(/*in*/ struct fdisk *dev,
-                    /*in*/ struct cchdir *dir,
+void cchdir_getfile(/*in*/ struct cchdir *dir,
                     /*in*/ struct lfnde *e,
                     /*out*/ struct cchfile *file)
 {
@@ -356,24 +357,22 @@ bool cchdir_move(/*in*/ struct fdisk *dev,
     char old_name[256];
     lfnde_getname(e, old_name);
     cchdir_findentryidx(src, old_name, &idx);
-
     cchdir_removeentry(src, idx);
     lfnde_setname(e, new_name);
     cchdir_addentry(dst, e);
 
     if (lfnde_isdir(e)) {
-        struct cchdir subdir;
-        cchdir_getdir(dev, src->chain->fat, e, &subdir);
+        struct cchdir dir;
+        cchdir_getdir(dev, src->chain->fat, e, &dir);
 
         struct lfnde dotdot;
-        cchdir_findentry(&subdir, "..", &dotdot);
+        cchdir_findentry(&dir, "..", &dotdot);
         assert(lfnde_getstartcluster(&dotdot) == src->chain->start_cluster);
         lfnde_setstartcluster(&dotdot, dst->chain->start_cluster);
 
-        // Write subdir to the disk
-        cchdir_write(&subdir, dev);
-
-        cchdir_destruct(&subdir);
+        // Write dir to the disk
+        cchdir_write(&dir, dev);
+        cchdir_destruct(&dir);
     }
 
     return true;
