@@ -167,16 +167,16 @@ MU_TEST(test_remove_dir)
     u32 entries_before = alist_count(root.entries);
 
     struct lfnde e;
-    const char *dir_name = "TestDirectory";
+    const char *dir_name = "testdir";
     cchdir_adddir(&root, dir_name, &e);
     MU_ASSERT_U32_EQ(free_before - 1, fat_get_free_cluster_count(&fat));
     MU_ASSERT_U32_EQ(entries_before + 1, alist_count(root.entries));
-    MU_ASSERT(cchdir_findentry(&root, dir_name, &e) == true);
+    MU_ASSERT(cchdir_findentry(&root, dir_name, &e));
 
-    MU_ASSERT(cchdir_removedir(&root, dir_name) == true);
+    MU_ASSERT(cchdir_removedir(&root, dir_name));
     MU_ASSERT_U32_EQ(free_before, fat_get_free_cluster_count(&fat));
     MU_ASSERT_U32_EQ(entries_before, alist_count(root.entries));
-    MU_ASSERT(cchdir_findentry(&root, dir_name, &e) == false);
+    MU_ASSERT(!cchdir_findentry(&root, dir_name, &e));
 
     cchdir_destruct(&root);
     fdisk_close(&disk);
@@ -198,9 +198,13 @@ MU_TEST(test_unique_dir_name)
 
     struct lfnde e;
 
-    MU_ASSERT(cchdir_adddir(&root, "TestDir#0000", &e) == true);
-    MU_ASSERT(cchdir_adddir(&root, "TestDir#0000", &e) == false);
+    MU_ASSERT(cchdir_adddir(&root, "home", &e));
+    MU_ASSERT(!cchdir_adddir(&root, "home", &e));
     MU_ASSERT_INT_EQ(EALREADYEXISTS, vfat_errno);
+
+    // Reuse name
+    MU_ASSERT(cchdir_removedir(&root, "home"));
+    MU_ASSERT(cchdir_adddir(&root, "home", &e));
 
     cchdir_destruct(&root);
     fdisk_close(&disk);
@@ -222,12 +226,55 @@ MU_TEST(test_rename_file)
 
     struct lfnde e;    
 
-    cchdir_addfile(&root, "OldFileName", &e);
-    cchdir_setname(&root, &e, "NewFileName");
+    cchdir_addfile(&root, "oldfile", &e);
 
-    MU_ASSERT(cchdir_findentry(&root, "OldFileName", &e) == false);
-    MU_ASSERT(cchdir_findentry(&root, "NewFileName", &e) == true);
+    MU_ASSERT(cchdir_findentry(&root, "oldfile", &e) == true);
+    MU_ASSERT(cchdir_findentry(&root, "newfile", &e) == false);
 
+    cchdir_setname(&disk, &root, &e, "newfile");
+
+    MU_ASSERT(cchdir_findentry(&root, "oldfile", &e) == false);
+    MU_ASSERT(cchdir_findentry(&root, "newfile", &e) == true);
+
+    cchdir_destruct(&root);
+    fdisk_close(&disk);
+}
+
+MU_TEST(test_move_file)
+{
+    MU_PRINT_TEST_INFO();
+
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    struct lfnde fe;
+    struct lfnde de;
+    struct cchdir dir;
+    struct cchfile file;
+
+    MU_ASSERT(cchdir_adddir(&root, "home", &de));
+    MU_ASSERT(cchdir_addfile(&root, "dump.bin", &fe));
+
+    MU_ASSERT(cchdir_getdir(&disk, &fat, &de, &dir));
+    MU_ASSERT(cchdir_move(&disk, &root, &fe, &dir, "dump2.bin"));
+
+    MU_ASSERT_U32_EQ(1, alist_count(root.entries));
+    MU_ASSERT_U32_EQ(1, alist_count(dir.entries));
+    MU_ASSERT(cchdir_findentry(&root, "home", &de));
+    MU_ASSERT(!cchdir_findentry(&root, "dump2.bin", &de));
+    MU_ASSERT(cchdir_findentry(&dir, "dump2.bin", &de));
+
+    cchdir_getfile(&disk, &dir, &fe, &file);
+
+    cchfile_destruct(&file);
+    cchdir_destruct(&dir);
     cchdir_destruct(&root);
     fdisk_close(&disk);
 }
@@ -244,6 +291,7 @@ MU_TEST_SUITE(cchdir_test_suite)
     MU_RUN_TEST(test_remove_dir);
     MU_RUN_TEST(test_unique_dir_name);
     MU_RUN_TEST(test_rename_file);
+    MU_RUN_TEST(test_move_file);
 
     MU_REPORT();
 }
