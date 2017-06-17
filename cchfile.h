@@ -24,6 +24,7 @@ bool cchfile_read(/*in*/ struct fdisk *dev,
                   /*in*/ struct cchfile *file,
                   /*in*/ u32 offset,
                   /*in*/ u32 nbytes,
+                  /*out*/ u32 *nread,
                   /*out*/ u8 *buf);
 
 void cchfile_write(/*in*/ struct fdisk *dev,

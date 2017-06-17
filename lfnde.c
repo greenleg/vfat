@@ -78,14 +78,14 @@ static void fnede_readbuf(u8 *buf, struct fnede *e)
 {
     e->entry_type = read_u8(buf, FNEDE_ENTRYTYPE_OFFSET);
     e->secondary_flags = read_u8(buf, FNEDE_SECODARYFLAGS_OFFSET);
-    memcpy(e->name, buf, FNEDE_FILENAME_OFFSET);
+    memcpy(e->name, buf + FNEDE_FILENAME_OFFSET, FNEDE_UNAME_LENGTH);
 }
 
 static void fnede_writebuf(struct fnede *e, u8 *buf)
 {
     write_u8(buf, FNEDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, FNEDE_SECODARYFLAGS_OFFSET, e->secondary_flags);
-    memcpy(buf, e->name, FNEDE_FILENAME_OFFSET);
+    memcpy(buf + FNEDE_FILENAME_OFFSET, e->name, FNEDE_UNAME_LENGTH);
 }
 
 void lfnde_destruct(struct lfnde *e)
@@ -109,7 +109,9 @@ void lfnde_create(struct lfnde *e)
     alist_create(e->fnede_list, sizeof(struct fnede));
 
     // Set valid default values.
+    e->fde->entry_type = FILE_DIR_ENTRY;
     e->fde->secondary_count = 1;
+    e->sede->entry_type = STREAMEXT_DIR_ENTRY;
     e->sede->name_length = 0;
     e->sede->first_cluster = 0;
 }
@@ -240,6 +242,8 @@ void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
     for (i = 0; i < fnede_cnt; ++i) {
         alist_remove(e->fnede_list, 0);
     }
+
+    fnede.entry_type = FILENAMEEXT_DIR_ENTRY;
 
     // Fill list with the new values
     char_idx = 0;

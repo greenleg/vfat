@@ -177,7 +177,7 @@ void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ u32 idx, /*out*/ struct l
     alist_get(dir->entries, idx, e);
 }
 
-bool cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
 {
     u32 i;
     char namebuf[256];
@@ -194,7 +194,7 @@ bool cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out
     return false;
 }
 
-bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ u32 *idx)
+bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ u32 *idx)
 {
     u32 i;
     char namebuf[256];
@@ -374,6 +374,53 @@ bool cchdir_move(/*in*/ struct fdisk *dev,
         cchdir_write(&dir, dev);
         cchdir_destruct(&dir);
     }
+
+    return true;
+}
+
+bool cchdir_copyfile(/*in*/ struct fdisk *dev,
+                     /*in*/ struct cchdir *src,
+                     /*in*/ struct lfnde *e,
+                     /*in*/ struct cchdir *dst)
+{
+    char namebuf[256];
+    lfnde_getname(e, namebuf);
+    return cchdir_copyfile2(dev, src, e, dst, namebuf);
+}
+
+bool cchdir_copyfile2(/*in*/ struct fdisk *dev,
+                      /*in*/ struct cchdir *src,
+                      /*in*/ struct lfnde *e,
+                      /*in*/ struct cchdir *dst,
+                      /*in*/ const char *new_name)
+{
+    struct lfnde copye;
+    if (!cchdir_addfile(dst, new_name, &copye)) {
+        return false;
+    }
+
+    // Copy the file content
+    const int nbytes = 4096;
+    u8 buf[nbytes];
+
+    struct cchfile orig;
+    cchdir_getfile(src, e, &orig);
+
+    struct cchfile copy;
+    cchdir_getfile(src, &copye, &copy);
+
+    u32 pos = 0;
+    u32 nread;
+    cchfile_read(dev, &orig, pos, nbytes, &nread, buf);
+    while (nread > 0) {
+        cchfile_write(dev, &copy, pos, nread, buf);
+        pos += nread;
+        cchfile_read(dev, &orig, pos, nbytes, &nread, buf);
+    }
+
+    // Free memory
+    cchfile_destruct(&orig);
+    cchfile_destruct(&copy);
 
     return true;
 }

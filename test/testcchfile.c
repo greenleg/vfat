@@ -76,7 +76,7 @@ MU_TEST(test_read_write)
     cchdir_addfile(&root, "dump.bin", &e);
     cchdir_getfile(&root, &e, &file);
 
-    u32 i;
+    u32 i, nread;
     u32 len = 10000;
     u8 writebuf[len];
     u8 readbuf[len];
@@ -89,15 +89,16 @@ MU_TEST(test_read_write)
     cchfile_write(&disk, &file, 0, len, writebuf);
 
     // Read from device
-    cchfile_read(&disk, &file, 0, len, readbuf);
+    cchfile_read(&disk, &file, 0, len, &nread, readbuf);
+    MU_ASSERT_U32_EQ(len, nread);
 
     for (i = 0; i < len; ++i) {
         MU_ASSERT_U32_EQ(i % 256, readbuf[i]);
     }
 
     // Read too long
-    MU_ASSERT(cchfile_read(&disk, &file, 0, len + 1, readbuf) == false);
-    MU_ASSERT_INT_EQ(EIO, vfat_errno);
+    cchfile_read(&disk, &file, 0, len + 1, &nread, readbuf);
+    MU_ASSERT_U32_EQ(len, nread);
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);

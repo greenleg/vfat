@@ -350,6 +350,81 @@ MU_TEST(test_move_dir)
     fdisk_close(&disk);
 }
 
+MU_TEST(test_copy_file)
+{
+    MU_PRINT_TEST_INFO();
+
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    struct lfnde orige;
+    struct lfnde copye;
+
+    struct lfnde de1;
+    struct lfnde de2;
+
+    struct cchdir dir1;
+    struct cchdir dir2;
+
+    struct cchfile orig;
+    struct cchfile copy;
+
+    MU_ASSERT(cchdir_adddir(&root, "dir1", &de1, &dir1));
+    cchdir_write(&dir1, &disk);
+
+    MU_ASSERT(cchdir_adddir(&root, "dir2", &de2, &dir2));
+    cchdir_write(&dir2, &disk);
+
+    MU_ASSERT(cchdir_addfile(&dir1, "dump.bin", &orige));
+
+    MU_ASSERT_U32_EQ(2, alist_count(root.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir1.entries)); // including "." and ".." directories
+    MU_ASSERT_U32_EQ(2, alist_count(dir2.entries));
+
+    u32 i, nread;
+    u32 len = 4096 * 4;
+    u8 buf[len];
+    for (i = 0; i < len; ++i) {
+        buf[i] = i % 256;
+    }
+
+    // Write to source file
+    cchdir_getfile(&dir1, &orige, &orig);
+    cchfile_write(&disk, &orig, 0, len, buf);
+
+    MU_ASSERT(cchdir_copyfile(&disk, &dir1, &orige, &dir2));
+
+    MU_ASSERT(cchdir_findentry(&dir1, "dump.bin", &orige));
+    MU_ASSERT(cchdir_findentry(&dir2, "dump.bin", &copye));
+
+    // Read from copy
+    cchdir_getfile(&dir2, &copye, &copy);
+    MU_ASSERT_U32_EQ(len, cchfile_getlen(&copy));
+    cchfile_read(&disk, &copy, 0, len, &nread, buf);
+
+    for (i = 0; i < len; ++i) {
+        MU_ASSERT_U32_EQ(i % 256, buf[i]);
+    }
+
+    MU_ASSERT_U32_EQ(2, alist_count(root.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir1.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir2.entries));
+
+    cchfile_destruct(&orig);
+    cchfile_destruct(&copy);
+    cchdir_destruct(&dir1);
+    cchdir_destruct(&dir2);
+    cchdir_destruct(&root);
+    fdisk_close(&disk);
+}
+
 MU_TEST_SUITE(cchdir_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
@@ -364,6 +439,7 @@ MU_TEST_SUITE(cchdir_test_suite)
     MU_RUN_TEST(test_rename_file);
     MU_RUN_TEST(test_move_file);
     MU_RUN_TEST(test_move_dir);
+    MU_RUN_TEST(test_copy_file);
 
     MU_REPORT();
 }

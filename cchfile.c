@@ -27,19 +27,24 @@ bool cchfile_read(/*in*/ struct fdisk *dev,
                   /*in*/ struct cchfile *file,
                   /*in*/ u32 offset,
                   /*in*/ u32 nbytes,
+                  /*out*/ u32 *nread,
                   /*out*/ u8 *buf)
 {
-    if (nbytes == 0) {
-        return true;
-    }
-
-    if (offset + nbytes > cchfile_getlen(file)) {
+    u32 datalen = cchfile_getlen(file);
+    if (offset + nbytes > datalen) {
         // The file offset is beyond the end of the file.
-        vfat_errno = EIO;
-        return false;
+        if (offset < datalen) {
+            nbytes = datalen - offset;
+        } else {
+            nbytes = 0;
+        }
+    }    
+
+    if (nbytes > 0) {
+        cch_readdata(dev, file->chain, offset, nbytes, buf);
     }
 
-    cch_readdata(dev, file->chain, offset, nbytes, buf);
+    *nread = nbytes;
     return true;
 }
 
