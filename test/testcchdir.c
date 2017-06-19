@@ -393,7 +393,7 @@ MU_TEST(test_copy_file)
     u8 buf[len];
     for (i = 0; i < len; ++i) {
         buf[i] = i % 256;
-    }
+    }    
 
     // Write to source file
     cchdir_getfile(&dir1, &orige, &orig);
@@ -425,6 +425,103 @@ MU_TEST(test_copy_file)
     fdisk_close(&disk);
 }
 
+MU_TEST(test_copy_dir)
+{
+    MU_PRINT_TEST_INFO();
+
+    struct fdisk disk;
+    struct vbr br;
+    struct fat fat;
+    struct cchdir root;
+
+    fdisk_open(G_DISK_FNAME, &disk);
+    vbr_read(&disk, &br);
+    fat_read(&disk, &br, &fat);
+    cchdir_readroot(&disk, &fat, &root);
+
+    struct lfnde fe;
+
+    struct lfnde de1;
+    struct lfnde de2;
+
+    struct cchdir dir1;
+    struct cchdir dir2;
+
+    MU_ASSERT(cchdir_adddir(&root, "dir1", &de1, &dir1));
+    cchdir_write(&dir1, &disk);
+
+    MU_ASSERT(cchdir_adddir(&root, "dir2", &de2, &dir2));
+    cchdir_write(&dir2, &disk);
+
+    MU_ASSERT(cchdir_addfile(&dir1, "dump.bin", &fe));
+
+    // Keep in mind that all directories except root include "." and ".." sub-directories
+    MU_ASSERT_U32_EQ(2, alist_count(root.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir1.entries));
+    MU_ASSERT_U32_EQ(2, alist_count(dir2.entries));
+
+    u32 i, nread;
+    u32 len = 4096 * 4 + 100;
+    u8 buf[len];
+    for (i = 0; i < len; ++i) {
+        buf[i] = i % 256;
+    }
+
+    // Write to file
+    struct cchfile file;
+    cchdir_getfile(&dir1, &fe, &file);
+    cchfile_write(&disk, &file, 0, len, buf);
+
+    cchdir_write(&dir1, &disk);
+    cchdir_write(&dir2, &disk);
+
+    MU_ASSERT(cchdir_copydir(&disk, &root, &de1, &dir2));
+
+    struct lfnde copyfe;
+    struct lfnde copyde1;
+    struct cchdir copydir1;
+    struct cchfile copyfile;
+
+    MU_ASSERT(cchdir_findentry(&root, "dir1", &de1));
+    MU_ASSERT(cchdir_findentry(&root, "dir2", &de2));
+    MU_ASSERT(cchdir_findentry(&dir1, "dump.bin", &fe));
+    MU_ASSERT(cchdir_findentry(&dir2, "dir1", &copyde1));
+    MU_ASSERT(cchdir_getdir(&disk, &fat, &copyde1, &copydir1));
+    MU_ASSERT(cchdir_findentry(&copydir1, "dump.bin", &copyfe));
+
+    MU_ASSERT_U32_EQ(2, alist_count(root.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir1.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(dir2.entries));
+    MU_ASSERT_U32_EQ(3, alist_count(copydir1.entries));
+
+    // Read from copy
+    cchdir_getfile(&copydir1, &copyfe, &copyfile);
+    MU_ASSERT_U32_EQ(len, cchfile_getlen(&copyfile));
+    cchfile_read(&disk, &copyfile, 0, len, &nread, buf);
+
+    for (i = 0; i < len; ++i) {
+        MU_ASSERT_U32_EQ(i % 256, buf[i]);
+    }
+
+    // Writing to the copy doesn't affect to the origin file.
+    buf[0] = 50;
+    cchfile_write(&disk, &copyfile, 0, 1, buf);
+    cchfile_read(&disk, &file, 0, 1, &nread, buf);
+    MU_ASSERT_U32_EQ(0, buf[0]);
+    cchfile_read(&disk, &copyfile, 0, 1, &nread, buf);
+    MU_ASSERT_U32_EQ(50, buf[0]);
+
+    cchfile_destruct(&copyfile);
+    cchfile_destruct(&file);
+
+    cchdir_destruct(&copydir1);
+    cchdir_destruct(&dir1);
+    cchdir_destruct(&dir2);
+    cchdir_destruct(&root);
+
+    fdisk_close(&disk);
+}
+
 MU_TEST_SUITE(cchdir_test_suite)
 {
     MU_SUITE_CONFIGURE(&setup, &teardown);
@@ -440,6 +537,7 @@ MU_TEST_SUITE(cchdir_test_suite)
     MU_RUN_TEST(test_move_file);
     MU_RUN_TEST(test_move_dir);
     MU_RUN_TEST(test_copy_file);
+    MU_RUN_TEST(test_copy_dir);
 
     MU_REPORT();
 }

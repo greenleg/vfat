@@ -68,11 +68,10 @@ bool cchdir_copyfile(/*in*/ struct fdisk *dev,
                      /*in*/ struct lfnde *e,
                      /*in*/ struct cchdir *dst);
 
-bool cchdir_copyfile2(/*in*/ struct fdisk *dev,
-                      /*in*/ struct cchdir *src,
-                      /*in*/ struct lfnde *e,
-                      /*in*/ struct cchdir *dst,
-                      /*in*/ const char *new_name);
+bool cchdir_copydir(/*in*/ struct fdisk *dev,
+                    /*in*/ struct cchdir *src,
+                    /*in*/ struct lfnde *e,
+                    /*in*/ struct cchdir *dst);
 
 void cchdir_destruct(struct cchdir *dir);
 

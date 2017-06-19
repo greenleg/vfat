@@ -385,17 +385,9 @@ bool cchdir_copyfile(/*in*/ struct fdisk *dev,
 {
     char namebuf[256];
     lfnde_getname(e, namebuf);
-    return cchdir_copyfile2(dev, src, e, dst, namebuf);
-}
 
-bool cchdir_copyfile2(/*in*/ struct fdisk *dev,
-                      /*in*/ struct cchdir *src,
-                      /*in*/ struct lfnde *e,
-                      /*in*/ struct cchdir *dst,
-                      /*in*/ const char *new_name)
-{
     struct lfnde copye;
-    if (!cchdir_addfile(dst, new_name, &copye)) {
+    if (!cchdir_addfile(dst, namebuf, &copye)) {
         return false;
     }
 
@@ -421,6 +413,55 @@ bool cchdir_copyfile2(/*in*/ struct fdisk *dev,
     // Free memory
     cchfile_destruct(&orig);
     cchfile_destruct(&copy);
+
+    return true;
+}
+
+bool cchdir_copydir(/*in*/ struct fdisk *dev,
+                    /*in*/ struct cchdir *src,
+                    /*in*/ struct lfnde *e,
+                    /*in*/ struct cchdir *dst)
+{
+    struct fat *fat = src->chain->fat;
+
+    char namebuf[256];
+    lfnde_getname(e, namebuf);
+
+    struct cchdir orig;
+    if (!cchdir_getdir(dev, fat, e, &orig)) {
+        return false;
+    }
+
+    struct lfnde copye;
+    struct cchdir copy;
+    if (!cchdir_adddir(dst, namebuf, &copye, &copy)) {
+        return false;
+    }
+
+    struct lfnde child;
+    u32 i;
+    for (i = 0; i < alist_count(orig.entries); ++i) {
+        cchdir_getentry(&orig, i, &child);
+        if (lfnde_isdir(&child)) {
+            lfnde_getname(&child, namebuf);
+            if (strcmp(namebuf, ".") == 0 || strcmp(namebuf, "..") == 0) {
+                continue;
+            }
+
+            if (!cchdir_copydir(dev, &orig, &child, &copy)) {
+                return false;
+            }
+        } else {
+            if (!cchdir_copyfile(dev, &orig, &child, &copy)) {
+                return false;
+            }
+        }
+    }
+
+    cchdir_write(&copy, dev);
+
+    cchdir_destruct(&orig);
+    cchdir_destruct(&copy);
 
     return true;
 }
