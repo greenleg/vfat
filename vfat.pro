@@ -20,7 +20,8 @@ SOURCES += main.c \
     lfnde.c \
     cchfile.c \
     test/testcchfile.c \
-    vfstdio.c
+    filesys.c \
+    test/testfilesys.c
 
 HEADERS += \
     vbr.h \
@@ -35,4 +36,4 @@ HEADERS += \
     cch.h \
     lfnde.h \
     cchfile.h \
-    vfstdio.h
+    filesys.h

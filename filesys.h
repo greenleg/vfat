@@ -1,5 +1,5 @@
-#ifndef VFAT_STDIO_H
-#define VFAT_STDIO_H
+#ifndef VFAT_FILESYS_H
+#define VFAT_FILESYS_H
 
 #include "fdisk.h"
 #include "fat.h"
@@ -28,8 +28,10 @@ struct vfile
     struct cchfile *file;
 };
 
-struct vfile * vf_fopen(/*in*/ struct filesys *fs,
-                        /*in*/ const char *fname,
-                        /*in*/ const char *mode);
+bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path);
 
-#endif /* VFAT_STDIO_H */
+struct vfile * filesys_fopen(/*in*/ struct filesys *fs,
+                             /*in*/ const char *fname,
+                             /*in*/ const char *mode);
+
+#endif /* VFAT_FILESYS_H */

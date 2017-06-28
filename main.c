@@ -8,6 +8,7 @@ int main(int argc, char *argv[])
     MU_RUN_SUITE(cch_test_suite);
     MU_RUN_SUITE(cchdir_test_suite);
     MU_RUN_SUITE(cchfile_test_suite);
+    MU_RUN_SUITE(filesys_test_suite);
 
     return 0;
 }
