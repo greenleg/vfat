@@ -37,10 +37,23 @@ bool filesys_open(/*in*/ struct fdisk *dev, /*out*/ struct filesys *fs)
     return true;
 }
 
+bool filesys_close(/*in*/ struct filesys *fs)
+{
+    cchdir_write(fs->root, fs->dev);
+    fat_write(fs->fat, fs->dev);
+    vbr_write(fs->vbr, fs->dev);
+
+    return true;
+}
+
 bool filesys_destruct(/*in*/ struct filesys *fs)
 {
     cchdir_destruct(fs->root);
     fat_destruct(fs->fat);
+
+    free(fs->root);
+    free(fs->fat);
+    free(fs->vbr);
 
     return true;
 }
@@ -48,7 +61,7 @@ bool filesys_destruct(/*in*/ struct filesys *fs)
 static int parse_path(/*in*/ const char *path, /*out*/ char *parts[256])
 {
     // Skip leading '/'
-    int cnt = 0;
+    int n = 0;
     int len;
     int i = 0;
     int j;
@@ -58,36 +71,42 @@ static int parse_path(/*in*/ const char *path, /*out*/ char *parts[256])
             ++j;
         }
 
+        if (j == i + 1) {
+            i = j;
+            continue;
+        }
+
         len = j - i;
 
-        parts[cnt] = malloc(sizeof(char) * len);
-        memcpy(parts[cnt], &(path[i + 1]), len);
-        parts[cnt][len - 1] = '\0';
+        parts[n] = malloc(sizeof(char) * len);
+        memcpy(parts[n], &(path[i + 1]), len);
+        parts[n][len - 1] = '\0';
 
-        ++cnt;
+        ++n;
         i = j;
     }
 
-    return cnt;
+    return n;
 }
 
 bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
 {
     char *parts[256];
-    int cnt = parse_path(path, parts);
+    int nparts = parse_path(path, parts);
 
-    struct lfnde e;
-    //struct lfnde e1;
+    struct lfnde e;    
     struct cchdir *dir = fs->root;
-    struct cchdir *subdir = malloc(sizeof(struct cchdir));
+    struct cchdir *subdir;
 
-    for (int i = 0; i < cnt; ++i) {
+    for (int i = 0; i < nparts; ++i) {
+        subdir = malloc(sizeof(struct cchdir));
+
         if (cchdir_findentry(dir, parts[i], &e)) {
             cchdir_getdir(fs->dev, fs->fat, &e, subdir);
         } else {
             cchdir_adddir(dir, parts[i], &e, subdir);
             cchdir_write(dir, fs->dev);
-            if (i == cnt - 1) {
+            if (i == nparts - 1) {
                 cchdir_write(subdir, fs->dev);
             }
         }
@@ -98,7 +117,45 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
         }
 
         dir = subdir;
+    }
+
+    if (dir != fs->root) {
+        cchdir_destruct(dir);
+        free(dir);
+    }    
+
+    for (int i = 0; i < nparts; ++i) {
+        free(parts[i]);
+    }
+
+    return true;
+}
+
+struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path)
+{
+    char *parts[256];
+    int nparts = parse_path(path, parts);
+
+    struct lfnde e;
+    struct cchdir *dir = fs->root;
+    struct cchdir *subdir;
+
+    bool notfound = false;
+    for (int i = 0; i < nparts; ++i) {
+        if (!cchdir_findentry(dir, parts[i], &e)) {
+            notfound = true;
+            break;
+        }
+
         subdir = malloc(sizeof(struct cchdir));
+        cchdir_getdir(fs->dev, fs->fat, &e, subdir);
+
+        if (dir != fs->root) {
+            cchdir_destruct(dir);
+            free(dir);
+        }
+
+        dir = subdir;
     }
 
     if (dir != fs->root) {
@@ -106,11 +163,46 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
         free(dir);
     }
 
-    free(subdir);
-
-    for (int i = 0; i < cnt; ++i) {
+    for (int i = 0; i < nparts; ++i) {
         free(parts[i]);
     }
+
+    if (notfound) {
+        return NULL;
+    }
+
+    struct vdir *vdir = malloc(sizeof(struct vdir));
+    vdir->ccdir = dir;
+    vdir->idx = 0;
+
+    return vdir;
+}
+
+void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir)
+{
+    if (dir->ccdir != fs->root) {
+        cchdir_destruct(dir->ccdir);
+        free(dir->ccdir);
+    }
+
+    free(dir);
+}
+
+bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
+{
+    u32 n = alist_count(dir->ccdir->entries);
+    if (dir->idx == n) {
+        return false;
+    }
+
+    struct lfnde e;
+    cchdir_getentry(dir->ccdir, dir->idx, &e);
+
+    lfnde_getname(&e, entry->name);
+    entry->isdir = lfnde_isdir(&e);
+    entry->datalen = lfnde_getdatalen(&e);
+
+    ++(dir->idx);
 
     return true;
 }

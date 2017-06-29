@@ -13,6 +13,24 @@ struct filesys
     struct cchdir *root;
 };
 
+struct vdir
+{
+    struct cchdir *ccdir;
+    u32 idx;
+};
+
+struct vdirent
+{
+    char name[256];
+    bool isdir;
+    u64 datalen;
+};
+
+struct vfile
+{
+    struct cchfile *file;
+};
+
 bool filesys_format(/*in*/ struct fdisk *dev,
                     /*in*/ u64 volume_size,
                     /*in*/ u16 bytes_per_sector,
@@ -20,15 +38,13 @@ bool filesys_format(/*in*/ struct fdisk *dev,
                     /*out*/ struct filesys *fs);
 
 bool filesys_open(/*in*/ struct fdisk *dev, /*out*/ struct filesys *fs);
-
+bool filesys_close(/*in*/ struct filesys *fs);
 bool filesys_destruct(/*in*/ struct filesys *fs);
 
-struct vfile
-{
-    struct cchfile *file;
-};
-
 bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path);
+struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path);
+void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir);
+bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry);
 
 struct vfile * filesys_fopen(/*in*/ struct filesys *fs,
                              /*in*/ const char *fname,
