@@ -43,6 +43,7 @@ bool filesys_destruct(/*in*/ struct filesys *fs);
 
 bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path);
 struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path);
+struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir, /*in*/ const char *name);
 void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir);
 bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry);
 

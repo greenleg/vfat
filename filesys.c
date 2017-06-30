@@ -158,10 +158,10 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
         dir = subdir;
     }
 
-    if (dir != fs->root) {
+    /*if (dir != fs->root) {
         cchdir_destruct(dir);
         free(dir);
-    }
+    }*/
 
     for (int i = 0; i < nparts; ++i) {
         free(parts[i]);
@@ -205,6 +205,23 @@ bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
     ++(dir->idx);
 
     return true;
+}
+
+struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir, /*in*/ const char *name)
+{
+    struct lfnde e;
+    if (!cchdir_findentry(dir->ccdir, name, &e)) {
+        return NULL;
+    }
+
+    struct cchdir *subccdir = malloc(sizeof(struct cchdir));
+    cchdir_getdir(fs->dev, dir->ccdir->chain->fat, &e, subccdir);
+
+    struct vdir *subdir = malloc(sizeof(struct vdir));
+    subdir->ccdir = subccdir;
+    subdir->idx = 0;
+
+    return subdir;
 }
 
 struct vfile * filesys_fopen(/*in*/ struct filesys *fs,

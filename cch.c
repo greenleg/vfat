@@ -6,8 +6,9 @@
 
 static u64 getdevofs(struct vbr *vbr, u32 cluster, u32 cluster_offset)
 {
+    u32 sector_size = vbr_get_bytes_per_sector(vbr);
     u32 cluster_size = vbr_get_bytes_per_cluster(vbr);
-    return vbr->cluster_heap_offset + cluster * cluster_size + cluster_offset;
+    return vbr->cluster_heap_offset * sector_size + cluster * cluster_size + cluster_offset;
 }
 
 u32 cch_getlen(struct cch *cc)

@@ -3,6 +3,27 @@
 
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
+static void printdir(struct filesys *fs, struct vdir *dir, int level)
+{
+    struct vdir *subdir;
+    struct vdirent e;
+    while(filesys_readdir(dir, &e)) {
+        if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
+            continue;
+        }
+
+        for (int i = 0; i < level; ++i) {
+            printf("*\t");
+        }
+
+        printf("%s\n", e.name);
+
+        subdir = filesys_getdir(fs, dir, e.name);
+        printdir(fs, subdir, level + 1);
+        filesys_closedir(fs, subdir);
+    }
+}
+
 MU_TEST_SETUP(setup)
 {
     struct fdisk dev;
@@ -51,18 +72,19 @@ MU_TEST(test_readdir)
     filesys_mkdir(&fs, "/home/pavel/Desktop");
     filesys_mkdir(&fs, "/home/pavel/Documents");
     filesys_mkdir(&fs, "/home/pavel/Downloads");
+    filesys_mkdir(&fs, "/home/pavel/Downloads/astyle");
+    filesys_mkdir(&fs, "/home/pavel/Qt");
+    filesys_mkdir(&fs, "/home/pavel/Qt/Docs");
+    filesys_mkdir(&fs, "/home/pavel/Qt/Examples");
+    filesys_mkdir(&fs, "/home/pavel/Qt/Tools");
 
     filesys_close(&fs);
     filesys_destruct(&fs);
-    fdisk_close(&dev);
 
     filesys_open(&dev, &fs);
 
     struct vdir *dir = filesys_opendir(&fs, "/");
-    struct vdirent e;
-    while(filesys_readdir(dir, &e)) {
-        printf("%s\n", e.name);
-    }
+    printdir(&fs, dir, 0);
 
     filesys_closedir(&fs, dir);
     filesys_close(&fs);
