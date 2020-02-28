@@ -1,9 +1,9 @@
-#include "common.h"
 #include "minunit.h"
-#include "alist.h"
-#include "cch.h"
-#include "cchdir.h"
-#include "lfnde.h"
+#include "../include/common.h"
+#include "../include/alist.h"
+#include "../include/cch.h"
+#include "../include/cchdir.h"
+#include "../include/lfnde.h"
 
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
@@ -20,7 +20,7 @@ MU_TEST_SETUP(setup)
 MU_TEST_TEARDOWN(teardown)
 {
     remove(G_DISK_FNAME);
-    vfat_errno = 0;
+    ::__vfat_errno = 0;
 }
 
 MU_TEST(test_add_entry)
@@ -142,7 +142,7 @@ MU_TEST(test_add_too_many_directories)
         free_before_add = fat_get_free_cluster_count(&fat);
         sprintf(namebuf, "this is test directory with index %d", count++);
         if (!cchdir_adddir(&root, namebuf, &e, &dir)) {
-            MU_ASSERT_INT_EQ(EFATFULL, vfat_errno);
+            MU_ASSERT_INT_EQ(EFATFULL, ::__vfat_errno);
             MU_ASSERT_U32_EQ(free_before_add, fat_get_free_cluster_count(&fat));
             break;
         }
@@ -206,7 +206,7 @@ MU_TEST(test_unique_dir_name)
 
     MU_ASSERT(cchdir_adddir(&root, "home", &e, &dir));
     MU_ASSERT(!cchdir_adddir(&root, "home", &e, &dir));
-    MU_ASSERT_INT_EQ(EALREADYEXISTS, vfat_errno);
+    MU_ASSERT_INT_EQ(EALREADYEXISTS, ::__vfat_errno);
 
     cchdir_destruct(&dir);
 

@@ -2,9 +2,9 @@
 #include <sys/types.h>
 #include <math.h>
 
-#include "common.h"
-#include "binaryreader.h"
-#include "vbr.h"
+#include "../include/common.h"
+#include "../include/binaryreader.h"
+#include "../include/vbr.h"
 
 #define VBR_SECTOR 0
 

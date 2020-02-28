@@ -1,8 +1,8 @@
 #include "minunit.h"
 #include "testsuite.h"
-#include "../fdisk.h"
-#include "../vbr.h"
-#include "../fat.h"
+#include "../include/fdisk.h"
+#include "../include/vbr.h"
+#include "../include/fat.h"
 
 /* These variables reside in the process memory permanently */
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
@@ -120,7 +120,7 @@ MU_TEST(test_fat_get_free_cluster_count2)
 
     /* Allocated too many clusters */
     MU_ASSERT(fat_alloc_chain(&fat, 1, &cluster) == false);
-    MU_ASSERT_INT_EQ(EFATFULL, vfat_errno);
+    MU_ASSERT_INT_EQ(EFATFULL, ::__vfat_errno);
 
     fat_destruct(&fat);
     fdisk_close(&disk);

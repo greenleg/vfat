@@ -4,39 +4,36 @@ project(vfat LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_C_COMPILER gcc)
-
-include_directories(.)
-include_directories(test)
+#set(CMAKE_C_COMPILER gcc)
 
 add_executable(vfat
-    alist.h
-    alist.c
-    binaryreader.h
-    binaryreader.c
-    cch.h
-    cch.c
-    cchdir.h
-    cchdir.c
-    cchfile.h
-    cchfile.c
-    common.h
-    fat.h
-    fat.c
-    fdisk.h
-    fdisk.c
-    filesys.h
-    filesys.c
-    lfnde.h
-    lfnde.c
-    vbr.h
-    vbr.c
+    include/common.h
+    include/alist.h
+    include/binaryreader.h
+    include/cch.h
+    include/cchdir.h
+    include/cchfile.h
+    include/fat.h
+    include/fdisk.h
+    include/filesys.h
+    include/lfnde.h
+    include/vbr.h
+    src/alist.cpp
+    src/binaryreader.cpp
+    src/cch.cpp
+    src/cchdir.cpp
+    src/cchfile.cpp
+    src/fat.cpp
+    src/fdisk.cpp
+    src/filesys.cpp
+    src/lfnde.cpp
+    src/vbr.cpp
     test/minunit.h
     test/testsuite.h
-    test/testsuite.c
-    test/testfat.c
-    test/testcch.c
-    test/testcchdir.c
-    test/testcchfile.c
-    test/testfilesys.c
+    test/testvbr.cpp
+    test/testfat.cpp
+    test/testcch.cpp
+    test/testcchdir.cpp
+    test/testcchfile.cpp
+    test/testfilesys.cpp
     main.cpp)

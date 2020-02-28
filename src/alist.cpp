@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include "alist.h"
+#include "../include/alist.h"
 
 #define INIT_CAPACITY 4
 

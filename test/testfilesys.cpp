@@ -1,5 +1,5 @@
 #include "minunit.h"
-#include "filesys.h"
+#include "../include/filesys.h"
 
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 

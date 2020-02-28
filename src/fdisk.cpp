@@ -6,8 +6,8 @@
 #include <fcntl.h>
 #include <stdlib.h>
 
-#include "common.h"
-#include "fdisk.h"
+#include "../include/common.h"
+#include "../include/fdisk.h"
 
 void fdisk_create(/*in*/ const char* fname, /*out*/ struct fdisk *disk)
 {

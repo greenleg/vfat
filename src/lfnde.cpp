@@ -2,9 +2,9 @@
 #include <string.h>
 #include <assert.h>
 
-#include "binaryreader.h"
-#include "alist.h"
-#include "lfnde.h"
+#include "../include/binaryreader.h"
+#include "../include/alist.h"
+#include "../include/lfnde.h"
 
 #define FDE_ENTRYTYPE_OFFSET 0
 #define FDE_SECONDARYCOUNT_OFFSET 1

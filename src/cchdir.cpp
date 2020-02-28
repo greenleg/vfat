@@ -1,16 +1,18 @@
 #include <assert.h>
 
-#include "alist.h"
-#include "fat.h"
-#include "cchdir.h"
-#include "cchfile.h"
-#include "lfnde.h"
+#include "../include/alist.h"
+#include "../include/fat.h"
+#include "../include/cchdir.h"
+#include "../include/cchfile.h"
+#include "../include/lfnde.h"
+
+int32_t __vfat_errno;
 
 static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
     struct lfnde e;
     if (cchdir_findentry(dir, name, &e)) {
-        vfat_errno = EALREADYEXISTS;
+        __vfat_errno = EALREADYEXISTS;
         return false;
     }
 

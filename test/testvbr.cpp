@@ -1,9 +1,9 @@
 #include <stdlib.h>
 
-#include "../fdisk.h"
-#include "../vbr.h"
 #include "minunit.h"
 #include "testsuite.h"
+#include "../include/fdisk.h"
+#include "../include/vbr.h"
 
 MU_TEST(test_vbr_create)
 {

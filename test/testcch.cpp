@@ -1,6 +1,6 @@
-#include "common.h"
 #include "minunit.h"
-#include "cch.h"
+#include "../include/common.h"
+#include "../include/cch.h"
 
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 

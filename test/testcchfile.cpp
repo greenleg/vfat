@@ -1,12 +1,12 @@
 #include <errno.h>
 
-#include "common.h"
 #include "minunit.h"
-#include "alist.h"
-#include "cch.h"
-#include "cchdir.h"
-#include "cchfile.h"
-#include "lfnde.h"
+#include "../include/common.h"
+#include "../include/alist.h"
+#include "../include/cch.h"
+#include "../include/cchdir.h"
+#include "../include/cchfile.h"
+#include "../include/lfnde.h"
 
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";
 
@@ -23,7 +23,7 @@ MU_TEST_SETUP(setup)
 MU_TEST_TEARDOWN(teardown)
 {
     remove(G_DISK_FNAME);
-    vfat_errno = 0;
+    ::__vfat_errno = 0;
 }
 
 MU_TEST(test_set_length)

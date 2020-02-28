@@ -1,8 +1,8 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "cchfile.h"
-#include "lfnde.h"
+#include "../include/cchfile.h"
+#include "../include/lfnde.h"
 
 /*
  * Returns the length of this file in bytes. This is the length that

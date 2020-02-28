@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "common.h"
-#include "fat.h"
+#include "../include/common.h"
+#include "../include/fat.h"
 
 static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ u32 *cluster)
 {
@@ -26,7 +26,7 @@ static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ u32 *cluster)
         }
     }
 
-    vfat_errno = EFATFULL;
+    __vfat_errno = EFATFULL;
     return false;
 }
 

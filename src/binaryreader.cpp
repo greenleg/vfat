@@ -2,7 +2,7 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-#include "binaryreader.h"
+#include "../include/binaryreader.h"
 
 uint8_t read_u8(uint8_t *data, uint32_t offset)
 {
