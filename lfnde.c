@@ -103,9 +103,9 @@ u16 lfnde_count(struct lfnde *e)
 
 void lfnde_create(struct lfnde *e)
 {
-    e->fde = malloc(sizeof(struct fde));
-    e->sede = malloc(sizeof(struct sede));
-    e->fnede_list = malloc(sizeof(struct alist));
+    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
+    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
+    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(e->fnede_list, sizeof(struct fnede));
 
     // Set valid default values.
@@ -119,19 +119,19 @@ void lfnde_create(struct lfnde *e)
 void lfnde_readbuf(u8 *buf, struct lfnde *e)
 {
     assert(buf[0] == FILE_DIR_ENTRY);
-    e->fde = malloc(sizeof(struct fde));
+    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
     fde_readbuf(buf, e->fde);
     buf += FAT_DIR_ENTRY_SIZE;
 
     assert(buf[0] == STREAMEXT_DIR_ENTRY);
-    e->sede = malloc(sizeof(struct sede));
+    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
     sede_readbuf(buf, e->sede);
     buf += FAT_DIR_ENTRY_SIZE;
 
     struct fnede fnede;
     u8 i;
 
-    e->fnede_list = malloc(sizeof(struct alist));
+    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(e->fnede_list, sizeof(struct fnede));
 
     for (i = 0; i < e->fde->secondary_count - 1; ++i) {

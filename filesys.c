@@ -7,9 +7,9 @@ bool filesys_format(/*in*/ struct fdisk *dev,
                     /*out*/ struct filesys *fs)
 {
     fs->dev = dev;
-    fs->vbr = malloc(sizeof(struct vbr));
-    fs->fat = malloc(sizeof(struct fat));
-    fs->root = malloc(sizeof(struct cchdir));
+    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
+    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
+    fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     vbr_create(fs->vbr, volume_size, bytes_per_sector, sectors_per_cluster);
     vbr_write(fs->vbr, dev);
@@ -26,9 +26,9 @@ bool filesys_format(/*in*/ struct fdisk *dev,
 bool filesys_open(/*in*/ struct fdisk *dev, /*out*/ struct filesys *fs)
 {
     fs->dev = dev;
-    fs->vbr = malloc(sizeof(struct vbr));
-    fs->fat = malloc(sizeof(struct fat));
-    fs->root = malloc(sizeof(struct cchdir));
+    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
+    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
+    fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     vbr_read(dev, fs->vbr);
     fat_read(dev, fs->vbr, fs->fat);
@@ -78,7 +78,7 @@ static int parse_path(/*in*/ const char *path, /*out*/ char *parts[256])
 
         len = j - i;
 
-        parts[n] = malloc(sizeof(char) * len);
+        parts[n] = static_cast<char *>(malloc(sizeof(char) * len));
         memcpy(parts[n], &(path[i + 1]), len);
         parts[n][len - 1] = '\0';
 
@@ -99,7 +99,7 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
     struct cchdir *subdir;
 
     for (int i = 0; i < nparts; ++i) {
-        subdir = malloc(sizeof(struct cchdir));
+        subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
         if (cchdir_findentry(dir, parts[i], &e)) {
             cchdir_getdir(fs->dev, fs->fat, &e, subdir);
@@ -147,7 +147,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
             break;
         }
 
-        subdir = malloc(sizeof(struct cchdir));
+        subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
         cchdir_getdir(fs->dev, fs->fat, &e, subdir);
 
         if (dir != fs->root) {
@@ -171,7 +171,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
         return NULL;
     }
 
-    struct vdir *vdir = malloc(sizeof(struct vdir));
+    struct vdir *vdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     vdir->ccdir = dir;
     vdir->idx = 0;
 
@@ -214,10 +214,10 @@ struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir,
         return NULL;
     }
 
-    struct cchdir *subccdir = malloc(sizeof(struct cchdir));
+    struct cchdir *subccdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
     cchdir_getdir(fs->dev, dir->ccdir->chain->fat, &e, subccdir);
 
-    struct vdir *subdir = malloc(sizeof(struct vdir));
+    struct vdir *subdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     subdir->ccdir = subccdir;
     subdir->idx = 0;
 

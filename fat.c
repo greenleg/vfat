@@ -104,7 +104,7 @@ void fat_create(struct vbr *vbr, struct fat *fat)
 {
     fat->vbr = vbr;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
-    fat->entries = malloc(sizeof(u32) * vbr->cluster_count);
+    fat->entries = static_cast<u32 *>(malloc(sizeof(u32) * vbr->cluster_count));
     memset((void*)fat->entries, 0, sizeof(uint32_t) * vbr->cluster_count);
     fat->entries[0] = FAT_MEDIA_DESCRIPTOR;
     fat->entries[1] = FAT_EOF;
@@ -116,7 +116,7 @@ void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat)
 
     fat->vbr = vbr;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
-    fat->entries = malloc(sizeof(u32) * vbr->cluster_count);
+    fat->entries = static_cast<u32 *>(malloc(sizeof(u32) * vbr->cluster_count));
     fdisk_read(disk, (u8 *)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
 }
 

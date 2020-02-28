@@ -1,8 +1,8 @@
 #include "minunit.h"
 #include "testsuite.h"
-#include "fdisk.h"
-#include "vbr.h"
-#include "fat.h"
+#include "../fdisk.h"
+#include "../vbr.h"
+#include "../fat.h"
 
 /* These variables reside in the process memory permanently */
 static const char *G_DISK_FNAME = "/home/pavel/projects/vfat/test/disk0";

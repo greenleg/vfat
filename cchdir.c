@@ -86,7 +86,7 @@ void cchdir_readdir(/*in*/ struct fdisk *disk,
                     /*in*/ bool root,
                     /*out*/ struct cchdir* dir)
 {
-    struct cch *cc = malloc(sizeof(struct cch));
+    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     cc->fat = fat;
     cc->start_cluster = first_cluster;
 
@@ -97,7 +97,7 @@ void cchdir_readdir(/*in*/ struct fdisk *disk,
     dir->chain = cc;
     dir->root = root;
     dir->capacity = size / FAT_DIR_ENTRY_SIZE;
-    dir->entries = malloc(sizeof(struct alist));
+    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(dir->entries, sizeof(struct lfnde));
 
     cchdir_read_entries(dir, buf);
@@ -116,21 +116,21 @@ void cchdir_create(struct cch *cc, struct cchdir *dir)
     dir->chain = cc;
     dir->root = false;
     dir->capacity = cch_getsize(cc) / FAT_DIR_ENTRY_SIZE;
-    dir->entries = malloc(sizeof(struct alist));
+    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(dir->entries, sizeof(struct lfnde));
 }
 
 void cchdir_createroot(struct fat *fat, struct cchdir *dir)
 {
     struct vbr *br = fat->vbr;
-    struct cch *cc = malloc(sizeof(struct cch));
+    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     cch_create(cc, fat, 1);
     br->rootdir_first_cluster = cc->start_cluster;
 
     dir->chain = cc;
     dir->root = true;
     dir->capacity = cch_getsize(cc) / FAT_DIR_ENTRY_SIZE;
-    dir->entries = malloc(sizeof(struct alist));
+    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(dir->entries, sizeof(struct lfnde));
 }
 
@@ -232,7 +232,7 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
     struct lfnde dotdot;
     struct fat *fat = parentdir->chain->fat;
 
-    struct cch *cc = malloc(sizeof(struct cch));
+    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     if (!cch_create(cc, fat, 1)) {
         return false;
     }
@@ -324,7 +324,7 @@ void cchdir_getfile(/*in*/ struct cchdir *dir,
                     /*in*/ struct lfnde *e,
                     /*out*/ struct cchfile *file)
 {
-    struct cch *cc = malloc(sizeof(struct cch));
+    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     cc->fat = dir->chain->fat;
     cc->start_cluster = lfnde_getstartcluster(e);
 
