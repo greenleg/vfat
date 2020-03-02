@@ -1,11 +1,12 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.10) # gtest_discover_tests() was introduced in CMake 3.10.
 
 project(vfat LANGUAGES CXX)
 
-#add_compile_definitions(RUN_ALL_TEST)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+include(GoogleTest)
+enable_testing()
 
 # Download and unpack googletest at configure time
 configure_file(gtest/CMakeLists.txt googletest-download/CMakeLists.txt)
@@ -31,8 +32,6 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
                  ${CMAKE_CURRENT_BINARY_DIR}/googletest-build
                  EXCLUDE_FROM_ALL)
 
-message("gtest_SOURCE_DIR=${gtest_SOURCE_DIR}")
-
 # The gtest/gtest_main targets carry header search path
 # dependencies automatically when using CMake 2.8.11 or
 # later. Otherwise we have to add them here ourselves.
@@ -40,38 +39,44 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
     include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
-add_executable(vfat
-#    include/common.h
-#    include/alist.h
-#    include/binaryreader.h
-#    include/cch.h
-#    include/cchdir.h
-#    include/cchfile.h
-#    include/fat.h
-#    include/fdisk.h
-#    include/filesys.h
-#    include/lfnde.h
-#    include/vbr.h
-#    src/alist.cpp
-#    src/binaryreader.cpp
-#    src/cch.cpp
-#    src/cchdir.cpp
-#    src/cchfile.cpp
-#    src/fat.cpp
-#    src/fdisk.cpp
-#    src/filesys.cpp
-#    src/lfnde.cpp
-#    src/vbr.cpp
-#    test/minunit.h
-#    test/testsuite.h
-#    test/testvbr.cpp
-#    test/testfat.cpp
-#    test/testcch.cpp
-#    test/testcchdir.cpp
-#    test/testcchfile.cpp
-#    test/testfilesys.cpp
-    main.cpp)
+set(vfat_lib_src
+    include/common.h
+    include/alist.h
+    include/binaryreader.h
+    include/cch.h
+    include/cchdir.h
+    include/cchfile.h
+    include/fat.h
+    include/fdisk.h
+    include/filesys.h
+    include/lfnde.h
+    include/vbr.h
+    src/alist.cpp
+    src/binaryreader.cpp
+    src/cch.cpp
+    src/cchdir.cpp
+    src/cchfile.cpp
+    src/fat.cpp
+    src/fdisk.cpp
+    src/filesys.cpp
+    src/lfnde.cpp
+    src/vbr.cpp)
 
-target_link_libraries(vfat gtest_main)
-#add_test()
+set(vfat_test_src
+    test/minunit.h
+    test/testsuite.h
+    test/BootSectorTest.cpp
+    test/FatTest.cpp
+    test/ClusterChainTest.cpp
+    test/ClusterChainDirectoryTest.cpp
+    test/testcchfile.cpp
+    test/testfilesys.cpp
+    test/main.cpp)
 
+add_executable(vfat ${vfat_lib_src} src/main.cpp)
+add_executable(vfat.test ${vfat_lib_src} ${vfat_test_src})
+
+target_link_libraries(vfat.test gtest)
+
+#gtest_add_tests(TARGET vfat TEST_PREFIX source:)
+gtest_discover_tests(vfat.test TEST_PREFIX "runtime:")
