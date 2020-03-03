@@ -63,14 +63,12 @@ set(vfat_lib_src
     src/vbr.cpp)
 
 set(vfat_test_src
-    test/minunit.h
-    test/testsuite.h
     test/BootSectorTest.cpp
     test/FatTest.cpp
     test/ClusterChainTest.cpp
     test/ClusterChainDirectoryTest.cpp
-    test/testcchfile.cpp
-    test/testfilesys.cpp
+    test/ClusterChainFileTest.cpp
+    test/FileSystemTest.cpp
     test/main.cpp)
 
 add_executable(vfat ${vfat_lib_src} src/main.cpp)
