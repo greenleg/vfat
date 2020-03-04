@@ -7,39 +7,39 @@
 #include "../include/cchfile.h"
 #include "../include/lfnde.h"
 
+using namespace org::vfat;
+
 class ClusterChainFileTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
+        this->device = new FileDisk("disk0");
 
-        fdisk_create(DISK_FNAME, &disk);
-        cchdir_formatdev(&disk, 1024 * 1024, 512, 1);
-
-        fdisk_close(&disk);
+        this->device->Create();
+        cchdir_formatdev(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
+        this->device->Close();
+        this->device->Delete();
+        delete this->device;
         ::__vfat_errno = 0;
     }
 };
 
 TEST_F(ClusterChainFileTest, SetLength)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
     struct cchfile file;
@@ -54,20 +54,18 @@ TEST_F(ClusterChainFileTest, SetLength)
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainFileTest, ReadWrite)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
     struct cchfile file;
@@ -77,18 +75,18 @@ TEST_F(ClusterChainFileTest, ReadWrite)
 
     u32 i, nread;
     u32 len = 10000;
-    u8 writebuf[len];
-    u8 readbuf[len];
+    uint8_t writebuf[len];
+    uint8_t readbuf[len];
 
     for (i = 0; i < len; ++i) {
         writebuf[i] = i % 256;
     }
 
     // Write to device
-    cchfile_write(&disk, &file, 0, len, writebuf);
+    cchfile_write(this->device, &file, 0, len, writebuf);
 
     // Read from device
-    cchfile_read(&disk, &file, 0, len, &nread, readbuf);
+    cchfile_read(this->device, &file, 0, len, &nread, readbuf);
     EXPECT_EQ(len, nread);
 
     for (i = 0; i < len; ++i) {
@@ -96,10 +94,10 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     }
 
     // Read too long
-    cchfile_read(&disk, &file, 0, len + 1, &nread, readbuf);
+    cchfile_read(this->device, &file, 0, len + 1, &nread, readbuf);
     EXPECT_EQ(len, nread);
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }

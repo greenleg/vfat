@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "fdisk.h"
+#include "FileDisk.h"
 #include "fat.h"
 
 struct cch
@@ -13,8 +13,8 @@ struct cch
     struct fat *fat;
 };
 
-void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *dst);
-void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *src);
+void cch_readdata(org::vfat::FileDisk *disk, struct cch *cc, u32 offset, u32 nbytes, uint8_t *dst);
+void cch_writedata(org::vfat::FileDisk *disk, struct cch *cc, u32 offset, u32 nbytes, uint8_t *src);
 u32  cch_getlen(struct cch *cc);
 u64  cch_getsize(struct cch *cc);
 bool cch_setlen(/*in*/ struct cch *cc, /*in*/ u32 nr_clusters);

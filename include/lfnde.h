@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "common.h"
-#include "fdisk.h"
+#include "FileDisk.h"
 
 #define FAT_DIR_ENTRY_SIZE 32
 
@@ -19,8 +19,8 @@
 
 struct fde
 {
-    u8 entry_type;
-    u8 secondary_count;
+    uint8_t entry_type;
+    uint8_t secondary_count;
     u16 attributes;
     u32 create;
     u32 last_modified;
@@ -29,17 +29,17 @@ struct fde
 
 struct sede
 {
-    u8 entry_type;
-    u8 secondary_flags;
-    u8 name_length;
+    uint8_t entry_type;
+    uint8_t secondary_flags;
+    uint8_t name_length;
     u32 first_cluster;
     u64 data_length;
 };
 
 struct fnede
 {
-    u8 entry_type;
-    u8 secondary_flags;
+    uint8_t entry_type;
+    uint8_t secondary_flags;
     u16 name[FNEDE_UNAME_LENGTH];
 };
 
@@ -51,8 +51,8 @@ struct lfnde
 };
 
 void lfnde_create(struct lfnde *e);
-void lfnde_readbuf(u8 *buf, struct lfnde *e);
-void lfnde_writebuf(struct lfnde *e, u8 *buf);
+void lfnde_readbuf(uint8_t *buf, struct lfnde *e);
+void lfnde_writebuf(struct lfnde *e, uint8_t *buf);
 u64 lfnde_getdatalen(/*in*/ struct lfnde *e);
 void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len);
 void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name);

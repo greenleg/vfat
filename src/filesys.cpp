@@ -1,47 +1,47 @@
 #include "../include/filesys.h"
 
-bool filesys_format(/*in*/ struct fdisk *dev,
+bool filesys_format(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ u64 volume_size,
                     /*in*/ u16 bytes_per_sector,
                     /*in*/ u16 sectors_per_cluster,
                     /*out*/ struct filesys *fs)
 {
-    fs->dev = dev;
+    fs->device = device;
     fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
     fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     vbr_create(fs->vbr, volume_size, bytes_per_sector, sectors_per_cluster);
-    vbr_write(fs->vbr, dev);
+    vbr_write(fs->vbr, device);
 
     fat_create(fs->vbr, fs->fat);
     cchdir_createroot(fs->fat, fs->root);
 
-    fat_write(fs->fat, dev);
-    cchdir_write(fs->root, dev);
+    fat_write(fs->fat, device);
+    cchdir_write(fs->root, device);
 
     return true;
 }
 
-bool filesys_open(/*in*/ struct fdisk *dev, /*out*/ struct filesys *fs)
+bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs)
 {
-    fs->dev = dev;
+    fs->device = device;
     fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
     fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
-    vbr_read(dev, fs->vbr);
-    fat_read(dev, fs->vbr, fs->fat);
-    cchdir_readroot(dev, fs->fat, fs->root);
+    vbr_read(device, fs->vbr);
+    fat_read(device, fs->vbr, fs->fat);
+    cchdir_readroot(device, fs->fat, fs->root);
 
     return true;
 }
 
 bool filesys_close(/*in*/ struct filesys *fs)
 {
-    cchdir_write(fs->root, fs->dev);
-    fat_write(fs->fat, fs->dev);
-    vbr_write(fs->vbr, fs->dev);
+    cchdir_write(fs->root, fs->device);
+    fat_write(fs->fat, fs->device);
+    vbr_write(fs->vbr, fs->device);
 
     return true;
 }
@@ -102,12 +102,12 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
         subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
         if (cchdir_findentry(dir, parts[i], &e)) {
-            cchdir_getdir(fs->dev, fs->fat, &e, subdir);
+            cchdir_getdir(fs->device, fs->fat, &e, subdir);
         } else {
             cchdir_adddir(dir, parts[i], &e, subdir);
-            cchdir_write(dir, fs->dev);
+            cchdir_write(dir, fs->device);
             if (i == nparts - 1) {
-                cchdir_write(subdir, fs->dev);
+                cchdir_write(subdir, fs->device);
             }
         }
 
@@ -148,7 +148,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
         }
 
         subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-        cchdir_getdir(fs->dev, fs->fat, &e, subdir);
+        cchdir_getdir(fs->device, fs->fat, &e, subdir);
 
         if (dir != fs->root) {
             cchdir_destruct(dir);
@@ -215,7 +215,7 @@ struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir,
     }
 
     struct cchdir *subccdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-    cchdir_getdir(fs->dev, dir->ccdir->chain->fat, &e, subccdir);
+    cchdir_getdir(fs->device, dir->ccdir->chain->fat, &e, subccdir);
 
     struct vdir *subdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     subdir->ccdir = subccdir;

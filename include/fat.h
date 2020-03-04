@@ -29,8 +29,8 @@ struct fat
 };
 
 void fat_create(struct vbr *vbr, struct fat *fat);
-void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat);
-void fat_write(struct fat *fat, struct fdisk *disk);
+void fat_read(org::vfat::FileDisk *device, struct vbr *vbr, struct fat *fat);
+void fat_write(struct fat *fat, org::vfat::FileDisk *device);
 
 bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *start_cluster);
 void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u32 new_cluster);

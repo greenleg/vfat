@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include "common.h"
-#include "fdisk.h"
+#include "FileDisk.h"
 
 #define VBR_SIZE 512
 
@@ -28,17 +28,17 @@ struct vbr
     u32 rootdir_first_cluster;
 
     /* This is a power of 2. Range: min of 29 = 512 byte cluster size, and a max of 212 = 4096. */
-    u8 bytes_per_sector_pow2;
+    uint8_t bytes_per_sector_pow2;
 
     /*
      * This is a power of 2. Range: Min of 21=512. The maximum Cluster size is 32 MiB,
      * so the Values in Bytes per Sector + Sectors Per Cluster cannot exceed 25.
      */
-    u8 sectors_per_cluster_pow2;
+    uint8_t sectors_per_cluster_pow2;
 };
 
-void vbr_read(struct fdisk *disk, struct vbr *vbr);
-void vbr_write(struct vbr *vbr, struct fdisk *disk);
+void vbr_read(org::vfat::FileDisk *device, struct vbr *vbr);
+void vbr_write(struct vbr *vbr, org::vfat::FileDisk *device);
 void vbr_create(struct vbr *vbr, u64 volume_size, u16 bytes_per_sector, u16 sector_per_cluster);
 
 u16  vbr_get_bytes_per_sector(struct vbr *vbr);

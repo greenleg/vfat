@@ -19,26 +19,26 @@ static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name
     return true;
 }
 
-static void cchdir_read_entries(struct cchdir *dir, u8 *buf)
+static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
 {
     u32 offset = 0;
-    u8 entry_type;
+    uint8_t entry_type;
     struct lfnde e;
     u32 i;
 
     for (i = 0; i < dir->capacity; ++i) {
-        entry_type = buf[offset];
+        entry_type = buffer[offset];
         if (entry_type == NO_DIR_ENTRY) {
             break;
         }
 
-        lfnde_readbuf(buf + offset, &e);
+        lfnde_readbuf(buffer + offset, &e);
         alist_add(dir->entries, &e);
         offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
     }
 }
 
-static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
+static u32 cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, u32 bufsize)
 {
     u32 offset = 0;
     u32 i;
@@ -46,13 +46,13 @@ static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
     struct lfnde e;
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, &e);
-        lfnde_writebuf(&e, buf + offset);
+        lfnde_writebuf(&e, buffer + offset);
         offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
     }
 
     if (offset < bufsize) {
         // Write the end-of-list marker.
-        buf[offset] = NO_DIR_ENTRY;
+        buffer[offset] = NO_DIR_ENTRY;
         offset += 1;
     }
 
@@ -60,7 +60,7 @@ static u32 cchdir_write_entries(struct cchdir* dir, u8 *buf, u32 bufsize)
     return offset;
 }
 
-void cchdir_formatdev(/*in*/ struct fdisk *dev,
+void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
                       /*in*/ u64 vol_size,
                       /*in*/ u16 bytes_per_sect,
                       /*in*/ u16 sect_per_clus)
@@ -70,19 +70,19 @@ void cchdir_formatdev(/*in*/ struct fdisk *dev,
     struct cchdir root;
 
     vbr_create(&br, vol_size, bytes_per_sect, sect_per_clus);
-    vbr_write(&br, dev);
+    vbr_write(&br, device);
 
     fat_create(&br, &fat);
     cchdir_createroot(&fat, &root);
 
-    cchdir_write(&root, dev);
-    fat_write(&fat, dev);
+    cchdir_write(&root, device);
+    fat_write(&fat, device);
 
     cchdir_destruct(&root);
     fat_destruct(&fat);
 }
 
-void cchdir_readdir(/*in*/ struct fdisk *disk,
+void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct fat *fat,
                     /*in*/ u32 first_cluster,
                     /*in*/ bool root,
@@ -93,8 +93,8 @@ void cchdir_readdir(/*in*/ struct fdisk *disk,
     cc->start_cluster = first_cluster;
 
     u64 size = cch_getsize(cc);
-    u8 buf[size];
-    cch_readdata(disk, cc, 0, size, buf);
+    uint8_t buffer[size];
+    cch_readdata(device, cc, 0, size, buffer);
 
     dir->chain = cc;
     dir->root = root;
@@ -102,15 +102,15 @@ void cchdir_readdir(/*in*/ struct fdisk *disk,
     dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(dir->entries, sizeof(struct lfnde));
 
-    cchdir_read_entries(dir, buf);
+    cchdir_read_entries(dir, buffer);
 }
 
-void cchdir_write(struct cchdir* dir, struct fdisk *disk)
+void cchdir_write(struct cchdir* dir, org::vfat::FileDisk *device)
 {
     u32 nbytes = dir->capacity * FAT_DIR_ENTRY_SIZE;
-    u8 buf[nbytes];
+    uint8_t buf[nbytes];
     u32 realbytes = cchdir_write_entries(dir, buf, nbytes);
-    cch_writedata(disk, dir->chain, 0, realbytes, buf);
+    cch_writedata(device, dir->chain, 0, realbytes, buf);
 }
 
 void cchdir_create(struct cch *cc, struct cchdir *dir)
@@ -136,9 +136,9 @@ void cchdir_createroot(struct fat *fat, struct cchdir *dir)
     alist_create(dir->entries, sizeof(struct lfnde));
 }
 
-void cchdir_readroot(/*in*/ struct fdisk *disk, /*in*/ struct fat *fat, /*out*/ struct cchdir *dir)
+void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ struct fat *fat, /*out*/ struct cchdir *dir)
 {
-    cchdir_readdir(disk, fat, fat->vbr->rootdir_first_cluster, true, dir);
+    cchdir_readdir(device, fat, fat->vbr->rootdir_first_cluster, true, dir);
 }
 
 void cchdir_changesize(struct cchdir *dir, u32 fat32_entry_cnt)
@@ -334,18 +334,18 @@ void cchdir_getfile(/*in*/ struct cchdir *dir,
     file->entry = e;
 }
 
-bool cchdir_getdir(/*in*/ struct fdisk *dev,
+bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ struct fat *fat,
                    /*in*/ struct lfnde *e,
                    /*out*/ struct cchdir *dir)
 {
     u32 first_cluster = lfnde_getstartcluster(e);
-    cchdir_readdir(dev, fat, first_cluster, false, dir);
+    cchdir_readdir(device, fat, first_cluster, false, dir);
 
     return true;
 }
 
-bool cchdir_move(/*in*/ struct fdisk *dev,
+bool cchdir_move(/*in*/ org::vfat::FileDisk *device,
                  /*in*/ struct cchdir *src,
                  /*in*/ struct lfnde *e,
                  /*in*/ struct cchdir *dst,
@@ -365,7 +365,7 @@ bool cchdir_move(/*in*/ struct fdisk *dev,
 
     if (lfnde_isdir(e)) {
         struct cchdir dir;
-        cchdir_getdir(dev, src->chain->fat, e, &dir);
+        cchdir_getdir(device, src->chain->fat, e, &dir);
 
         struct lfnde dotdot;
         cchdir_findentry(&dir, "..", &dotdot);
@@ -373,14 +373,14 @@ bool cchdir_move(/*in*/ struct fdisk *dev,
         lfnde_setstartcluster(&dotdot, dst->chain->start_cluster);
 
         // Write dir to the disk
-        cchdir_write(&dir, dev);
+        cchdir_write(&dir, device);
         cchdir_destruct(&dir);
     }
 
     return true;
 }
 
-bool cchdir_copyfile(/*in*/ struct fdisk *dev,
+bool cchdir_copyfile(/*in*/ org::vfat::FileDisk *device,
                      /*in*/ struct cchdir *src,
                      /*in*/ struct lfnde *e,
                      /*in*/ struct cchdir *dst)
@@ -395,7 +395,7 @@ bool cchdir_copyfile(/*in*/ struct fdisk *dev,
 
     // Copy the file content
     const int nbytes = 4096;
-    u8 buf[nbytes];
+    uint8_t buf[nbytes];
 
     struct cchfile orig;
     cchdir_getfile(src, e, &orig);
@@ -405,11 +405,11 @@ bool cchdir_copyfile(/*in*/ struct fdisk *dev,
 
     u32 pos = 0;
     u32 nread;
-    cchfile_read(dev, &orig, pos, nbytes, &nread, buf);
+    cchfile_read(device, &orig, pos, nbytes, &nread, buf);
     while (nread > 0) {
-        cchfile_write(dev, &copy, pos, nread, buf);
+        cchfile_write(device, &copy, pos, nread, buf);
         pos += nread;
-        cchfile_read(dev, &orig, pos, nbytes, &nread, buf);
+        cchfile_read(device, &orig, pos, nbytes, &nread, buf);
     }
 
     // Free memory
@@ -419,7 +419,7 @@ bool cchdir_copyfile(/*in*/ struct fdisk *dev,
     return true;
 }
 
-bool cchdir_copydir(/*in*/ struct fdisk *dev,
+bool cchdir_copydir(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct cchdir *src,
                     /*in*/ struct lfnde *e,
                     /*in*/ struct cchdir *dst)
@@ -430,7 +430,7 @@ bool cchdir_copydir(/*in*/ struct fdisk *dev,
     lfnde_getname(e, namebuf);
 
     struct cchdir orig;
-    if (!cchdir_getdir(dev, fat, e, &orig)) {
+    if (!cchdir_getdir(device, fat, e, &orig)) {
         return false;
     }
 
@@ -450,17 +450,17 @@ bool cchdir_copydir(/*in*/ struct fdisk *dev,
                 continue;
             }
 
-            if (!cchdir_copydir(dev, &orig, &child, &copy)) {
+            if (!cchdir_copydir(device, &orig, &child, &copy)) {
                 return false;
             }
         } else {
-            if (!cchdir_copyfile(dev, &orig, &child, &copy)) {
+            if (!cchdir_copyfile(device, &orig, &child, &copy)) {
                 return false;
             }
         }
     }
 
-    cchdir_write(&copy, dev);
+    cchdir_write(&copy, device);
 
     cchdir_destruct(&orig);
     cchdir_destruct(&copy);
@@ -468,12 +468,12 @@ bool cchdir_copydir(/*in*/ struct fdisk *dev,
     return true;
 }
 
-bool cchdir_setname(/*in*/ struct fdisk *dev,
+bool cchdir_setname(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct cchdir *dir,
                     /*in*/ struct lfnde *e,
                     /*in*/ const char *name)
 {
-    return cchdir_move(dev, dir, e, dir, name);
+    return cchdir_move(device, dir, e, dir, name);
 }
 
 void cchdir_destruct(/*in*/ struct cchdir *dir)

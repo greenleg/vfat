@@ -17,7 +17,7 @@
 #define VBR_BYTESPERSECTOR_OFFSET 108
 #define VBR_SECTORSPERCLUSTER_OFFSET 109
 
-static void vbr_readbuf(u8 *buf, struct vbr *vbr)
+static void vbr_readbuf(uint8_t *buf, struct vbr *vbr)
 {
     vbr->volume_length = read_u64(buf, VBR_VOLUMELENGTH_OFFSET);
     vbr->fat_offset = read_u32(buf, VBR_FATOFFSET_OFFSET);
@@ -29,7 +29,7 @@ static void vbr_readbuf(u8 *buf, struct vbr *vbr)
     vbr->sectors_per_cluster_pow2 = read_u8(buf, VBR_SECTORSPERCLUSTER_OFFSET);
 }
 
-static void vbr_writebuf(struct vbr *vbr, u8 *buf)
+static void vbr_writebuf(struct vbr *vbr, uint8_t *buf)
 {
     write_u64(buf, VBR_VOLUMELENGTH_OFFSET, vbr->volume_length);
     write_u32(buf, VBR_FATOFFSET_OFFSET, vbr->fat_offset);
@@ -41,18 +41,18 @@ static void vbr_writebuf(struct vbr *vbr, u8 *buf)
     write_u8(buf, VBR_SECTORSPERCLUSTER_OFFSET, vbr->sectors_per_cluster_pow2);
 }
 
-void vbr_read(struct fdisk *disk, struct vbr *vbr)
+void vbr_read(org::vfat::FileDisk *device, struct vbr *vbr)
 {
-    u8 buf[VBR_SIZE];
-    fdisk_read(disk, buf, 0, VBR_SIZE);
+    uint8_t buf[VBR_SIZE];
+    device->Read(buf, 0, VBR_SIZE);
     vbr_readbuf(buf, vbr);
 }
 
-void vbr_write(struct vbr *vbr, struct fdisk *disk)
+void vbr_write(struct vbr *vbr, org::vfat::FileDisk *device)
 {
-    u8 buf[VBR_SIZE];
+    uint8_t buf[VBR_SIZE];
     vbr_writebuf(vbr, buf);
-    fdisk_write(disk, buf, 0, VBR_SIZE);
+    device->Write(buf, 0, VBR_SIZE);
 }
 
 void vbr_create(struct vbr *vbr, u64 volume_size, u16 bytes_per_sector, u16 sectors_per_cluster)

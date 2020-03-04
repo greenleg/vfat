@@ -110,21 +110,21 @@ void fat_create(struct vbr *vbr, struct fat *fat)
     fat->entries[1] = FAT_EOF;
 }
 
-void fat_read(struct fdisk *disk, struct vbr *vbr, struct fat *fat)
+void fat_read(org::vfat::FileDisk *device, struct vbr *vbr, struct fat *fat)
 {
     u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
 
     fat->vbr = vbr;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
     fat->entries = static_cast<u32 *>(malloc(sizeof(u32) * vbr->cluster_count));
-    fdisk_read(disk, (u8 *)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
+    device->Read((uint8_t *)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
 }
 
-void fat_write(struct fat *fat, struct fdisk *disk)
+void fat_write(struct fat *fat, org::vfat::FileDisk *device)
 {
     struct vbr *vbr = fat->vbr;
     u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
-    fdisk_write(disk, (u8*)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
+    device->Write((uint8_t* )fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
 }
 
 void fat_destruct(struct fat *fat)

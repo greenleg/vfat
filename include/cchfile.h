@@ -20,18 +20,18 @@ void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ u32 len);
 /*
  * Reads from this file into the specified buffer.
  */
-bool cchfile_read(/*in*/ struct fdisk *dev,
+bool cchfile_read(/*in*/ org::vfat::FileDisk *device,
                   /*in*/ struct cchfile *file,
                   /*in*/ u32 offset,
                   /*in*/ u32 nbytes,
                   /*out*/ u32 *nread,
-                  /*out*/ u8 *buf);
+                  /*out*/ uint8_t *buf);
 
-void cchfile_write(/*in*/ struct fdisk *dev,
+void cchfile_write(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ struct cchfile *file,
                    /*in*/ u32 offset,
                    /*in*/ u32 nbytes,
-                   /*in*/ u8 *buf);
+                   /*in*/ uint8_t *buf);
 
 void cchfile_destruct(/*in*/ struct cchfile *file);
 

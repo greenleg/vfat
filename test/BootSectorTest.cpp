@@ -1,7 +1,7 @@
 #include <stdlib.h>
 
 #include "gtest/gtest.h"
-#include "../include/fdisk.h"
+#include "../include/FileDisk.h"
 #include "../include/vbr.h"
 
 class BootRecordTest : public ::testing::Test
@@ -10,6 +10,15 @@ protected:
     void SetUp() override {}
     void TearDown() override {}
 };
+
+TEST_F(BootRecordTest, FileDisk)
+{
+    org::vfat::FileDisk disk("disk0");
+
+    disk.Create();
+    disk.Open();
+    disk.Close();
+}
 
 TEST_F(BootRecordTest, CreateBootRecord)
 {
@@ -29,18 +38,17 @@ TEST_F(BootRecordTest, CreateBootRecord)
 TEST_F(BootRecordTest, CreateAndSaveBootRecord)
 {
     /// TODO: Set a path to a temp directory beyond the repository.
-    const char* diskFileName = "disk0";
-    struct fdisk disk;
+    //const char* diskFileName = "disk0";
+    org::vfat::FileDisk device("disk0");
     struct vbr br;
 
-    fdisk_create(diskFileName, &disk);
+    device.Create();
     vbr_create(&br, 1024 * 1024, 512, 1);
-    vbr_write(&br, &disk);
+    vbr_write(&br, &device);
+    device.Close();
 
-    fdisk_close(&disk);
-
-    fdisk_open(diskFileName, &disk);
-    vbr_read(&disk, &br);
+    device.Open();
+    vbr_read(&device, &br);
 
     EXPECT_EQ(2048, br.volume_length);
     EXPECT_EQ(512,  vbr_get_bytes_per_sector(&br));
@@ -51,6 +59,6 @@ TEST_F(BootRecordTest, CreateAndSaveBootRecord)
     EXPECT_EQ(17,   br.cluster_heap_offset);
     EXPECT_EQ(2,    br.rootdir_first_cluster);
 
-    fdisk_close(&disk);
-    remove(diskFileName);
+    device.Close();
+    device.Delete();
 }

@@ -36,7 +36,7 @@
  */
 #define DIRECTORY_MASK 0x10
 
-static void fde_readbuf(u8 *buf, struct fde *e)
+static void fde_readbuf(uint8_t *buf, struct fde *e)
 {
     e->entry_type = read_u8(buf, FDE_ENTRYTYPE_OFFSET);
     e->secondary_count = read_u8(buf, FDE_SECONDARYCOUNT_OFFSET);
@@ -46,7 +46,7 @@ static void fde_readbuf(u8 *buf, struct fde *e)
     e->last_accessed = read_u32(buf, FDE_LASTACCESSED_OFFSET);
 }
 
-static void fde_writebuf(struct fde *e, u8 *buf)
+static void fde_writebuf(struct fde *e, uint8_t *buf)
 {
     write_u8(buf, FDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, FDE_SECONDARYCOUNT_OFFSET, e->secondary_count);
@@ -56,7 +56,7 @@ static void fde_writebuf(struct fde *e, u8 *buf)
     write_u32(buf, FDE_LASTACCESSED_OFFSET, e->last_accessed);
 }
 
-static void sede_readbuf(u8 *buf, struct sede *e)
+static void sede_readbuf(uint8_t *buf, struct sede *e)
 {
     e->entry_type = read_u8(buf, SEDE_ENTRYTYPE_OFFSET);
     e->secondary_flags = read_u8(buf, SEDE_SECONDARYFLAGS_OFFSET);
@@ -65,7 +65,7 @@ static void sede_readbuf(u8 *buf, struct sede *e)
     e->data_length = read_u64(buf, SEDE_DATALENGTH_OFFSET);
 }
 
-static void sede_writebuf(struct sede *e, u8 *buf)
+static void sede_writebuf(struct sede *e, uint8_t *buf)
 {
     write_u8(buf, SEDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, SEDE_SECONDARYFLAGS_OFFSET, e->secondary_flags);
@@ -74,14 +74,14 @@ static void sede_writebuf(struct sede *e, u8 *buf)
     write_u64(buf, SEDE_DATALENGTH_OFFSET, e->data_length);
 }
 
-static void fnede_readbuf(u8 *buf, struct fnede *e)
+static void fnede_readbuf(uint8_t *buf, struct fnede *e)
 {
     e->entry_type = read_u8(buf, FNEDE_ENTRYTYPE_OFFSET);
     e->secondary_flags = read_u8(buf, FNEDE_SECODARYFLAGS_OFFSET);
     memcpy(e->name, buf + FNEDE_FILENAME_OFFSET, FNEDE_UNAME_LENGTH);
 }
 
-static void fnede_writebuf(struct fnede *e, u8 *buf)
+static void fnede_writebuf(struct fnede *e, uint8_t *buf)
 {
     write_u8(buf, FNEDE_ENTRYTYPE_OFFSET, e->entry_type);
     write_u8(buf, FNEDE_SECODARYFLAGS_OFFSET, e->secondary_flags);
@@ -116,7 +116,7 @@ void lfnde_create(struct lfnde *e)
     e->sede->first_cluster = 0;
 }
 
-void lfnde_readbuf(u8 *buf, struct lfnde *e)
+void lfnde_readbuf(uint8_t *buf, struct lfnde *e)
 {
     assert(buf[0] == FILE_DIR_ENTRY);
     e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
@@ -129,7 +129,7 @@ void lfnde_readbuf(u8 *buf, struct lfnde *e)
     buf += FAT_DIR_ENTRY_SIZE;
 
     struct fnede fnede;
-    u8 i;
+    uint8_t i;
 
     e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
     alist_create(e->fnede_list, sizeof(struct fnede));
@@ -142,7 +142,7 @@ void lfnde_readbuf(u8 *buf, struct lfnde *e)
     }
 }
 
-void lfnde_writebuf(struct lfnde *e, u8 *buf)
+void lfnde_writebuf(struct lfnde *e, uint8_t *buf)
 {
     fde_writebuf(e->fde, buf);
     buf += FAT_DIR_ENTRY_SIZE;
@@ -151,7 +151,7 @@ void lfnde_writebuf(struct lfnde *e, u8 *buf)
     buf += FAT_DIR_ENTRY_SIZE;
 
     struct fnede fnede;
-    u8 i;
+    uint8_t i;
     for (i = 0; i < e->fde->secondary_count - 1; ++i) {        
         alist_get(e->fnede_list, i, &fnede);
         fnede_writebuf(&fnede, buf);
@@ -205,12 +205,12 @@ void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)
 
 void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name)
 {
-    u8 len = e->sede->name_length;
-    u8 char_idx;
-    u8 fnede_cnt = (len + FNEDE_UNAME_LENGTH - 1) / FNEDE_UNAME_LENGTH;
-    u8 fnede_idx;
+    uint8_t len = e->sede->name_length;
+    uint8_t char_idx;
+    uint8_t fnede_cnt = (len + FNEDE_UNAME_LENGTH - 1) / FNEDE_UNAME_LENGTH;
+    uint8_t fnede_idx;
     struct fnede fnede;
-    u8 i;
+    uint8_t i;
 
     char_idx = 0;
     for (fnede_idx = 0; fnede_idx < fnede_cnt - 1; ++fnede_idx) {
@@ -233,10 +233,10 @@ void lfnde_getname(/*in*/ struct lfnde *e, /*out*/ char *name)
 void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
 {
     struct fnede fnede;
-    u8 len = strlen(name);
-    u8 fnede_cnt = alist_count(e->fnede_list);
-    u8 new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
-    u8 i, char_idx, fnede_idx;
+    uint8_t len = strlen(name);
+    uint8_t fnede_cnt = alist_count(e->fnede_list);
+    uint8_t new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
+    uint8_t i, char_idx, fnede_idx;
 
     // Clear list
     for (i = 0; i < fnede_cnt; ++i) {

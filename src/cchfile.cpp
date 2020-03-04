@@ -23,12 +23,12 @@ void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ u32 len)
 /*
  * Reads from this file into the specified buffer.
  */
-bool cchfile_read(/*in*/ struct fdisk *dev,
+bool cchfile_read(/*in*/ org::vfat::FileDisk *device,
                   /*in*/ struct cchfile *file,
                   /*in*/ u32 offset,
                   /*in*/ u32 nbytes,
                   /*out*/ u32 *nread,
-                  /*out*/ u8 *buf)
+                  /*out*/ uint8_t *buffer)
 {
     u32 datalen = cchfile_getlen(file);
     if (offset + nbytes > datalen) {
@@ -41,25 +41,25 @@ bool cchfile_read(/*in*/ struct fdisk *dev,
     }    
 
     if (nbytes > 0) {
-        cch_readdata(dev, file->chain, offset, nbytes, buf);
+        cch_readdata(device, file->chain, offset, nbytes, buffer);
     }
 
     *nread = nbytes;
     return true;
 }
 
-void cchfile_write(/*in*/ struct fdisk *dev,
+void cchfile_write(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ struct cchfile *file,
                    /*in*/ u32 offset,
                    /*in*/ u32 nbytes,
-                   /*in*/ u8 *buf)
+                   /*in*/ uint8_t *buffer)
 {
     u32 lastByte = offset + nbytes;
     if (lastByte > cchfile_getlen(file)) {
         cchfile_setlen(file, lastByte);
     }
 
-    cch_writedata(dev, file->chain, offset, nbytes, buf);
+    cch_writedata(device, file->chain, offset, nbytes, buffer);
 }
 
 void cchfile_destruct(/*in*/ struct cchfile *file)

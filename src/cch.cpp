@@ -44,7 +44,7 @@ bool cch_create(/*in*/ struct cch *cc, /*in*/ struct fat *fat, /*in*/ u32 length
     return cch_setlen(cc, length);
 }
 
-void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *dst)
+void cch_readdata(org::vfat::FileDisk *device, struct cch *cc, u32 offset, u32 nbytes, uint8_t *buffer)
 {
     if (cc->start_cluster == 0 && nbytes > 0) {
         /* Cannot read from empty cluster chain */
@@ -65,22 +65,22 @@ void cch_readdata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8
     if (offset % cluster_size != 0) {
         u32 cluster_offset = (offset % cluster_size);
         u32 size = MIN(cluster_size - cluster_offset, n);
-        fdisk_read(disk, dst, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
-        dst += size;
+        device->Read(buffer, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
+        buffer += size;
         n -= size;
         ++chain_idx;
     }
 
     while (n > 0) {
         u32 size = MIN(cluster_size, n);
-        fdisk_read(disk, dst, getdevofs(vbr, chain[chain_idx], 0), size);
-        dst += size;
+        device->Read(buffer, getdevofs(vbr, chain[chain_idx], 0), size);
+        buffer += size;
         n -= size;
         ++chain_idx;
     }
 }
 
-void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u8 *src)
+void cch_writedata(org::vfat::FileDisk *device, struct cch *cc, u32 offset, u32 nbytes, uint8_t *buffer)
 {
     if (nbytes == 0) {
         return;
@@ -108,16 +108,16 @@ void cch_writedata(struct fdisk *disk, struct cch *cc, u32 offset, u32 nbytes, u
     if (offset % cluster_size != 0) {
         cluster_offset = (offset % cluster_size);
         size = MIN(cluster_size - cluster_offset, n);
-        fdisk_write(disk, src, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
-        src += size;
+        device->Write(buffer, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
+        buffer += size;
         n -= size;
         ++chain_idx;
     }
 
     while (n > 0) {
         size = MIN(cluster_size, n);
-        fdisk_write(disk, src, getdevofs(vbr, chain[chain_idx], 0), size);
-        src += size;
+        device->Write(buffer, getdevofs(vbr, chain[chain_idx], 0), size);
+        buffer += size;
         n -= size;
         ++chain_idx;
     }

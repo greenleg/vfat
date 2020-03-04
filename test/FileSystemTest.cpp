@@ -1,26 +1,29 @@
 #include "gtest/gtest.h"
 #include "../include/filesys.h"
 
+using namespace org::vfat;
+
 class FileSystemTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk dev;
+        this->device = new FileDisk("disk0");
         struct filesys fs;
 
-        fdisk_create(DISK_FNAME, &dev);
-        filesys_format(&dev, 1024 * 1024, 512, 1, &fs);
+        this->device->Create();
+        filesys_format(this->device, 1024 * 1024, 512, 1, &fs);
 
         filesys_destruct(&fs);
-        fdisk_close(&dev);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
+        this->device->Close();
+        this->device->Delete();
+        delete this->device;
     }
 
     static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
@@ -48,25 +51,18 @@ protected:
 
 TEST_F(FileSystemTest, MakeDirectory)
 {
-    struct fdisk dev;
     struct filesys fs;
 
-    fdisk_open(DISK_FNAME, &dev);
-    filesys_open(&dev, &fs);
-
+    filesys_open(this->device, &fs);
     filesys_mkdir(&fs, "/home/pavel/projects/vfat");
-
-    filesys_destruct(&fs);
-    fdisk_close(&dev);
+    filesys_destruct(&fs);    
 }
 
 TEST_F(FileSystemTest, ReadDirectory)
 {
-    struct fdisk dev;
     struct filesys fs;
 
-    fdisk_open(DISK_FNAME, &dev);
-    filesys_open(&dev, &fs);
+    filesys_open(this->device, &fs);
 
     filesys_mkdir(&fs, "/home/pavel/projects/vfat");
     filesys_mkdir(&fs, "/home/pavel/projects/old");
@@ -82,7 +78,7 @@ TEST_F(FileSystemTest, ReadDirectory)
     filesys_close(&fs);
     filesys_destruct(&fs);
 
-    filesys_open(&dev, &fs);
+    filesys_open(this->device, &fs);
 
     struct vdir *dir = filesys_opendir(&fs, "/");
     this->PrintDirectory(&fs, dir, 0);
@@ -90,5 +86,4 @@ TEST_F(FileSystemTest, ReadDirectory)
     filesys_closedir(&fs, dir);
     filesys_close(&fs);
     filesys_destruct(&fs);
-    fdisk_close(&dev);
 }

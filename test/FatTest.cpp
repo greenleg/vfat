@@ -1,46 +1,49 @@
 #include "gtest/gtest.h"
-#include "../include/fdisk.h"
+#include "../include/FileDisk.h"
 #include "../include/vbr.h"
 #include "../include/fat.h"
+
+using namespace org::vfat;
 
 class FatTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
+        this->device = new FileDisk("disk0");
         struct vbr br;
         struct fat fat;
 
-        fdisk_create(DISK_FNAME, &disk);
+        this->device->Create();
 
         vbr_create(&br, 1024 * 1024, 512, 1);
-        vbr_write(&br, &disk);
+        vbr_write(&br, this->device);
 
         fat_create(&br, &fat);
-        fat_write(&fat, &disk);
+        fat_write(&fat, this->device);
 
-        fdisk_close(&disk);
+        fat_destruct(&fat);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
+        this->device->Close();
+        device->Delete();
+
+        delete this->device;
     }
 };
 
 TEST_F(FatTest, ReadFat)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     u32 i;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
 
     EXPECT_EQ(FAT_FIRST_CLUSTER - 1, fat.last_alloc_cluster);
 
@@ -54,55 +57,47 @@ TEST_F(FatTest, ReadFat)
     /* TODO: Additional checks */
 
     fat_destruct(&fat);
-    fdisk_close(&disk);
 }
 
 TEST_F(FatTest, AllocateCluster)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
 
     u32 new_cluster;
     EXPECT_TRUE(fat_alloc_chain(&fat, 1, &new_cluster));
     EXPECT_EQ(new_cluster, fat.last_alloc_cluster);
 
     fat_destruct(&fat);
-    fdisk_close(&disk);
 }
 
 TEST_F(FatTest, GetFreeClusterCount)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
 
     EXPECT_EQ(br.cluster_count - FAT_FIRST_CLUSTER, fat_get_free_cluster_count(&fat));
 
-    fat_destruct(&fat);
-    fdisk_close(&disk);
+    fat_destruct(&fat);    
 }
 
 TEST_F(FatTest, GetFreeClusterCount2)
 {
-    struct fdisk disk;
+    //struct fdisk disk;
     struct vbr br;
     struct fat fat;
     u32 max;
     u32 i;
     u32 cluster;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
 
     max = fat_get_free_cluster_count(&fat);
     for (i = max; i > 0; --i) {
@@ -117,5 +112,4 @@ TEST_F(FatTest, GetFreeClusterCount2)
     EXPECT_EQ(EFATFULL, ::__vfat_errno);
 
     fat_destruct(&fat);
-    fdisk_close(&disk);
 }

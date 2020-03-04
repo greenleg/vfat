@@ -5,39 +5,39 @@
 #include "../include/cchdir.h"
 #include "../include/lfnde.h"
 
+using namespace org::vfat;
+
 class ClusterChainDirectoryTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
+        this->device = new FileDisk("disk0");
 
-        fdisk_create(DISK_FNAME, &disk);
-        cchdir_formatdev(&disk, 1024 * 1024, 512, 1);
-
-        fdisk_close(&disk);
+        this->device->Create();
+        cchdir_formatdev(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
+        this->device->Close();
+        this->device->Delete();
+        delete this->device;
         ::__vfat_errno = 0;
     }
 };
 
 TEST_F(ClusterChainDirectoryTest, AddEntry)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     EXPECT_EQ(0, alist_count(root.entries));
 
@@ -50,21 +50,19 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     EXPECT_EQ(root.capacity, cch_getsize(root.chain) / FAT_DIR_ENTRY_SIZE);
 
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
 {
     u32 i;
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     EXPECT_EQ(0, alist_count(root.entries));
 
@@ -82,20 +80,18 @@ TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
     }
 
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     const char *name = "A nice directory";
     struct lfnde e1;
@@ -113,20 +109,18 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 
     cchdir_destruct(&dir);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     char namebuf[255];
     u32 free_before_add;
@@ -146,20 +140,18 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 
     cchdir_destruct(&dir);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     u32 free_before = fat_get_free_cluster_count(&fat);
     u32 entries_before = alist_count(root.entries);
@@ -178,20 +170,18 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     EXPECT_FALSE(cchdir_findentry(&root, dir_name, &e));
 
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
     struct cchdir dir;
@@ -208,20 +198,18 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 
     cchdir_destruct(&dir);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, RenameFile)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;    
 
@@ -230,35 +218,33 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
     EXPECT_TRUE(cchdir_findentry(&root, "oldfile", &e));
     EXPECT_FALSE(cchdir_findentry(&root, "newfile", &e));
 
-    cchdir_setname(&disk, &root, &e, "newfile");
+    cchdir_setname(this->device, &root, &e, "newfile");
 
     EXPECT_FALSE(cchdir_findentry(&root, "oldfile", &e));
     EXPECT_TRUE(cchdir_findentry(&root, "newfile", &e));
 
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveFile)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe;
     struct lfnde de;
-    struct cchdir dir;    
+    struct cchdir dir;
 
     EXPECT_TRUE(cchdir_adddir(&root, "home", &de, &dir));
     EXPECT_TRUE(cchdir_addfile(&root, "dump.bin", &fe));
 
-    EXPECT_TRUE(cchdir_move(&disk, &root, &fe, &dir, "dump2.bin"));
+    EXPECT_TRUE(cchdir_move(this->device, &root, &fe, &dir, "dump2.bin"));
 
     EXPECT_EQ(1, alist_count(root.entries));
     EXPECT_EQ(3, alist_count(dir.entries));  // including "." and ".." directories.
@@ -268,20 +254,18 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
 
     cchdir_destruct(&dir);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveDirectory)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe1;
     struct lfnde fe2;
@@ -296,10 +280,10 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     struct cchfile file3;
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
+    cchdir_write(&dir1, this->device);
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
+    cchdir_write(&dir2, this->device);
 
     EXPECT_TRUE(cchdir_addfile(&dir1, "dump1.bin", &fe1));
     EXPECT_TRUE(cchdir_addfile(&dir1, "dump2.bin", &fe2));
@@ -311,19 +295,19 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     EXPECT_EQ(5, alist_count(dir1.entries)); // including "." and ".." directories
     EXPECT_EQ(2, alist_count(dir2.entries));
 
-    EXPECT_TRUE(cchdir_move(&disk, &root, &de1, &dir2, "dir1"));
+    EXPECT_TRUE(cchdir_move(this->device, &root, &de1, &dir2, "dir1"));
 
-    cchdir_write(&dir1, &disk);
-    cchdir_write(&dir2, &disk);
+    cchdir_write(&dir1, this->device);
+    cchdir_write(&dir2, this->device);
 
     cchdir_destruct(&dir1);
     cchdir_destruct(&dir2);
 
     EXPECT_TRUE(cchdir_findentry(&root, "dir2", &de2));
-    cchdir_getdir(&disk, &fat, &de2, &dir2);
+    cchdir_getdir(this->device, &fat, &de2, &dir2);
 
     EXPECT_TRUE(cchdir_findentry(&dir2, "dir1", &de1));
-    cchdir_getdir(&disk, &fat, &de1, &dir1);
+    cchdir_getdir(this->device, &fat, &de1, &dir1);
 
     EXPECT_EQ(1, alist_count(root.entries));
     EXPECT_EQ(5, alist_count(dir1.entries));
@@ -333,20 +317,18 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     cchdir_destruct(&dir1);
     cchdir_destruct(&dir2);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyFile)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde orige;
     struct lfnde copye;
@@ -361,10 +343,10 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     struct cchfile copy;
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
+    cchdir_write(&dir1, this->device);
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
+    cchdir_write(&dir2, this->device);
 
     EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &orige));
 
@@ -374,16 +356,16 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
 
     u32 i, nread;
     u32 len = 4096 * 4;
-    u8 buf[len];
+    uint8_t buf[len];
     for (i = 0; i < len; ++i) {
         buf[i] = i % 256;
     }    
 
     // Write to source file
     cchdir_getfile(&dir1, &orige, &orig);
-    cchfile_write(&disk, &orig, 0, len, buf);
+    cchfile_write(this->device, &orig, 0, len, buf);
 
-    EXPECT_TRUE(cchdir_copyfile(&disk, &dir1, &orige, &dir2));
+    EXPECT_TRUE(cchdir_copyfile(this->device, &dir1, &orige, &dir2));
 
     EXPECT_TRUE(cchdir_findentry(&dir1, "dump.bin", &orige));
     EXPECT_TRUE(cchdir_findentry(&dir2, "dump.bin", &copye));
@@ -391,7 +373,7 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     // Read from copy
     cchdir_getfile(&dir2, &copye, &copy);
     EXPECT_EQ(len, cchfile_getlen(&copy));
-    cchfile_read(&disk, &copy, 0, len, &nread, buf);
+    cchfile_read(this->device, &copy, 0, len, &nread, buf);
 
     for (i = 0; i < len; ++i) {
         EXPECT_EQ(i % 256, buf[i]);
@@ -406,20 +388,18 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     cchdir_destruct(&dir1);
     cchdir_destruct(&dir2);
     cchdir_destruct(&root);
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 {
-    struct fdisk disk;
     struct vbr br;
     struct fat fat;
     struct cchdir root;
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    vbr_read(this->device, &br);
+    fat_read(this->device, &br, &fat);
+    cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe;
 
@@ -430,10 +410,10 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     struct cchdir dir2;
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
+    cchdir_write(&dir1, this->device);
 
     EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
+    cchdir_write(&dir2, this->device);
 
     EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &fe));
 
@@ -444,7 +424,7 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 
     u32 i, nread;
     u32 len = 4096 * 4 + 100;
-    u8 buf[len];
+    uint8_t buf[len];
     for (i = 0; i < len; ++i) {
         buf[i] = i % 256;
     }
@@ -452,12 +432,12 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     // Write to file
     struct cchfile file;
     cchdir_getfile(&dir1, &fe, &file);
-    cchfile_write(&disk, &file, 0, len, buf);
+    cchfile_write(this->device, &file, 0, len, buf);
 
-    cchdir_write(&dir1, &disk);
-    cchdir_write(&dir2, &disk);
+    cchdir_write(&dir1, this->device);
+    cchdir_write(&dir2, this->device);
 
-    EXPECT_TRUE(cchdir_copydir(&disk, &root, &de1, &dir2));
+    EXPECT_TRUE(cchdir_copydir(this->device, &root, &de1, &dir2));
 
     struct lfnde copyfe;
     struct lfnde copyde1;
@@ -468,7 +448,7 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     EXPECT_TRUE(cchdir_findentry(&root, "dir2", &de2));
     EXPECT_TRUE(cchdir_findentry(&dir1, "dump.bin", &fe));
     EXPECT_TRUE(cchdir_findentry(&dir2, "dir1", &copyde1));
-    EXPECT_TRUE(cchdir_getdir(&disk, &fat, &copyde1, &copydir1));
+    EXPECT_TRUE(cchdir_getdir(this->device, &fat, &copyde1, &copydir1));
     EXPECT_TRUE(cchdir_findentry(&copydir1, "dump.bin", &copyfe));
 
     EXPECT_EQ(2, alist_count(root.entries));
@@ -479,7 +459,7 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     // Read from copy
     cchdir_getfile(&copydir1, &copyfe, &copyfile);
     EXPECT_EQ(len, cchfile_getlen(&copyfile));
-    cchfile_read(&disk, &copyfile, 0, len, &nread, buf);
+    cchfile_read(this->device, &copyfile, 0, len, &nread, buf);
 
     for (i = 0; i < len; ++i) {
         EXPECT_EQ(i % 256, buf[i]);
@@ -487,10 +467,10 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 
     // Writing to the copy doesn't affect to the origin file.
     buf[0] = 50;
-    cchfile_write(&disk, &copyfile, 0, 1, buf);
-    cchfile_read(&disk, &file, 0, 1, &nread, buf);
+    cchfile_write(this->device, &copyfile, 0, 1, buf);
+    cchfile_read(this->device, &file, 0, 1, &nread, buf);
     EXPECT_EQ(0, buf[0]);
-    cchfile_read(&disk, &copyfile, 0, 1, &nread, buf);
+    cchfile_read(this->device, &copyfile, 0, 1, &nread, buf);
     EXPECT_EQ(50, buf[0]);
 
     cchfile_destruct(&copyfile);
@@ -501,5 +481,5 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     cchdir_destruct(&dir2);
     cchdir_destruct(&root);
 
-    fdisk_close(&disk);
+    fat_destruct(&fat);
 }
