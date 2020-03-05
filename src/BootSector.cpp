@@ -7,6 +7,7 @@
 #include "../include/binaryreader.h"
 #include "../include/BootSector.h"
 
+#define BS_HEADER_SIZE 32
 #define BS_VOLUMELENGTH_OFFSET 0
 #define BS_BYTESPERSECTOR_OFFSET 8
 #define BS_SECTORSPERCLUSTER_OFFSET 10
@@ -17,6 +18,8 @@
 #define BS_ROOTDIRFIRSTCLUSTER_OFFSET 28
 
 using namespace org::vfat;
+
+BootSector::BootSector() {}
 
 void BootSector::Create(uint64_t volumeSizeInBytes, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
@@ -62,8 +65,8 @@ void BootSector::Create(uint64_t volumeSizeInBytes, uint16_t bytesPerSector, uin
 
 void BootSector::Read(FileDisk *device)
 {
-    uint8_t buffer[this->bytesPerSector];
-    device->Read(buffer, 0, this->bytesPerSector);
+    uint8_t buffer[BS_HEADER_SIZE];
+    device->Read(buffer, 0, BS_HEADER_SIZE);
 
     this->volumeSizeInBytes = read_u64(buffer, BS_VOLUMELENGTH_OFFSET);
     this->bytesPerSector = read_u16(buffer, BS_BYTESPERSECTOR_OFFSET);
@@ -78,7 +81,7 @@ void BootSector::Read(FileDisk *device)
 
 void BootSector::Write(FileDisk *device) const
 {
-    uint8_t buffer[this->bytesPerSector];
+    uint8_t buffer[BS_HEADER_SIZE];
 
     write_u64(buffer, BS_VOLUMELENGTH_OFFSET, this->volumeSizeInBytes);
     write_u16(buffer, BS_BYTESPERSECTOR_OFFSET, this->bytesPerSector);
@@ -89,5 +92,5 @@ void BootSector::Write(FileDisk *device) const
     write_u32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET, this->clusterHeapOffset);
     write_u32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET, this->rootDirFirstCluster);
 
-    device->Write(buffer, 0, this->bytesPerSector);
+    device->Write(buffer, 0, BS_HEADER_SIZE);
 }

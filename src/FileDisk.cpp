@@ -61,7 +61,7 @@ void org::vfat::FileDisk::Read(uint8_t *buffer, long int fileOffset, size_t coun
     }
 
     fseek(this->filePtr, fileOffset, SEEK_SET);
-    fread(buffer, sizeof(char), count, this->filePtr);
+    fread(buffer, sizeof(uint8_t), count, this->filePtr);
 }
 
 void org::vfat::FileDisk::Write(uint8_t *buffer, long int fileOffset, size_t count) const
@@ -73,7 +73,7 @@ void org::vfat::FileDisk::Write(uint8_t *buffer, long int fileOffset, size_t cou
     }
 
     fseek(this->filePtr, fileOffset, SEEK_SET);
-    fwrite(buffer, sizeof(char), count, this->filePtr);
+    fwrite(buffer, sizeof(uint8_t), count, this->filePtr);
 }
 
 void org::vfat::FileDisk::Delete()

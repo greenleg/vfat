@@ -54,13 +54,13 @@ TEST_F(ClusterChainTest, ReadDataWithOffset)
 
     cch_writedata(this->device, &cc, 0, 1025, write_buf);
 
-    EXPECT_EQ(3, fat_getchainlen(&fat, cc.start_cluster));
+    ASSERT_EQ(3, fat_getchainlen(&fat, cc.start_cluster));
 
     uint8_t read_buf[1020];
     cch_readdata(this->device, &cc, 5, 1020, read_buf);
 
     for (i = 5; i < 1025; ++i) {
-        EXPECT_EQ(i % 256, read_buf[i - 5]);
+        ASSERT_EQ(i % 256, read_buf[i - 5]);
     }
 
     fat_destruct(&fat);

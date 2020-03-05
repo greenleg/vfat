@@ -77,4 +77,4 @@ add_executable(vfat.test ${vfat_lib_src} ${vfat_test_src})
 target_link_libraries(vfat.test gtest)
 
 #gtest_add_tests(TARGET vfat TEST_PREFIX source:)
-gtest_discover_tests(vfat.test TEST_PREFIX "runtime:")
+gtest_discover_tests(vfat.test)
