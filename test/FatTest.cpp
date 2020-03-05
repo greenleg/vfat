@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
+#include "../include/common.h"
 #include "../include/FileDisk.h"
-#include "../include/vbr.h"
+#include "../include/BootSector.h"
 #include "../include/fat.h"
 
 using namespace org::vfat;
@@ -13,15 +14,15 @@ protected:
     void SetUp() override
     {
         this->device = new FileDisk("disk0");
-        struct vbr br;
+        BootSector bootSector;
         struct fat fat;
 
         this->device->Create();
 
-        vbr_create(&br, 1024 * 1024, 512, 1);
-        vbr_write(&br, this->device);
+        bootSector.Create(1024 * 1024, 512, 1);
+        bootSector.Write(this->device);
 
-        fat_create(&br, &fat);
+        fat_create(&bootSector, &fat);
         fat_write(&fat, this->device);
 
         fat_destruct(&fat);
@@ -38,19 +39,19 @@ protected:
 
 TEST_F(FatTest, ReadFat)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
-    u32 i;
+    uint32_t i;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     EXPECT_EQ(FAT_FIRST_CLUSTER - 1, fat.last_alloc_cluster);
 
     EXPECT_EQ(FAT_MEDIA_DESCRIPTOR, fat.entries[0]);
     EXPECT_EQ(FAT_EOF, fat.entries[1]);
 
-    for (i = FAT_FIRST_CLUSTER; i < br.cluster_count; ++i) {
+    for (i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); ++i) {
         EXPECT_EQ(0, fat.entries[i]);
     }
 
@@ -61,13 +62,13 @@ TEST_F(FatTest, ReadFat)
 
 TEST_F(FatTest, AllocateCluster)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
-    u32 new_cluster;
+    uint32_t new_cluster;
     EXPECT_TRUE(fat_alloc_chain(&fat, 1, &new_cluster));
     EXPECT_EQ(new_cluster, fat.last_alloc_cluster);
 
@@ -76,28 +77,27 @@ TEST_F(FatTest, AllocateCluster)
 
 TEST_F(FatTest, GetFreeClusterCount)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
-    EXPECT_EQ(br.cluster_count - FAT_FIRST_CLUSTER, fat_get_free_cluster_count(&fat));
+    EXPECT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat_get_free_cluster_count(&fat));
 
     fat_destruct(&fat);    
 }
 
 TEST_F(FatTest, GetFreeClusterCount2)
 {
-    //struct fdisk disk;
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
-    u32 max;
-    u32 i;
-    u32 cluster;
+    uint32_t max;
+    uint32_t i;
+    uint32_t cluster;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     max = fat_get_free_cluster_count(&fat);
     for (i = max; i > 0; --i) {

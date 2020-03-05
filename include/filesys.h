@@ -8,7 +8,7 @@
 struct filesys
 {
     org::vfat::FileDisk *device;
-    struct vbr *vbr;
+    org::vfat::BootSector *bootSector;
     struct fat *fat;
     struct cchdir *root;
 };
@@ -16,14 +16,14 @@ struct filesys
 struct vdir
 {
     struct cchdir *ccdir;
-    u32 idx;
+    uint32_t idx;
 };
 
 struct vdirent
 {
     char name[256];
     bool isdir;
-    u64 datalen;
+    uint64_t datalen;
 };
 
 struct vfile
@@ -32,9 +32,9 @@ struct vfile
 };
 
 bool filesys_format(/*in*/ org::vfat::FileDisk *device,
-                    /*in*/ u64 volume_size,
-                    /*in*/ u16 bytes_per_sector,
-                    /*in*/ u16 sectors_per_cluster,
+                    /*in*/ uint64_t volume_size,
+                    /*in*/ uint16_t bytes_per_sector,
+                    /*in*/ uint16_t sectors_per_cluster,
                     /*out*/ struct filesys *fs);
 
 bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs);

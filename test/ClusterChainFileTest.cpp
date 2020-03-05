@@ -33,12 +33,12 @@ protected:
 
 TEST_F(ClusterChainFileTest, SetLength)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -59,12 +59,12 @@ TEST_F(ClusterChainFileTest, SetLength)
 
 TEST_F(ClusterChainFileTest, ReadWrite)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -73,8 +73,8 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     cchdir_addfile(&root, "dump.bin", &e);
     cchdir_getfile(&root, &e, &file);
 
-    u32 i, nread;
-    u32 len = 10000;
+    uint32_t i, nread;
+    uint32_t len = 10000;
     uint8_t writebuf[len];
     uint8_t readbuf[len];
 

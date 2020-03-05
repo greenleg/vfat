@@ -1,17 +1,18 @@
 #include <math.h>
-
 #include "../include/cch.h"
+
+using namespace org::vfat;
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-static u64 getdevofs(struct vbr *vbr, u32 cluster, u32 cluster_offset)
+static uint64_t getdevofs(BootSector *bootSector, uint32_t cluster, uint32_t cluster_offset)
 {
-    u32 sector_size = vbr_get_bytes_per_sector(vbr);
-    u32 cluster_size = vbr_get_bytes_per_cluster(vbr);
-    return vbr->cluster_heap_offset * sector_size + cluster * cluster_size + cluster_offset;
+    uint32_t dataOffset = bootSector->GetClusterHeapOffset();
+    uint32_t clusterSize = bootSector->GetBytesPerCluster();
+    return dataOffset + cluster * clusterSize + cluster_offset;
 }
 
-u32 cch_getlen(struct cch *cc)
+uint32_t cch_getlen(struct cch *cc)
 {
     if (cc->start_cluster == 0) {
         return 0;
@@ -20,110 +21,110 @@ u32 cch_getlen(struct cch *cc)
     return fat_getchainlen(cc->fat, cc->start_cluster);
 }
 
-u64 cch_getsize(struct cch *cc)
+uint64_t cch_getsize(struct cch *cc)
 {
-    u32 clus_cnt = cch_getlen(cc);
-    u32 clus_size = vbr_get_bytes_per_cluster(cc->fat->vbr);
+    uint32_t clus_cnt = cch_getlen(cc);
+    uint32_t clusterSize = cc->fat->bootSector->GetBytesPerCluster();
 
-    return clus_cnt * clus_size;
+    return clus_cnt * clusterSize;
 }
 
-u32 cch_setsize(struct cch *cc, u32 size)
+uint32_t cch_setsize(struct cch *cc, uint32_t size)
 {
-    u32 clus_size = vbr_get_bytes_per_cluster(cc->fat->vbr);
-    u32 clus_cnt = (size + clus_size - 1) / clus_size;
+    uint32_t clusterSize = cc->fat->bootSector->GetBytesPerCluster();
+    uint32_t clus_cnt = (size + clusterSize - 1) / clusterSize;
     cch_setlen(cc, clus_cnt);
 
-    return clus_size * clus_cnt;
+    return clusterSize * clus_cnt;
 }
 
-bool cch_create(/*in*/ struct cch *cc, /*in*/ struct fat *fat, /*in*/ u32 length)
+bool cch_create(/*in*/ struct cch *cc, /*in*/ struct fat *fat, /*in*/ uint32_t length)
 {
     cc->fat = fat;
     cc->start_cluster = 0;
     return cch_setlen(cc, length);
 }
 
-void cch_readdata(org::vfat::FileDisk *device, struct cch *cc, u32 offset, u32 nbytes, uint8_t *buffer)
+void cch_readdata(org::vfat::FileDisk *device, struct cch *cc, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     if (cc->start_cluster == 0 && nbytes > 0) {
-        /* Cannot read from empty cluster chain */
+        /* Cannot read from an empty cluster chain */
     }
 
     struct fat *fat = cc->fat;
-    struct vbr *vbr = fat->vbr;
-    u32 cluster_size = vbr_get_bytes_per_cluster(vbr);
-    u32 chain_idx;
-    u32 n;
+    BootSector* bootSector = fat->bootSector;
+    uint32_t clusterSize = bootSector->GetBytesPerCluster();
+    uint32_t chain_idx;
+    uint32_t n;
 
-    u32 chain[fat_getchainlen(fat, cc->start_cluster)];
+    uint32_t chain[fat_getchainlen(fat, cc->start_cluster)];
     fat_getchain(fat, cc->start_cluster, chain);
 
-    chain_idx = (offset / cluster_size);
+    chain_idx = (offset / clusterSize);
     n = nbytes;
 
-    if (offset % cluster_size != 0) {
-        u32 cluster_offset = (offset % cluster_size);
-        u32 size = MIN(cluster_size - cluster_offset, n);
-        device->Read(buffer, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
+    if (offset % clusterSize != 0) {
+        uint32_t cluster_offset = (offset % clusterSize);
+        uint32_t size = MIN(clusterSize - cluster_offset, n);
+        device->Read(buffer, getdevofs(bootSector, chain[chain_idx], cluster_offset), size);
         buffer += size;
         n -= size;
         ++chain_idx;
     }
 
     while (n > 0) {
-        u32 size = MIN(cluster_size, n);
-        device->Read(buffer, getdevofs(vbr, chain[chain_idx], 0), size);
+        uint32_t size = MIN(clusterSize, n);
+        device->Read(buffer, getdevofs(bootSector, chain[chain_idx], 0), size);
         buffer += size;
         n -= size;
         ++chain_idx;
     }
 }
 
-void cch_writedata(org::vfat::FileDisk *device, struct cch *cc, u32 offset, u32 nbytes, uint8_t *buffer)
+void cch_writedata(org::vfat::FileDisk *device, struct cch *cc, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     if (nbytes == 0) {
         return;
     }
 
     struct fat *fat = cc->fat;
-    struct vbr *vbr = fat->vbr;
-    u32 cluster_size = vbr_get_bytes_per_cluster(vbr);
-    u32 min_size = offset + nbytes;
-    u32 chain_idx;
-    u32 n;
-    u32 cluster_offset;
-    u32 size;
+    BootSector *bootSector = fat->bootSector;
+    uint32_t clusterSize = bootSector->GetBytesPerCluster();
+    uint32_t min_size = offset + nbytes;
+    uint32_t chain_idx;
+    uint32_t n;
+    uint32_t cluster_offset;
+    uint32_t size;
 
     if (cch_getsize(cc) < min_size) {
         cch_setsize(cc, min_size); // growing the chain
     }
 
-    u32 chain[fat_getchainlen(fat, cc->start_cluster)];
+    uint32_t chain[fat_getchainlen(fat, cc->start_cluster)];
     fat_getchain(fat, cc->start_cluster, chain);
 
-    chain_idx = (offset / cluster_size);
+    chain_idx = (offset / clusterSize);
     n = nbytes;
 
-    if (offset % cluster_size != 0) {
-        cluster_offset = (offset % cluster_size);
-        size = MIN(cluster_size - cluster_offset, n);
-        device->Write(buffer, getdevofs(vbr, chain[chain_idx], cluster_offset), size);
+    if (offset % clusterSize != 0) {
+        cluster_offset = (offset % clusterSize);
+        size = MIN(clusterSize - cluster_offset, n);
+        device->Write(buffer, getdevofs(bootSector, chain[chain_idx], cluster_offset), size);
         buffer += size;
         n -= size;
         ++chain_idx;
     }
 
     while (n > 0) {
-        size = MIN(cluster_size, n);
-        device->Write(buffer, getdevofs(vbr, chain[chain_idx], 0), size);
+        size = MIN(clusterSize, n);
+        device->Write(buffer, getdevofs(bootSector, chain[chain_idx], 0), size);
         buffer += size;
         n -= size;
         ++chain_idx;
     }
 }
 
-bool cch_setlen(/*in*/ struct cch *cc, /*in*/ u32 nr_clusters)
+bool cch_setlen(/*in*/ struct cch *cc, /*in*/ uint32_t nr_clusters)
 {
     if (cc->start_cluster == 0 && nr_clusters == 0) {
         /* nothing to do */
@@ -134,16 +135,16 @@ bool cch_setlen(/*in*/ struct cch *cc, /*in*/ u32 nr_clusters)
         return fat_alloc_chain(cc->fat, nr_clusters, &(cc->start_cluster));
     }
 
-    u32 len = fat_getchainlen(cc->fat, cc->start_cluster);
+    uint32_t len = fat_getchainlen(cc->fat, cc->start_cluster);
     if (nr_clusters == len) {
         return true;
     }
 
-    u32 chain[len];
+    uint32_t chain[len];
     fat_getchain(cc->fat, cc->start_cluster, chain);
     if (nr_clusters > len) {
         /* grow the chain */
-        u32 new_chain_start_cluster;
+        uint32_t new_chain_start_cluster;
         if (!fat_alloc_chain(cc->fat, nr_clusters - len, &new_chain_start_cluster)) {
             return false;
         }
@@ -151,7 +152,7 @@ bool cch_setlen(/*in*/ struct cch *cc, /*in*/ u32 nr_clusters)
         fat_append_chain(cc->fat, cc->start_cluster, new_chain_start_cluster);
     } else {
         /* shrink the chain */
-        u32 i;
+        uint32_t i;
         if (nr_clusters > 0) {
             fat_seteof(cc->fat, chain[nr_clusters - 1]);
             for (i = nr_clusters; i < len; ++i) {

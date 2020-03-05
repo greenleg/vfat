@@ -5,8 +5,11 @@
 #include "../include/cchdir.h"
 #include "../include/cchfile.h"
 #include "../include/lfnde.h"
+#include "../include/BootSector.h"
 
 int32_t __vfat_errno;
+
+using namespace org::vfat;
 
 static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
@@ -21,10 +24,10 @@ static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name
 
 static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
 {
-    u32 offset = 0;
+    uint32_t offset = 0;
     uint8_t entry_type;
     struct lfnde e;
-    u32 i;
+    uint32_t i;
 
     for (i = 0; i < dir->capacity; ++i) {
         entry_type = buffer[offset];
@@ -38,10 +41,10 @@ static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
     }
 }
 
-static u32 cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, u32 bufsize)
+static uint32_t cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, uint32_t bufsize)
 {
-    u32 offset = 0;
-    u32 i;
+    uint32_t offset = 0;
+    uint32_t i;
 
     struct lfnde e;
     for (i = 0; i < alist_count(dir->entries); ++i) {
@@ -61,18 +64,18 @@ static u32 cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, u32 bufsize
 }
 
 void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
-                      /*in*/ u64 vol_size,
-                      /*in*/ u16 bytes_per_sect,
-                      /*in*/ u16 sect_per_clus)
+                      /*in*/ uint64_t vol_size,
+                      /*in*/ uint16_t bytes_per_sect,
+                      /*in*/ uint16_t sect_per_clus)
 {
-    struct vbr br;
+    org::vfat::BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_create(&br, vol_size, bytes_per_sect, sect_per_clus);
-    vbr_write(&br, device);
+    bootSector.Create(vol_size, bytes_per_sect, sect_per_clus);
+    bootSector.Write(device);
 
-    fat_create(&br, &fat);
+    fat_create(&bootSector, &fat);
     cchdir_createroot(&fat, &root);
 
     cchdir_write(&root, device);
@@ -84,7 +87,7 @@ void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
 
 void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct fat *fat,
-                    /*in*/ u32 first_cluster,
+                    /*in*/ uint32_t first_cluster,
                     /*in*/ bool root,
                     /*out*/ struct cchdir* dir)
 {
@@ -92,7 +95,7 @@ void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
     cc->fat = fat;
     cc->start_cluster = first_cluster;
 
-    u64 size = cch_getsize(cc);
+    uint64_t size = cch_getsize(cc);
     uint8_t buffer[size];
     cch_readdata(device, cc, 0, size, buffer);
 
@@ -107,9 +110,9 @@ void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
 
 void cchdir_write(struct cchdir* dir, org::vfat::FileDisk *device)
 {
-    u32 nbytes = dir->capacity * FAT_DIR_ENTRY_SIZE;
+    uint32_t nbytes = dir->capacity * FAT_DIR_ENTRY_SIZE;
     uint8_t buf[nbytes];
-    u32 realbytes = cchdir_write_entries(dir, buf, nbytes);
+    uint32_t realbytes = cchdir_write_entries(dir, buf, nbytes);
     cch_writedata(device, dir->chain, 0, realbytes, buf);
 }
 
@@ -124,10 +127,10 @@ void cchdir_create(struct cch *cc, struct cchdir *dir)
 
 void cchdir_createroot(struct fat *fat, struct cchdir *dir)
 {
-    struct vbr *br = fat->vbr;
+    BootSector *bootSector = fat->bootSector;
     struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     cch_create(cc, fat, 1);
-    br->rootdir_first_cluster = cc->start_cluster;
+    bootSector->SetRootDirFirstCluster(cc->start_cluster);
 
     dir->chain = cc;
     dir->root = true;
@@ -138,20 +141,20 @@ void cchdir_createroot(struct fat *fat, struct cchdir *dir)
 
 void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ struct fat *fat, /*out*/ struct cchdir *dir)
 {
-    cchdir_readdir(device, fat, fat->vbr->rootdir_first_cluster, true, dir);
+    cchdir_readdir(device, fat, fat->bootSector->GetRootDirFirstCluster(), true, dir);
 }
 
-void cchdir_changesize(struct cchdir *dir, u32 fat32_entry_cnt)
+void cchdir_changesize(struct cchdir *dir, uint32_t fat32_entry_cnt)
 {
-    u32 size = fat32_entry_cnt * FAT_DIR_ENTRY_SIZE;
-    u32 new_size = cch_setsize(dir->chain, size);
+    uint32_t size = fat32_entry_cnt * FAT_DIR_ENTRY_SIZE;
+    uint32_t new_size = cch_setsize(dir->chain, size);
     dir->capacity = new_size / FAT_DIR_ENTRY_SIZE;
 }
 
-static u32 get_fat32_entry_cnt(struct cchdir *dir)
+static uint32_t get_fat32_entry_cnt(struct cchdir *dir)
 {
-    u32 i;
-    u32 n = 0;
+    uint32_t i;
+    uint32_t n = 0;
     struct lfnde e;
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
@@ -164,7 +167,7 @@ static u32 get_fat32_entry_cnt(struct cchdir *dir)
 
 void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
 {
-    u32 new_cnt = get_fat32_entry_cnt(dir);
+    uint32_t new_cnt = get_fat32_entry_cnt(dir);
     new_cnt += 1 + e->fde->secondary_count;
 
     if (new_cnt > dir->capacity) {
@@ -174,14 +177,14 @@ void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
     alist_add(dir->entries, e);
 }
 
-void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ u32 idx, /*out*/ struct lfnde *e)
+void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ uint32_t idx, /*out*/ struct lfnde *e)
 {
     alist_get(dir->entries, idx, e);
 }
 
 bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
 {
-    u32 i;
+    uint32_t i;
     char namebuf[256];
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
@@ -196,9 +199,9 @@ bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*
     return false;
 }
 
-bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ u32 *idx)
+bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ uint32_t *idx)
 {
-    u32 i;
+    uint32_t i;
     char namebuf[256];
     struct lfnde e;
 
@@ -215,9 +218,9 @@ bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*o
     return false;
 }
 
-void cchdir_removeentry(struct cchdir *dir, u32 idx)
+void cchdir_removeentry(struct cchdir *dir, uint32_t idx)
 {
-    u32 new_cnt;
+    uint32_t new_cnt;
 
     alist_remove(dir->entries, idx);
     new_cnt = get_fat32_entry_cnt(dir);
@@ -288,7 +291,7 @@ bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
     struct lfnde e;
     struct cch cc;
-    u32 idx;
+    uint32_t idx;
 
     if (!cchdir_findentryidx(dir, name, &idx)) {
         return false;
@@ -339,7 +342,7 @@ bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ struct lfnde *e,
                    /*out*/ struct cchdir *dir)
 {
-    u32 first_cluster = lfnde_getstartcluster(e);
+    uint32_t first_cluster = lfnde_getstartcluster(e);
     cchdir_readdir(device, fat, first_cluster, false, dir);
 
     return true;
@@ -355,7 +358,7 @@ bool cchdir_move(/*in*/ org::vfat::FileDisk *device,
         return false;
     }
 
-    u32 idx;
+    uint32_t idx;
     char old_name[256];
     lfnde_getname(e, old_name);
     cchdir_findentryidx(src, old_name, &idx);
@@ -403,8 +406,8 @@ bool cchdir_copyfile(/*in*/ org::vfat::FileDisk *device,
     struct cchfile copy;
     cchdir_getfile(src, &copye, &copy);
 
-    u32 pos = 0;
-    u32 nread;
+    uint32_t pos = 0;
+    uint32_t nread;
     cchfile_read(device, &orig, pos, nbytes, &nread, buf);
     while (nread > 0) {
         cchfile_write(device, &copy, pos, nread, buf);
@@ -441,7 +444,7 @@ bool cchdir_copydir(/*in*/ org::vfat::FileDisk *device,
     }
 
     struct lfnde child;
-    u32 i;
+    uint32_t i;
     for (i = 0; i < alist_count(orig.entries); ++i) {
         cchdir_getentry(&orig, i, &child);
         if (lfnde_isdir(&child)) {
@@ -479,7 +482,7 @@ bool cchdir_setname(/*in*/ org::vfat::FileDisk *device,
 void cchdir_destruct(/*in*/ struct cchdir *dir)
 {
     struct lfnde e;
-    u32 i;
+    uint32_t i;
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, &e);

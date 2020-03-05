@@ -8,31 +8,32 @@
 #include "cch.h"
 #include "lfnde.h"
 #include "cchfile.h"
+#include "BootSector.h"
 
 struct cchdir
 {
     struct cch *chain;
     struct alist *entries;
-    u32 capacity;
+    uint32_t capacity;
     bool root;
     bool dirty;
 };
 
 void cchdir_formatdev(/*in*/ org::vfat::FileDisk * device,
-                      /*in*/ u64 vol_size,
-                      /*in*/ u16 bytes_per_sect,
-                      /*in*/ u16 sect_per_clus);
+                      /*in*/ uint64_t vol_size,
+                      /*in*/ uint16_t bytes_per_sect,
+                      /*in*/ uint16_t sect_per_clus);
 
 void cchdir_write(struct cchdir* dir, org::vfat::FileDisk *device);
-void cchdir_read(org::vfat::FileDisk *device, struct fat *fat, struct cchdir* dir, u32 first_cluster, bool root);
+void cchdir_read(org::vfat::FileDisk *device, struct fat *fat, struct cchdir* dir, uint32_t first_cluster, bool root);
 
 void cchdir_create(struct cch *cc, struct cchdir *dir);
 void cchdir_createroot(struct fat *fat, struct cchdir *dir);
 void cchdir_readroot(org::vfat::FileDisk *device, struct fat *fat, struct cchdir *dir);
 void cchdir_addentry(struct cchdir *dir, struct lfnde *e);
-void cchdir_getentry(struct cchdir *dir, u32 idx, struct lfnde *e);
+void cchdir_getentry(struct cchdir *dir, uint32_t idx, struct lfnde *e);
 bool cchdir_findentry(/*in*/ struct cchdir *dir, /*out*/ const char *name, /*out*/ struct lfnde *e);
-void cchdir_removeentry(struct cchdir *dir, u32 idx);
+void cchdir_removeentry(struct cchdir *dir, uint32_t idx);
 bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name);
 bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde);
 

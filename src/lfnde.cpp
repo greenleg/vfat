@@ -96,7 +96,7 @@ void lfnde_destruct(struct lfnde *e)
     free(e->fnede_list);
 }
 
-u16 lfnde_count(struct lfnde *e)
+uint16_t lfnde_count(struct lfnde *e)
 {
     return 1 + e->fde->secondary_count;
 }
@@ -161,19 +161,19 @@ void lfnde_writebuf(struct lfnde *e, uint8_t *buf)
 
 bool lfnde_isdir(/*in*/ struct lfnde *e)
 {
-    u16 attr = e->fde->attributes;
+    uint16_t attr = e->fde->attributes;
     return (attr & DIRECTORY_MASK) != 0;
 }
 
 bool lfnde_isfile(/*in*/ struct lfnde *e)
 {
-    u16 attr = e->fde->attributes;
+    uint16_t attr = e->fde->attributes;
     return (attr & DIRECTORY_MASK) == 0;
 }
 
 void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val)
 {
-    u16 attr = e->fde->attributes;
+    uint16_t attr = e->fde->attributes;
     if (val) {
         attr |= DIRECTORY_MASK;
     } else {
@@ -183,22 +183,22 @@ void lfnde_setisdir(/*in*/ struct lfnde *e, /*in*/ bool val)
     e->fde->attributes = attr;
 }
 
-u64 lfnde_getdatalen(/*in*/ struct lfnde *e)
+uint64_t lfnde_getdatalen(/*in*/ struct lfnde *e)
 {
     return e->sede->data_length;
 }
 
-void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ u64 len)
+void lfnde_setdatalen(/*in*/ struct lfnde *e, /*in*/ uint64_t len)
 {
     e->sede->data_length = len;
 }
 
-u32 lfnde_getstartcluster(/*in*/ struct lfnde *e)
+uint32_t lfnde_getstartcluster(/*in*/ struct lfnde *e)
 {
     return e->sede->first_cluster;
 }
 
-void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ u32 start_cluster)
+void lfnde_setstartcluster(/*in*/ struct lfnde *e, /*in*/ uint32_t start_cluster)
 {
     e->sede->first_cluster = start_cluster;
 }

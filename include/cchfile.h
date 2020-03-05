@@ -13,24 +13,24 @@ struct cchfile
  * Returns the length of this file in bytes. This is the length that
  * is stored in the directory entry that is associated with this file.
  */
-u32 cchfile_getlen(/*in*/ struct cchfile *file);
+uint32_t cchfile_getlen(/*in*/ struct cchfile *file);
 
-void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ u32 len);
+void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ uint32_t len);
 
 /*
  * Reads from this file into the specified buffer.
  */
 bool cchfile_read(/*in*/ org::vfat::FileDisk *device,
                   /*in*/ struct cchfile *file,
-                  /*in*/ u32 offset,
-                  /*in*/ u32 nbytes,
-                  /*out*/ u32 *nread,
+                  /*in*/ uint32_t offset,
+                  /*in*/ uint32_t nbytes,
+                  /*out*/ uint32_t *nread,
                   /*out*/ uint8_t *buf);
 
 void cchfile_write(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ struct cchfile *file,
-                   /*in*/ u32 offset,
-                   /*in*/ u32 nbytes,
+                   /*in*/ uint32_t offset,
+                   /*in*/ uint32_t nbytes,
                    /*in*/ uint8_t *buf);
 
 void cchfile_destruct(/*in*/ struct cchfile *file);

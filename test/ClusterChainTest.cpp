@@ -12,15 +12,15 @@ protected:
     void SetUp() override
     {
         this->device = new FileDisk("disk0");
-        struct vbr br;
+        BootSector bootSector;
         struct fat fat;
 
         this->device->Create();
 
-        vbr_create(&br, 1024 * 1024, 512, 1);
-        vbr_write(&br, device);
+        bootSector.Create(1024 * 1024, 512, 1);
+        bootSector.Write(device);
 
-        fat_create(&br, &fat);
+        fat_create(&bootSector, &fat);
         fat_write(&fat, device);
 
         fat_destruct(&fat);
@@ -37,13 +37,13 @@ protected:
 
 TEST_F(ClusterChainTest, ReadDataWithOffset)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cch cc;
-    u32 i;
+    uint32_t i;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     cch_create(&cc, &fat, 0);
 
@@ -71,13 +71,13 @@ TEST_F(ClusterChainTest, WriteData)
     uint8_t chunk_size = 123;
     uint8_t writes = 10;
 
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cch cc;
-    u32 i;
+    uint32_t i;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     cch_create(&cc, &fat, 0);
 
@@ -102,16 +102,16 @@ TEST_F(ClusterChainTest, WriteData)
 
 TEST_F(ClusterChainTest, GetFreeClusterCount)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cch cc;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     cch_create(&cc, &fat, 0);
 
-    u32 n = fat_get_free_cluster_count(&fat);
+    uint32_t n = fat_get_free_cluster_count(&fat);
 
     cch_setlen(&cc, 1);
     EXPECT_EQ(n - 1, fat_get_free_cluster_count(&fat));
@@ -127,19 +127,19 @@ TEST_F(ClusterChainTest, GetFreeClusterCount)
 
 TEST_F(ClusterChainTest, SetSize)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cch cc;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     cch_create(&cc, &fat, 0);
 
-    cch_setsize(&cc, vbr_get_bytes_per_cluster(&br));
+    cch_setsize(&cc, bootSector.GetBytesPerCluster());
     EXPECT_EQ(1, cch_getlen(&cc));
 
-    cch_setsize(&cc, vbr_get_bytes_per_cluster(&br) + 1);
+    cch_setsize(&cc, bootSector.GetBytesPerCluster() + 1);
     EXPECT_EQ(2, cch_getlen(&cc));
 
     cch_setsize(&cc, 0);
@@ -153,17 +153,17 @@ TEST_F(ClusterChainTest, SetSize)
 
 TEST_F(ClusterChainTest, GetSize)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cch cc;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
 
     cch_create(&cc, &fat, 0);
-    cch_setsize(&cc, vbr_get_bytes_per_cluster(&br));
+    cch_setsize(&cc, bootSector.GetBytesPerCluster());
 
-    EXPECT_EQ(vbr_get_bytes_per_cluster(&br), cch_getsize(&cc));
+    EXPECT_EQ(bootSector.GetBytesPerCluster(), cch_getsize(&cc));
 
     fat_destruct(&fat);
 }

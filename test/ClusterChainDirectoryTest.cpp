@@ -31,12 +31,12 @@ protected:
 
 TEST_F(ClusterChainDirectoryTest, AddEntry)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     EXPECT_EQ(0, alist_count(root.entries));
@@ -46,7 +46,7 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     cchdir_addentry(&root, &e);
     EXPECT_EQ(1, alist_count(root.entries));
 
-    EXPECT_NE(0, br.rootdir_first_cluster);
+    EXPECT_NE(0, bootSector.GetRootDirFirstCluster());
     EXPECT_EQ(root.capacity, cch_getsize(root.chain) / FAT_DIR_ENTRY_SIZE);
 
     cchdir_destruct(&root);
@@ -55,13 +55,13 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
 
 TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
 {
-    u32 i;
-    struct vbr br;
+    uint32_t i;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     EXPECT_EQ(0, alist_count(root.entries));
@@ -85,12 +85,12 @@ TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
 
 TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     const char *name = "A nice directory";
@@ -114,19 +114,19 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 
 TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     char namebuf[255];
-    u32 free_before_add;
+    uint32_t free_before_add;
     struct lfnde e;
     struct cchdir dir;
-    u32 count = 0;
+    uint32_t count = 0;
 
     do {
         free_before_add = fat_get_free_cluster_count(&fat);
@@ -145,16 +145,16 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 
 TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
-    u32 free_before = fat_get_free_cluster_count(&fat);
-    u32 entries_before = alist_count(root.entries);
+    uint32_t free_before = fat_get_free_cluster_count(&fat);
+    uint32_t entries_before = alist_count(root.entries);
 
     struct lfnde e;
     struct cchdir dir;
@@ -175,12 +175,12 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
 
 TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -203,12 +203,12 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 
 TEST_F(ClusterChainDirectoryTest, RenameFile)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;    
@@ -229,12 +229,12 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
 
 TEST_F(ClusterChainDirectoryTest, MoveFile)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe;
@@ -259,12 +259,12 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
 
 TEST_F(ClusterChainDirectoryTest, MoveDirectory)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe1;
@@ -322,12 +322,12 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
 
 TEST_F(ClusterChainDirectoryTest, CopyFile)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde orige;
@@ -354,8 +354,8 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     EXPECT_EQ(3, alist_count(dir1.entries)); // including "." and ".." directories
     EXPECT_EQ(2, alist_count(dir2.entries));
 
-    u32 i, nread;
-    u32 len = 4096 * 4;
+    uint32_t i, nread;
+    uint32_t len = 4096 * 4;
     uint8_t buf[len];
     for (i = 0; i < len; ++i) {
         buf[i] = i % 256;
@@ -393,12 +393,12 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
 
 TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 {
-    struct vbr br;
+    BootSector bootSector;
     struct fat fat;
     struct cchdir root;
 
-    vbr_read(this->device, &br);
-    fat_read(this->device, &br, &fat);
+    bootSector.Read(this->device);
+    fat_read(this->device, &bootSector, &fat);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde fe;
@@ -422,8 +422,8 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     EXPECT_EQ(3, alist_count(dir1.entries));
     EXPECT_EQ(2, alist_count(dir2.entries));
 
-    u32 i, nread;
-    u32 len = 4096 * 4 + 100;
+    uint32_t i, nread;
+    uint32_t len = 4096 * 4 + 100;
     uint8_t buf[len];
     for (i = 0; i < len; ++i) {
         buf[i] = i % 256;

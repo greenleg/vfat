@@ -6,20 +6,6 @@
 #include <stdint.h>
 #include <sys/types.h>
 
-#include "common.h"
-
-//struct fdisk
-//{
-//    int fd;
-//    bool closed;
-//};
-
-//void fdisk_create(/*in*/ const char* fname, /*out*/ struct fdisk *disk);
-//void fdisk_open(/*in*/ const char* fname, /*out*/ struct fdisk *disk);
-//void fdisk_close(/*in*/ struct fdisk *disk);
-//void fdisk_read(/*in*/ struct fdisk *disk, /*in*/ u8 *buf, /*in*/ off_t offset, /*in*/ size_t count);
-//void fdisk_write(/*in*/ struct fdisk *disk, /*in*/ u8 *buf, /*in*/ off_t offset, /*in*/ size_t count);
-
 namespace org::vfat
 {
     class FileDisk
@@ -35,8 +21,8 @@ namespace org::vfat
         void Open();
         void Close();
         void Delete();
-        void Read(uint8_t *buffer, long int fileOffset, size_t count);
-        void Write(uint8_t *buffer, long int fileOffset, size_t count);
+        void Read(uint8_t *buffer, long int fileOffset, size_t count) const;
+        void Write(uint8_t *buffer, long int fileOffset, size_t count) const;
     };
 }
 

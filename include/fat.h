@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
-#include "vbr.h"
+#include "BootSector.h"
 
 /*
  * There are a few special values that relate to the FAT:
@@ -21,24 +21,26 @@
 #define FAT_FREE                 0x00000000
 #define FAT_FIRST_CLUSTER        2
 
+using namespace org::vfat;
+
 struct fat
 {
-    struct vbr *vbr;
-    u32 *entries;
-    u32 last_alloc_cluster;
+    BootSector *bootSector;
+    uint32_t *entries;
+    uint32_t last_alloc_cluster;
 };
 
-void fat_create(struct vbr *vbr, struct fat *fat);
-void fat_read(org::vfat::FileDisk *device, struct vbr *vbr, struct fat *fat);
+void fat_create(BootSector *bootSector, struct fat *fat);
+void fat_read(org::vfat::FileDisk *device, BootSector *bootSector, struct fat *fat);
 void fat_write(struct fat *fat, org::vfat::FileDisk *device);
 
-bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *start_cluster);
-void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u32 new_cluster);
-u32 fat_getchainlen(struct fat *fat, u32 start_cluster);
-void fat_getchain(struct fat *fat, u32 start_cluster, u32 *chain);
-void fat_seteof(struct fat* fat, u32 cluster);
-void fat_setfree(struct fat* fat, u32 cluster);
-u32 fat_get_free_cluster_count(struct fat *fat);
+bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ uint32_t length, /*out*/ uint32_t *start_cluster);
+void fat_append_chain(/*in*/ struct fat *fat, /*in*/ uint32_t start_cluster, /*in*/ uint32_t new_cluster);
+uint32_t fat_getchainlen(struct fat *fat, uint32_t start_cluster);
+void fat_getchain(struct fat *fat, uint32_t start_cluster, uint32_t *chain);
+void fat_seteof(struct fat* fat, uint32_t cluster);
+void fat_setfree(struct fat* fat, uint32_t cluster);
+uint32_t fat_get_free_cluster_count(struct fat *fat);
 
 void fat_destruct(struct fat *fat);
 

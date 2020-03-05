@@ -1,20 +1,22 @@
 #include "../include/filesys.h"
 
 bool filesys_format(/*in*/ org::vfat::FileDisk *device,
-                    /*in*/ u64 volume_size,
-                    /*in*/ u16 bytes_per_sector,
-                    /*in*/ u16 sectors_per_cluster,
+                    /*in*/ uint64_t volume_size,
+                    /*in*/ uint16_t bytes_per_sector,
+                    /*in*/ uint16_t sectors_per_cluster,
                     /*out*/ struct filesys *fs)
 {
     fs->device = device;
-    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
+    //fs->bootSector = static_cast<struct BootSector *>(malloc(sizeof(BootSector)));
+    fs->bootSector = new BootSector();
+    fs->bootSector->Create(volume_size, bytes_per_sector, sectors_per_cluster);
+
     fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
-    vbr_create(fs->vbr, volume_size, bytes_per_sector, sectors_per_cluster);
-    vbr_write(fs->vbr, device);
+    fs->bootSector->Write(device);
 
-    fat_create(fs->vbr, fs->fat);
+    fat_create(fs->bootSector, fs->fat);
     cchdir_createroot(fs->fat, fs->root);
 
     fat_write(fs->fat, device);
@@ -26,12 +28,12 @@ bool filesys_format(/*in*/ org::vfat::FileDisk *device,
 bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs)
 {
     fs->device = device;
-    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
+    fs->bootSector = new BootSector();
     fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
-    vbr_read(device, fs->vbr);
-    fat_read(device, fs->vbr, fs->fat);
+    fs->bootSector->Read(device);
+    fat_read(device, fs->bootSector, fs->fat);
     cchdir_readroot(device, fs->fat, fs->root);
 
     return true;
@@ -41,7 +43,7 @@ bool filesys_close(/*in*/ struct filesys *fs)
 {
     cchdir_write(fs->root, fs->device);
     fat_write(fs->fat, fs->device);
-    vbr_write(fs->vbr, fs->device);
+    fs->bootSector->Write(fs->device);
 
     return true;
 }
@@ -52,8 +54,8 @@ bool filesys_destruct(/*in*/ struct filesys *fs)
     fat_destruct(fs->fat);
 
     free(fs->root);
-    free(fs->fat);
-    free(fs->vbr);
+    free(fs->fat);    
+    delete fs->bootSector;
 
     return true;
 }
@@ -190,7 +192,7 @@ void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir)
 
 bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
 {
-    u32 n = alist_count(dir->ccdir->entries);
+    uint32_t n = alist_count(dir->ccdir->entries);
     if (dir->idx == n) {
         return false;
     }

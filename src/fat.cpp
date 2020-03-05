@@ -4,11 +4,11 @@
 #include "../include/common.h"
 #include "../include/fat.h"
 
-static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ u32 *cluster)
+static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ uint32_t *cluster)
 {
-    u32 clus;
+    uint32_t clus;
 
-    for (clus = fat->last_alloc_cluster + 1; clus < fat->vbr->cluster_count; ++clus) {
+    for (clus = fat->last_alloc_cluster + 1; clus < fat->bootSector->GetClusterCount(); ++clus) {
         if (fat->entries[clus] == FAT_FREE) {
             fat->entries[clus] = FAT_EOF;
             fat->last_alloc_cluster = clus;
@@ -30,10 +30,10 @@ static bool fat_alloc_cluster(/*in*/ struct fat *fat, /*out*/ u32 *cluster)
     return false;
 }
 
-bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *start_cluster)
+bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ uint32_t length, /*out*/ uint32_t *start_cluster)
 {
-    u32 cluster, new_cluster;
-    u32 i;
+    uint32_t cluster, new_cluster;
+    uint32_t i;
 
     if (!fat_alloc_cluster(fat, start_cluster)) {
         // vfat_errno contains an error code
@@ -54,9 +54,9 @@ bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ u32 length, /*out*/ u32 *sta
     return true;
 }
 
-void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u32 new_cluster)
+void fat_append_chain(/*in*/ struct fat *fat, /*in*/ uint32_t start_cluster, /*in*/ uint32_t new_cluster)
 {
-    u32 cluster = start_cluster;
+    uint32_t cluster = start_cluster;
 
     while (fat->entries[cluster] != FAT_EOF) {
         cluster = fat->entries[cluster];
@@ -65,10 +65,10 @@ void fat_append_chain(/*in*/ struct fat *fat, /*in*/ u32 start_cluster, /*in*/ u
     fat->entries[cluster] = new_cluster;
 }
 
-u32 fat_getchainlen(struct fat *fat, u32 start_cluster)
+uint32_t fat_getchainlen(struct fat *fat, uint32_t start_cluster)
 {
-    u32 cluster = start_cluster;
-    u32 len = 1;
+    uint32_t cluster = start_cluster;
+    uint32_t len = 1;
 
     while (fat->entries[cluster] != FAT_EOF) {
         cluster = fat->entries[cluster];
@@ -78,9 +78,9 @@ u32 fat_getchainlen(struct fat *fat, u32 start_cluster)
     return len;
 }
 
-void fat_getchain(struct fat *fat, u32 start_cluster, u32 *chain)
+void fat_getchain(struct fat *fat, uint32_t start_cluster, uint32_t *chain)
 {
-    u32 cluster = start_cluster;
+    uint32_t cluster = start_cluster;
     int i = 0;
 
     chain[0] = start_cluster;
@@ -90,41 +90,41 @@ void fat_getchain(struct fat *fat, u32 start_cluster, u32 *chain)
     }
 }
 
-void fat_seteof(struct fat* fat, u32 cluster)
+void fat_seteof(struct fat* fat, uint32_t cluster)
 {
     fat->entries[cluster] = FAT_EOF;
 }
 
-void fat_setfree(struct fat* fat, u32 cluster)
+void fat_setfree(struct fat* fat, uint32_t cluster)
 {
     fat->entries[cluster] = FAT_FREE;
 }
 
-void fat_create(struct vbr *vbr, struct fat *fat)
+void fat_create(BootSector *bootSector, struct fat *fat)
 {
-    fat->vbr = vbr;
+    fat->bootSector = bootSector;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
-    fat->entries = static_cast<u32 *>(malloc(sizeof(u32) * vbr->cluster_count));
-    memset((void*)fat->entries, 0, sizeof(uint32_t) * vbr->cluster_count);
+    fat->entries = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * bootSector->GetClusterCount()));
+    memset((void*)fat->entries, 0, sizeof(uint32_t) * bootSector->GetClusterCount());
     fat->entries[0] = FAT_MEDIA_DESCRIPTOR;
     fat->entries[1] = FAT_EOF;
 }
 
-void fat_read(org::vfat::FileDisk *device, struct vbr *vbr, struct fat *fat)
+void fat_read(org::vfat::FileDisk *device, BootSector *bootSector, struct fat *fat)
 {
-    u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
+    uint32_t fat_dev_offset = bootSector->GetFatOffset();
 
-    fat->vbr = vbr;
+    fat->bootSector = bootSector;
     fat->last_alloc_cluster = FAT_FIRST_CLUSTER - 1;
-    fat->entries = static_cast<u32 *>(malloc(sizeof(u32) * vbr->cluster_count));
-    device->Read((uint8_t *)fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
+    fat->entries = static_cast<uint32_t *>(malloc(sizeof(uint32_t) * bootSector->GetClusterCount()));
+    device->Read((uint8_t *)fat->entries, fat_dev_offset, sizeof(uint32_t) * bootSector->GetClusterCount());
 }
 
 void fat_write(struct fat *fat, org::vfat::FileDisk *device)
 {
-    struct vbr *vbr = fat->vbr;
-    u32 fat_dev_offset = vbr->fat_offset * vbr_get_bytes_per_sector(vbr);
-    device->Write((uint8_t* )fat->entries, fat_dev_offset, sizeof(u32) * vbr->cluster_count);
+    BootSector *bootSector = fat->bootSector;
+    uint32_t fat_dev_offset = bootSector->GetFatOffset();
+    device->Write((uint8_t* )fat->entries, fat_dev_offset, sizeof(uint32_t) * bootSector->GetClusterCount());
 }
 
 void fat_destruct(struct fat *fat)
@@ -132,12 +132,12 @@ void fat_destruct(struct fat *fat)
     free(fat->entries);
 }
 
-u32 fat_get_free_cluster_count(struct fat *fat)
+uint32_t fat_get_free_cluster_count(struct fat *fat)
 {
-    u32 clus;
-    u32 cnt = 0;
+    uint32_t clus;
+    uint32_t cnt = 0;
 
-    for (clus = FAT_FIRST_CLUSTER; clus < fat->vbr->cluster_count; ++clus) {
+    for (clus = FAT_FIRST_CLUSTER; clus < fat->bootSector->GetClusterCount(); ++clus) {
         if (fat->entries[clus] == FAT_FREE) {
             ++cnt;
         }

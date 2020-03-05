@@ -2,7 +2,7 @@
 
 #include "gtest/gtest.h"
 #include "../include/FileDisk.h"
-#include "../include/vbr.h"
+#include "../include/BootSector.h"
 
 class BootRecordTest : public ::testing::Test
 {
@@ -22,42 +22,41 @@ TEST_F(BootRecordTest, FileDisk)
 
 TEST_F(BootRecordTest, CreateBootRecord)
 {
-    struct vbr br;
-    vbr_create(&br, 1024 * 1024, 512, 1);
+    org::vfat::BootSector bootSector;
+    bootSector.Create(1024 * 1024, 512, 1);
 
-    EXPECT_EQ(2048, br.volume_length);
-    EXPECT_EQ(512,  vbr_get_bytes_per_sector(&br));
-    EXPECT_EQ(1,    vbr_get_sectors_per_cluster(&br));
-    EXPECT_EQ(2031, br.cluster_count);
-    EXPECT_EQ(1,    br.fat_offset);
-    EXPECT_EQ(16,   br.fat_length);
-    EXPECT_EQ(17,   br.cluster_heap_offset);
-    EXPECT_EQ(2,    br.rootdir_first_cluster);
+    EXPECT_EQ(2048, bootSector.GetVolumeSizeInBytes());
+    EXPECT_EQ(512,  bootSector.GetBytesPerSector());
+    EXPECT_EQ(1,    bootSector.GetSectorsPerCluster());
+    EXPECT_EQ(2031, bootSector.GetClusterCount());
+    EXPECT_EQ(1,    bootSector.GetFatOffset());
+    EXPECT_EQ(16,   bootSector.GetFatSizeInBytes());
+    EXPECT_EQ(17,   bootSector.GetClusterHeapOffset());
+    EXPECT_EQ(2,    bootSector.GetRootDirFirstCluster());
 }
 
 TEST_F(BootRecordTest, CreateAndSaveBootRecord)
 {
-    /// TODO: Set a path to a temp directory beyond the repository.
-    //const char* diskFileName = "disk0";
+    /// TODO: Set a path to a temp directory beyond the repository.    
     org::vfat::FileDisk device("disk0");
-    struct vbr br;
+    org::vfat::BootSector bootSector;
 
     device.Create();
-    vbr_create(&br, 1024 * 1024, 512, 1);
-    vbr_write(&br, &device);
+    bootSector.Create(1024 * 1024, 512, 1);
+    bootSector.Write(&device);
     device.Close();
 
     device.Open();
-    vbr_read(&device, &br);
+    bootSector.Read(&device);
 
-    EXPECT_EQ(2048, br.volume_length);
-    EXPECT_EQ(512,  vbr_get_bytes_per_sector(&br));
-    EXPECT_EQ(1,    vbr_get_sectors_per_cluster(&br));
-    EXPECT_EQ(2031, br.cluster_count);
-    EXPECT_EQ(1,    br.fat_offset);
-    EXPECT_EQ(16,   br.fat_length);
-    EXPECT_EQ(17,   br.cluster_heap_offset);
-    EXPECT_EQ(2,    br.rootdir_first_cluster);
+    EXPECT_EQ(2048, bootSector.GetVolumeSizeInBytes());
+    EXPECT_EQ(512,  bootSector.GetBytesPerSector());
+    EXPECT_EQ(1,    bootSector.GetSectorsPerCluster());
+    EXPECT_EQ(2031, bootSector.GetClusterCount());
+    EXPECT_EQ(1,    bootSector.GetFatOffset());
+    EXPECT_EQ(16,   bootSector.GetFatSizeInBytes());
+    EXPECT_EQ(17,   bootSector.GetClusterHeapOffset());
+    EXPECT_EQ(2,    bootSector.GetRootDirFirstCluster());
 
     device.Close();
     device.Delete();
