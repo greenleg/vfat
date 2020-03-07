@@ -23,25 +23,48 @@
 
 using namespace org::vfat;
 
-struct fat
+//struct fat
+//{
+//    BootSector *bootSector;
+//    uint32_t *entries;
+//    uint32_t last_alloc_cluster;
+//};
+
+//void fat_create(BootSector *bootSector, struct fat *fat);
+//void fat_read(org::vfat::FileDisk *device, BootSector *bootSector, struct fat *fat);
+//void fat_write(struct fat *fat, org::vfat::FileDisk *device);
+
+namespace org::vfat
 {
-    BootSector *bootSector;
-    uint32_t *entries;
-    uint32_t last_alloc_cluster;
-};
+    class Fat
+    {
+    private:
+        BootSector *bootSector;
+        uint32_t *entries;
+        uint32_t lastAllocatedCluster;
 
-void fat_create(BootSector *bootSector, struct fat *fat);
-void fat_read(org::vfat::FileDisk *device, BootSector *bootSector, struct fat *fat);
-void fat_write(struct fat *fat, org::vfat::FileDisk *device);
+        uint32_t AllocateCluster();
 
-bool fat_alloc_chain(/*in*/ struct fat *fat, /*in*/ uint32_t length, /*out*/ uint32_t *start_cluster);
-void fat_append_chain(/*in*/ struct fat *fat, /*in*/ uint32_t start_cluster, /*in*/ uint32_t new_cluster);
-uint32_t fat_getchainlen(struct fat *fat, uint32_t start_cluster);
-void fat_getchain(struct fat *fat, uint32_t start_cluster, uint32_t *chain);
-void fat_seteof(struct fat* fat, uint32_t cluster);
-void fat_setfree(struct fat* fat, uint32_t cluster);
-uint32_t fat_get_free_cluster_count(struct fat *fat);
+    public:
+        Fat(BootSector *bootSector);
+        void Create();
+        void Read(FileDisk *device);
+        void Write(FileDisk *device) const;
+        uint32_t AllocateChain(uint32_t length);
+        void AppendChain(uint32_t startCluster1, uint32_t startCluster2) const;
+        uint32_t GetChainLength(uint32_t startCluster) const;
+        void GetChain(uint32_t startCluster, uint32_t *chain) const;
 
-void fat_destruct(struct fat *fat);
+        void SetEof(uint32_t cluster) const;
+        void SetFree(uint32_t cluster) const;
+        uint32_t GetFreeClusterCount() const;
+        uint32_t GetEntry(int i) const;  // only for testing purpose;
+
+        BootSector * GetBootSector() const { return this->bootSector; }
+        uint32_t GetLastAllocatedCluster() const { return this->lastAllocatedCluster; }
+
+        ~Fat();
+    };
+}
 
 #endif /* VFAT_FAT_H */

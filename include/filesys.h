@@ -9,7 +9,7 @@ struct filesys
 {
     org::vfat::FileDisk *device;
     org::vfat::BootSector *bootSector;
-    struct fat *fat;
+    Fat *fat;
     struct cchdir *root;
 };
 

@@ -16,7 +16,7 @@ TEST_F(BootSectorTest, CreateBootRecord)
     org::vfat::BootSector bootSector;
     bootSector.Create(1024 * 1024, 512, 1);
 
-    ASSERT_EQ(1024 * 1024, bootSector.GetVolumeSizeInBytes());
+    ASSERT_EQ(1024 * 1024, bootSector.GetDeviceSizeInBytes());
     ASSERT_EQ(512,  bootSector.GetBytesPerSector());
     ASSERT_EQ(1,    bootSector.GetSectorsPerCluster());
     ASSERT_EQ(2031, bootSector.GetClusterCount());
@@ -40,7 +40,7 @@ TEST_F(BootSectorTest, CreateAndSaveBootRecord)
     device.Open();
     bootSector.Read(&device);
 
-    ASSERT_EQ(1024 * 1024, bootSector.GetVolumeSizeInBytes());
+    ASSERT_EQ(1024 * 1024, bootSector.GetDeviceSizeInBytes());
     ASSERT_EQ(512,  bootSector.GetBytesPerSector());
     ASSERT_EQ(1,    bootSector.GetSectorsPerCluster());
     ASSERT_EQ(2031, bootSector.GetClusterCount());

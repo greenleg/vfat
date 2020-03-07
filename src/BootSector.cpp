@@ -21,7 +21,7 @@ using namespace org::vfat;
 
 BootSector::BootSector() {}
 
-void BootSector::Create(uint64_t volumeSizeInBytes, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
+void BootSector::Create(uint64_t deviceSizeInBytes, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
     if (!IsPowerOfTwo(bytesPerSector)) {
         std::ostringstream msgStream;
@@ -41,7 +41,7 @@ void BootSector::Create(uint64_t volumeSizeInBytes, uint16_t bytesPerSector, uin
 //        throw std::runtime_error(msgStream.str());
 //    }
 
-    this->volumeSizeInBytes = volumeSizeInBytes;
+    this->deviceSizeInBytes = deviceSizeInBytes;
     this->bytesPerSector = bytesPerSector;
     this->sectorsPerCluster = sectorsPerCluster;
     this->fatOffset = this->bytesPerSector;
@@ -49,7 +49,7 @@ void BootSector::Create(uint64_t volumeSizeInBytes, uint16_t bytesPerSector, uin
     uint32_t bytesPerCluster = this->bytesPerSector * this->sectorsPerCluster;
 
     // Adjust the volume size to be a multiple of the sector size.
-    uint64_t volumeSizeInSectors = this->volumeSizeInBytes / this->bytesPerSector;
+    uint64_t volumeSizeInSectors = this->deviceSizeInBytes / this->bytesPerSector;
     int adjustedVolumeSizeInBytes = volumeSizeInSectors * this->bytesPerSector;
 
     this->clusterCount = (adjustedVolumeSizeInBytes - this->fatOffset) / (FAT_ENTRY_SIZE + bytesPerCluster);
@@ -68,7 +68,7 @@ void BootSector::Read(FileDisk *device)
     uint8_t buffer[BS_HEADER_SIZE];
     device->Read(buffer, 0, BS_HEADER_SIZE);
 
-    this->volumeSizeInBytes = read_u64(buffer, BS_VOLUMELENGTH_OFFSET);
+    this->deviceSizeInBytes = read_u64(buffer, BS_VOLUMELENGTH_OFFSET);
     this->bytesPerSector = read_u16(buffer, BS_BYTESPERSECTOR_OFFSET);
     this->sectorsPerCluster = read_u16(buffer, BS_SECTORSPERCLUSTER_OFFSET);
     this->fatOffset = read_u32(buffer, BS_FATOFFSET_OFFSET);
@@ -83,7 +83,7 @@ void BootSector::Write(FileDisk *device) const
 {
     uint8_t buffer[BS_HEADER_SIZE];
 
-    write_u64(buffer, BS_VOLUMELENGTH_OFFSET, this->volumeSizeInBytes);
+    write_u64(buffer, BS_VOLUMELENGTH_OFFSET, this->deviceSizeInBytes);
     write_u16(buffer, BS_BYTESPERSECTOR_OFFSET, this->bytesPerSector);
     write_u16(buffer, BS_SECTORSPERCLUSTER_OFFSET, this->sectorsPerCluster);
     write_u32(buffer, BS_FATOFFSET_OFFSET, this->fatOffset);

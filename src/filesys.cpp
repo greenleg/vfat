@@ -7,19 +7,18 @@ bool filesys_format(/*in*/ org::vfat::FileDisk *device,
                     /*out*/ struct filesys *fs)
 {
     fs->device = device;
-    //fs->bootSector = static_cast<struct BootSector *>(malloc(sizeof(BootSector)));
     fs->bootSector = new BootSector();
     fs->bootSector->Create(volume_size, bytes_per_sector, sectors_per_cluster);
 
-    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
+    fs->fat = new Fat(fs->bootSector);
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     fs->bootSector->Write(device);
 
-    fat_create(fs->bootSector, fs->fat);
+    fs->fat->Create();
     cchdir_createroot(fs->fat, fs->root);
 
-    fat_write(fs->fat, device);
+    fs->fat->Write(device);
     cchdir_write(fs->root, device);
 
     return true;
@@ -29,11 +28,11 @@ bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs
 {
     fs->device = device;
     fs->bootSector = new BootSector();
-    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
+    fs->fat = new Fat(fs->bootSector);
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     fs->bootSector->Read(device);
-    fat_read(device, fs->bootSector, fs->fat);
+    fs->fat->Read(device);
     cchdir_readroot(device, fs->fat, fs->root);
 
     return true;
@@ -42,7 +41,7 @@ bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs
 bool filesys_close(/*in*/ struct filesys *fs)
 {
     cchdir_write(fs->root, fs->device);
-    fat_write(fs->fat, fs->device);
+    fs->fat->Write(fs->device);
     fs->bootSector->Write(fs->device);
 
     return true;
@@ -51,10 +50,8 @@ bool filesys_close(/*in*/ struct filesys *fs)
 bool filesys_destruct(/*in*/ struct filesys *fs)
 {
     cchdir_destruct(fs->root);
-    fat_destruct(fs->fat);
-
     free(fs->root);
-    free(fs->fat);    
+    delete fs->fat;
     delete fs->bootSector;
 
     return true;

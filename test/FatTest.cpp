@@ -15,17 +15,17 @@ protected:
     {
         this->device = new FileDisk("disk0");
         BootSector bootSector;
-        struct fat fat;
+        Fat fat(&bootSector);
 
         this->device->Create();
 
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(this->device);
 
-        fat_create(&bootSector, &fat);
-        fat_write(&fat, this->device);
+        fat.Create();
+        fat.Write(this->device);
 
-        fat_destruct(&fat);
+        //fat_destruct(&fat);
     }
 
     void TearDown() override
@@ -40,76 +40,81 @@ protected:
 TEST_F(FatTest, ReadFat)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     uint32_t i;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
-    EXPECT_EQ(FAT_FIRST_CLUSTER - 1, fat.last_alloc_cluster);
+    ASSERT_EQ(FAT_FIRST_CLUSTER - 1, fat.GetLastAllocatedCluster());
 
-    EXPECT_EQ(FAT_MEDIA_DESCRIPTOR, fat.entries[0]);
-    EXPECT_EQ(FAT_EOF, fat.entries[1]);
+    ASSERT_EQ(FAT_MEDIA_DESCRIPTOR, fat.GetEntry(0));
+    ASSERT_EQ(FAT_EOF, fat.GetEntry(1));
 
     for (i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); ++i) {
-        EXPECT_EQ(0, fat.entries[i]);
+        ASSERT_EQ(0, fat.GetEntry(i));
     }
 
     /* TODO: Additional checks */
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(FatTest, AllocateCluster)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
-    uint32_t new_cluster;
-    EXPECT_TRUE(fat_alloc_chain(&fat, 1, &new_cluster));
-    EXPECT_EQ(new_cluster, fat.last_alloc_cluster);
+    uint32_t new_cluster = fat.AllocateChain(1);
+    ASSERT_EQ(new_cluster, fat.GetLastAllocatedCluster());
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(FatTest, GetFreeClusterCount)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
-    EXPECT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat_get_free_cluster_count(&fat));
+    ASSERT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat.GetFreeClusterCount());
 
-    fat_destruct(&fat);    
+    //fat_destruct(&fat);
 }
 
 TEST_F(FatTest, GetFreeClusterCount2)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     uint32_t max;
     uint32_t i;
     uint32_t cluster;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
-    max = fat_get_free_cluster_count(&fat);
+    max = fat.GetFreeClusterCount();
     for (i = max; i > 0; --i) {
-        EXPECT_EQ(i, fat_get_free_cluster_count(&fat));
-        EXPECT_TRUE(fat_alloc_chain(&fat, 1, &cluster));
+        ASSERT_EQ(i, fat.GetFreeClusterCount());
+        cluster = fat.AllocateChain(1);
     }
 
-    EXPECT_EQ(0, fat_get_free_cluster_count(&fat));
+    ASSERT_EQ(0, fat.GetFreeClusterCount());
 
-    /* Allocated too many clusters */
-    EXPECT_FALSE(fat_alloc_chain(&fat, 1, &cluster));
-    EXPECT_EQ(EFATFULL, ::__vfat_errno);
+    /* Allocated too many clusters */    
+    bool errorWasThrown = false;
+    try {
+        cluster = fat.AllocateChain(1);
+    } catch (std::runtime_error error) {
+        // FAT is full;
+        // EXPECT_EQ(EFATFULL, ::__vfat_errno);
+        errorWasThrown = true;
+    }
 
-    fat_destruct(&fat);
+    ASSERT_TRUE(errorWasThrown);
 }

@@ -13,17 +13,17 @@ protected:
     {
         this->device = new FileDisk("disk0");
         BootSector bootSector;
-        struct fat fat;
+        Fat fat(&bootSector);
 
         this->device->Create();
 
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(device);
 
-        fat_create(&bootSector, &fat);
-        fat_write(&fat, device);
+        fat.Create();
+        fat.Write(device);
 
-        fat_destruct(&fat);
+        //fat_destruct(&fat);
     }
 
     void TearDown() override
@@ -38,12 +38,12 @@ protected:
 TEST_F(ClusterChainTest, ReadDataWithOffset)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cch cc;
     uint32_t i;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
     cch_create(&cc, &fat, 0);
 
@@ -54,7 +54,7 @@ TEST_F(ClusterChainTest, ReadDataWithOffset)
 
     cch_writedata(this->device, &cc, 0, 1025, write_buf);
 
-    ASSERT_EQ(3, fat_getchainlen(&fat, cc.start_cluster));
+    ASSERT_EQ(3, fat.GetChainLength(cc.start_cluster));
 
     uint8_t read_buf[1020];
     cch_readdata(this->device, &cc, 5, 1020, read_buf);
@@ -63,7 +63,7 @@ TEST_F(ClusterChainTest, ReadDataWithOffset)
         ASSERT_EQ(i % 256, read_buf[i - 5]);
     }
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainTest, WriteData)
@@ -72,12 +72,12 @@ TEST_F(ClusterChainTest, WriteData)
     uint8_t writes = 10;
 
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cch cc;
     uint32_t i;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
     cch_create(&cc, &fat, 0);
 
@@ -97,42 +97,42 @@ TEST_F(ClusterChainTest, WriteData)
         EXPECT_EQ(i % chunk_size, read_buf[i]);
     }
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainTest, GetFreeClusterCount)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cch cc;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
     cch_create(&cc, &fat, 0);
 
-    uint32_t n = fat_get_free_cluster_count(&fat);
+    uint32_t n = fat.GetFreeClusterCount();
 
     cch_setlen(&cc, 1);
-    EXPECT_EQ(n - 1, fat_get_free_cluster_count(&fat));
+    ASSERT_EQ(n - 1, fat.GetFreeClusterCount());
 
     cch_setlen(&cc, 10);
-    EXPECT_EQ(n - 10, fat_get_free_cluster_count(&fat));
+    EXPECT_EQ(n - 10, fat.GetFreeClusterCount());
 
     cch_setlen(&cc, 0);
-    EXPECT_EQ(n, fat_get_free_cluster_count(&fat));
+    EXPECT_EQ(n, fat.GetFreeClusterCount());
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainTest, SetSize)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cch cc;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
     cch_create(&cc, &fat, 0);
 
@@ -148,22 +148,22 @@ TEST_F(ClusterChainTest, SetSize)
     cch_setsize(&cc, 1);
     EXPECT_EQ(1, cch_getlen(&cc));
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainTest, GetSize)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cch cc;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
 
     cch_create(&cc, &fat, 0);
     cch_setsize(&cc, bootSector.GetBytesPerCluster());
 
     EXPECT_EQ(bootSector.GetBytesPerCluster(), cch_getsize(&cc));
 
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }

@@ -69,24 +69,24 @@ void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
                       /*in*/ uint16_t sect_per_clus)
 {
     org::vfat::BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cchdir root;
 
     bootSector.Create(vol_size, bytes_per_sect, sect_per_clus);
     bootSector.Write(device);
 
-    fat_create(&bootSector, &fat);
+    fat.Create();
     cchdir_createroot(&fat, &root);
 
     cchdir_write(&root, device);
-    fat_write(&fat, device);
+    fat.Write(device);
 
     cchdir_destruct(&root);
-    fat_destruct(&fat);
+    //fat_destruct(&fat); will be invoked automatically
 }
 
 void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
-                    /*in*/ struct fat *fat,
+                    /*in*/ Fat *fat,
                     /*in*/ uint32_t first_cluster,
                     /*in*/ bool root,
                     /*out*/ struct cchdir* dir)
@@ -125,9 +125,9 @@ void cchdir_create(struct cch *cc, struct cchdir *dir)
     alist_create(dir->entries, sizeof(struct lfnde));
 }
 
-void cchdir_createroot(struct fat *fat, struct cchdir *dir)
+void cchdir_createroot(Fat *fat, struct cchdir *dir)
 {
-    BootSector *bootSector = fat->bootSector;
+    BootSector *bootSector = fat->GetBootSector();
     struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     cch_create(cc, fat, 1);
     bootSector->SetRootDirFirstCluster(cc->start_cluster);
@@ -139,9 +139,9 @@ void cchdir_createroot(struct fat *fat, struct cchdir *dir)
     alist_create(dir->entries, sizeof(struct lfnde));
 }
 
-void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ struct fat *fat, /*out*/ struct cchdir *dir)
+void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ Fat *fat, /*out*/ struct cchdir *dir)
 {
-    cchdir_readdir(device, fat, fat->bootSector->GetRootDirFirstCluster(), true, dir);
+    cchdir_readdir(device, fat, fat->GetBootSector()->GetRootDirFirstCluster(), true, dir);
 }
 
 void cchdir_changesize(struct cchdir *dir, uint32_t fat32_entry_cnt)
@@ -235,7 +235,7 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
 {
     struct lfnde dot;
     struct lfnde dotdot;
-    struct fat *fat = parentdir->chain->fat;
+    Fat *fat = parentdir->chain->fat;
 
     struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
     if (!cch_create(cc, fat, 1)) {
@@ -338,7 +338,7 @@ void cchdir_getfile(/*in*/ struct cchdir *dir,
 }
 
 bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
-                   /*in*/ struct fat *fat,
+                   /*in*/ Fat *fat,
                    /*in*/ struct lfnde *e,
                    /*out*/ struct cchdir *dir)
 {
@@ -427,7 +427,7 @@ bool cchdir_copydir(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct lfnde *e,
                     /*in*/ struct cchdir *dst)
 {
-    struct fat *fat = src->chain->fat;
+    Fat *fat = src->chain->fat;
 
     char namebuf[256];
     lfnde_getname(e, namebuf);

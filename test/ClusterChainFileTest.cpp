@@ -34,11 +34,11 @@ protected:
 TEST_F(ClusterChainFileTest, SetLength)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cchdir root;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -54,17 +54,17 @@ TEST_F(ClusterChainFileTest, SetLength)
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }
 
 TEST_F(ClusterChainFileTest, ReadWrite)
 {
     BootSector bootSector;
-    struct fat fat;
+    Fat fat(&bootSector);
     struct cchdir root;
 
     bootSector.Read(this->device);
-    fat_read(this->device, &bootSector, &fat);
+    fat.Read(this->device);
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -99,5 +99,5 @@ TEST_F(ClusterChainFileTest, ReadWrite)
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);
-    fat_destruct(&fat);
+    //fat_destruct(&fat);
 }

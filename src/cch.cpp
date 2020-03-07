@@ -18,27 +18,27 @@ uint32_t cch_getlen(struct cch *cc)
         return 0;
     }
 
-    return fat_getchainlen(cc->fat, cc->start_cluster);
+    return cc->fat->GetChainLength(cc->start_cluster);
 }
 
 uint64_t cch_getsize(struct cch *cc)
 {
     uint32_t clus_cnt = cch_getlen(cc);
-    uint32_t clusterSize = cc->fat->bootSector->GetBytesPerCluster();
+    uint32_t clusterSize = cc->fat->GetBootSector()->GetBytesPerCluster();
 
     return clus_cnt * clusterSize;
 }
 
 uint32_t cch_setsize(struct cch *cc, uint32_t size)
 {
-    uint32_t clusterSize = cc->fat->bootSector->GetBytesPerCluster();
+    uint32_t clusterSize = cc->fat->GetBootSector()->GetBytesPerCluster();
     uint32_t clus_cnt = (size + clusterSize - 1) / clusterSize;
     cch_setlen(cc, clus_cnt);
 
     return clusterSize * clus_cnt;
 }
 
-bool cch_create(/*in*/ struct cch *cc, /*in*/ struct fat *fat, /*in*/ uint32_t length)
+bool cch_create(/*in*/ struct cch *cc, /*in*/ Fat *fat, /*in*/ uint32_t length)
 {
     cc->fat = fat;
     cc->start_cluster = 0;
@@ -51,14 +51,14 @@ void cch_readdata(org::vfat::FileDisk *device, struct cch *cc, uint32_t offset, 
         /* Cannot read from an empty cluster chain */
     }
 
-    struct fat *fat = cc->fat;
-    BootSector* bootSector = fat->bootSector;
+    Fat *fat = cc->fat;
+    BootSector* bootSector = fat->GetBootSector();
     uint32_t clusterSize = bootSector->GetBytesPerCluster();
     uint32_t chain_idx;
     uint32_t n;
 
-    uint32_t chain[fat_getchainlen(fat, cc->start_cluster)];
-    fat_getchain(fat, cc->start_cluster, chain);
+    uint32_t chain[fat->GetChainLength(cc->start_cluster)];
+    fat->GetChain(cc->start_cluster, chain);
 
     chain_idx = (offset / clusterSize);
     n = nbytes;
@@ -87,8 +87,8 @@ void cch_writedata(org::vfat::FileDisk *device, struct cch *cc, uint32_t offset,
         return;
     }
 
-    struct fat *fat = cc->fat;
-    BootSector *bootSector = fat->bootSector;
+    Fat *fat = cc->fat;
+    BootSector *bootSector = fat->GetBootSector();
     uint32_t clusterSize = bootSector->GetBytesPerCluster();
     uint32_t min_size = offset + nbytes;
     uint32_t chain_idx;
@@ -100,8 +100,8 @@ void cch_writedata(org::vfat::FileDisk *device, struct cch *cc, uint32_t offset,
         cch_setsize(cc, min_size); // growing the chain
     }
 
-    uint32_t chain[fat_getchainlen(fat, cc->start_cluster)];
-    fat_getchain(fat, cc->start_cluster, chain);
+    uint32_t chain[fat->GetChainLength(cc->start_cluster)];
+    fat->GetChain(cc->start_cluster, chain);
 
     chain_idx = (offset / clusterSize);
     n = nbytes;
@@ -132,35 +132,33 @@ bool cch_setlen(/*in*/ struct cch *cc, /*in*/ uint32_t nr_clusters)
     }
 
     if (cc->start_cluster == 0 && nr_clusters > 0) {
-        return fat_alloc_chain(cc->fat, nr_clusters, &(cc->start_cluster));
+        cc->start_cluster = cc->fat->AllocateChain(nr_clusters);
+        return true;
     }
 
-    uint32_t len = fat_getchainlen(cc->fat, cc->start_cluster);
+    uint32_t len = cc->fat->GetChainLength(cc->start_cluster);
     if (nr_clusters == len) {
         return true;
     }
 
     uint32_t chain[len];
-    fat_getchain(cc->fat, cc->start_cluster, chain);
+    cc->fat->GetChain(cc->start_cluster, chain);
     if (nr_clusters > len) {
         /* grow the chain */
         uint32_t new_chain_start_cluster;
-        if (!fat_alloc_chain(cc->fat, nr_clusters - len, &new_chain_start_cluster)) {
-            return false;
-        }
-
-        fat_append_chain(cc->fat, cc->start_cluster, new_chain_start_cluster);
+        new_chain_start_cluster = cc->fat->AllocateChain( nr_clusters - len);
+        cc->fat->AppendChain(cc->start_cluster, new_chain_start_cluster);
     } else {
         /* shrink the chain */
         uint32_t i;
         if (nr_clusters > 0) {
-            fat_seteof(cc->fat, chain[nr_clusters - 1]);
+            cc->fat->SetEof(chain[nr_clusters - 1]);
             for (i = nr_clusters; i < len; ++i) {
-                fat_setfree(cc->fat, chain[i]);
+                cc->fat->SetFree(chain[i]);
             }
         } else {
             for (i = 0; i < len; ++i) {
-                fat_setfree(cc->fat, chain[i]);
+                cc->fat->SetFree(chain[i]);
             }
 
             cc->start_cluster = 0;
