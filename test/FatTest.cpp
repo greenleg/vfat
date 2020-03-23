@@ -2,7 +2,7 @@
 #include "../include/common.h"
 #include "../include/FileDisk.h"
 #include "../include/BootSector.h"
-#include "../include/fat.h"
+#include "../include/Fat.h"
 
 using namespace org::vfat;
 

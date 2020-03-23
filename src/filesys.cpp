@@ -214,7 +214,7 @@ struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir,
     }
 
     struct cchdir *subccdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-    cchdir_getdir(fs->device, dir->ccdir->chain->fat, &e, subccdir);
+    cchdir_getdir(fs->device, dir->ccdir->chain->GetFat(), &e, subccdir);
 
     struct vdir *subdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     subdir->ccdir = subccdir;

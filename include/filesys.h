@@ -2,7 +2,7 @@
 #define VFAT_FILESYS_H
 
 #include "FileDisk.h"
-#include "fat.h"
+#include "Fat.h"
 #include "cchdir.h"
 
 struct filesys

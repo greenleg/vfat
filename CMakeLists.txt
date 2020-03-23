@@ -46,7 +46,7 @@ set(vfat_lib_src
     include/cch.h
     include/cchdir.h
     include/cchfile.h
-    include/fat.h
+    include/Fat.h
     include/FileDisk.h
     include/filesys.h
     include/lfnde.h
@@ -56,7 +56,7 @@ set(vfat_lib_src
     src/cch.cpp
     src/cchdir.cpp
     src/cchfile.cpp
-    src/fat.cpp
+    src/Fat.cpp
     src/FileDisk.cpp
     src/filesys.cpp
     src/lfnde.cpp

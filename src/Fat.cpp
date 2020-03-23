@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdexcept>
 #include "../include/common.h"
-#include "../include/fat.h"
+#include "../include/Fat.h"
 
 using namespace org::vfat;
 

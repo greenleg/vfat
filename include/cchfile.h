@@ -6,7 +6,7 @@
 struct cchfile
 {
     struct lfnde *entry;
-    struct cch *chain;
+    struct ClusterChain *chain;
 };
 
 /*

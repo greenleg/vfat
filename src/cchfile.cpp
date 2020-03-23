@@ -15,8 +15,8 @@ uint32_t cchfile_getlen(/*in*/ struct cchfile *file)
 
 void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ uint32_t len)
 {
-    cch_setsize(file->chain, len);
-    lfnde_setstartcluster(file->entry, file->chain->start_cluster);
+    file->chain->SetSizeInBytes(len);
+    lfnde_setstartcluster(file->entry, file->chain->GetStartCluster());
     lfnde_setdatalen(file->entry, len);
 }
 
@@ -41,7 +41,7 @@ bool cchfile_read(/*in*/ org::vfat::FileDisk *device,
     }    
 
     if (nbytes > 0) {
-        cch_readdata(device, file->chain, offset, nbytes, buffer);
+        file->chain->ReadData(device, offset, nbytes, buffer);
     }
 
     *nread = nbytes;
@@ -59,7 +59,7 @@ void cchfile_write(/*in*/ org::vfat::FileDisk *device,
         cchfile_setlen(file, lastByte);
     }
 
-    cch_writedata(device, file->chain, offset, nbytes, buffer);
+    file->chain->WriteData(device, offset, nbytes, buffer);
 }
 
 void cchfile_destruct(/*in*/ struct cchfile *file)

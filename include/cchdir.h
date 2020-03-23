@@ -14,7 +14,7 @@ using namespace org::vfat;
 
 struct cchdir
 {
-    struct cch *chain;
+    struct ClusterChain *chain;
     struct alist *entries;
     uint32_t capacity;
     bool root;
