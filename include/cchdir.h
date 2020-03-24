@@ -5,7 +5,7 @@
 
 #include "common.h"
 #include "alist.h"
-#include "cch.h"
+#include "ClusterChain.h"
 #include "lfnde.h"
 #include "cchfile.h"
 #include "BootSector.h"

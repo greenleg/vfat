@@ -27,11 +27,11 @@ bool filesys_format(/*in*/ org::vfat::FileDisk *device,
 bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs)
 {
     fs->device = device;
-    fs->bootSector = new BootSector();
-    fs->fat = new Fat(fs->bootSector);
+    fs->bootSector = new BootSector();    
     fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
 
     fs->bootSector->Read(device);
+    fs->fat = new Fat(fs->bootSector);
     fs->fat->Read(device);
     cchdir_readroot(device, fs->fat, fs->root);
 

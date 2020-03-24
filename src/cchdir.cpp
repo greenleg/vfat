@@ -69,13 +69,13 @@ void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
                       /*in*/ uint16_t sect_per_clus)
 {
     org::vfat::BootSector bootSector;
-    Fat fat(&bootSector);
-    struct cchdir root;
-
     bootSector.Create(vol_size, bytes_per_sect, sect_per_clus);
     bootSector.Write(device);
 
+    Fat fat(&bootSector);
     fat.Create();
+
+    struct cchdir root;
     cchdir_createroot(&fat, &root);
 
     cchdir_write(&root, device);

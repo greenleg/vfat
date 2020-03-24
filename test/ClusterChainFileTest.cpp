@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 #include "../include/common.h"
 #include "../include/alist.h"
-#include "../include/cch.h"
+#include "../include/ClusterChain.h"
 #include "../include/cchdir.h"
 #include "../include/cchfile.h"
 #include "../include/lfnde.h"
@@ -33,12 +33,13 @@ protected:
 
 TEST_F(ClusterChainFileTest, SetLength)
 {
-    BootSector bootSector;
-    Fat fat(&bootSector);
-    struct cchdir root;
-
+    BootSector bootSector;    
     bootSector.Read(this->device);
+
+    Fat fat(&bootSector);
     fat.Read(this->device);
+
+    struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;
@@ -50,7 +51,7 @@ TEST_F(ClusterChainFileTest, SetLength)
     EXPECT_EQ(0, cchfile_getlen(&file));
     cchfile_setlen(&file, 100);
     EXPECT_EQ(100, cchfile_getlen(&file));
-    EXPECT_GE(cch_getsize(file.chain), 100);
+    EXPECT_GE(file.chain->GetSizeInBytes(), 100);
 
     cchfile_destruct(&file);
     cchdir_destruct(&root);
@@ -59,12 +60,13 @@ TEST_F(ClusterChainFileTest, SetLength)
 
 TEST_F(ClusterChainFileTest, ReadWrite)
 {
-    BootSector bootSector;
-    Fat fat(&bootSector);
-    struct cchdir root;
-
+    BootSector bootSector;    
     bootSector.Read(this->device);
+
+    Fat fat(&bootSector);
     fat.Read(this->device);
+
+    struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
     struct lfnde e;

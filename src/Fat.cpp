@@ -10,6 +10,7 @@ using namespace org::vfat;
 Fat::Fat(BootSector *bootSector)
 {
     this->bootSector = bootSector;
+    this->entries = new uint32_t[bootSector->GetClusterCount()];
 }
 
 Fat::~Fat()
@@ -21,7 +22,6 @@ void Fat::Create()
 {
     this->lastAllocatedCluster = FAT_FIRST_CLUSTER - 1;
     uint32_t clusterCount = this->bootSector->GetClusterCount();
-    this->entries = new uint32_t[clusterCount];
     memset((void*)this->entries, 0, sizeof(uint32_t) * clusterCount);
     this->entries[0] = FAT_MEDIA_DESCRIPTOR;
     this->entries[1] = FAT_EOF;
@@ -32,7 +32,6 @@ void Fat::Read(FileDisk *device)
     this->lastAllocatedCluster = FAT_FIRST_CLUSTER - 1;
     uint32_t fatOffset = this->bootSector->GetFatOffset();
     uint32_t clusterCount = this->bootSector->GetClusterCount();
-    this->entries = new uint32_t[clusterCount];
     device->Read((uint8_t *)this->entries, fatOffset, sizeof(uint32_t) * clusterCount);
 }
 

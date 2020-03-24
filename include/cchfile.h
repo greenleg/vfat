@@ -1,7 +1,7 @@
 #ifndef VFAT_CCHFILE_H
 #define VFAT_CCHFILE_H
 
-#include "cch.h"
+#include "ClusterChain.h"
 
 struct cchfile
 {

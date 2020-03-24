@@ -43,7 +43,7 @@ set(vfat_lib_src
     include/common.h
     include/alist.h
     include/binaryreader.h
-    include/cch.h
+    include/ClusterChain.h
     include/cchdir.h
     include/cchfile.h
     include/Fat.h
@@ -53,7 +53,7 @@ set(vfat_lib_src
     include/BootSector.h
     src/alist.cpp
     src/binaryreader.cpp
-    src/cch.cpp
+    src/ClusterChain.cpp
     src/cchdir.cpp
     src/cchfile.cpp
     src/Fat.cpp
