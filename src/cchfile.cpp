@@ -10,14 +10,14 @@
  */
 uint32_t cchfile_getlen(/*in*/ struct cchfile *file)
 {
-    return file->entry->sede->data_length;
+    return file->entry->GetDataLength();
 }
 
 void cchfile_setlen(/*in*/ struct cchfile *file, /*in*/ uint32_t len)
 {
     file->chain->SetSizeInBytes(len);
-    lfnde_setstartcluster(file->entry, file->chain->GetStartCluster());
-    lfnde_setdatalen(file->entry, len);
+    file->entry->SetStartCluster(file->chain->GetStartCluster());
+    file->entry->SetDataLength(len);
 }
 
 /*

@@ -2,11 +2,14 @@
 #define VFAT_CCHFILE_H
 
 #include "ClusterChain.h"
+#include "lfnde.h"
+
+using namespace org::vfat;
 
 struct cchfile
 {
-    struct lfnde *entry;
-    struct ClusterChain *chain;
+    DirectoryEntry *entry;
+    ClusterChain *chain;
 };
 
 /*
@@ -34,5 +37,22 @@ void cchfile_write(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ uint8_t *buf);
 
 void cchfile_destruct(/*in*/ struct cchfile *file);
+
+namespace org::vfat
+{
+    class ClusterChainFile
+    {
+    private:
+        DirectoryEntry *entry;
+        ClusterChain *chain;
+
+    public:
+        uint32_t GetLength() const;
+        void SetLength(uint32_t val);
+
+        uint32_t Read(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        void Write(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+    };
+}
 
 #endif

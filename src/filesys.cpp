@@ -93,7 +93,7 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
     char *parts[256];
     int nparts = parse_path(path, parts);
 
-    struct lfnde e;    
+    DirectoryEntry e;
     struct cchdir *dir = fs->root;
     struct cchdir *subdir;
 
@@ -135,7 +135,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
     char *parts[256];
     int nparts = parse_path(path, parts);
 
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchdir *dir = fs->root;
     struct cchdir *subdir;
 
@@ -194,12 +194,12 @@ bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
         return false;
     }
 
-    struct lfnde e;
+    DirectoryEntry e;
     cchdir_getentry(dir->ccdir, dir->idx, &e);
 
-    lfnde_getname(&e, entry->name);
-    entry->isdir = lfnde_isdir(&e);
-    entry->datalen = lfnde_getdatalen(&e);
+    e.GetName(entry->name);
+    entry->isdir = e.IsDir();
+    entry->datalen = e.GetDataLength();
 
     ++(dir->idx);
 
@@ -208,7 +208,7 @@ bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
 
 struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir, /*in*/ const char *name)
 {
-    struct lfnde e;
+    DirectoryEntry e;
     if (!cchdir_findentry(dir->ccdir, name, &e)) {
         return NULL;
     }

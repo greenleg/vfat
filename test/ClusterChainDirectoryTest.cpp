@@ -42,8 +42,8 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
 
     EXPECT_EQ(0, alist_count(root.entries));
 
-    struct lfnde e;
-    lfnde_create(&e);
+    DirectoryEntry e;
+    //lfnde_create(&e);
     cchdir_addentry(&root, &e);
     EXPECT_EQ(1, alist_count(root.entries));
 
@@ -67,16 +67,17 @@ TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
 
     EXPECT_EQ(0, alist_count(root.entries));
 
-    struct lfnde e;
     for(uint32_t i = 0; i < 100; ++i) {
-        lfnde_create(&e);
+        DirectoryEntry e;
+        //lfnde_create(&e);
         cchdir_addentry(&root, &e);
     }
 
     for(uint32_t i = 0; i < 100; ++i) {
+        DirectoryEntry e;
         EXPECT_EQ(100 - i, alist_count(root.entries));
         cchdir_getentry(&root, 0, &e);
-        lfnde_destruct(&e);
+        //lfnde_destruct(&e);
         cchdir_removeentry(&root, 0);
     }
 
@@ -95,17 +96,17 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
     cchdir_readroot(this->device, &fat, &root);
 
     const char *name = "A nice directory";
-    struct lfnde e1;
-    struct lfnde e2;
+    DirectoryEntry e1;
+    DirectoryEntry e2;
     struct cchdir dir;
 
     cchdir_adddir(&root, name, &e1, &dir);
     cchdir_findentry(&root, name, &e2);
 
     char namebuf[32];
-    lfnde_getname(&e1, namebuf);
+    e1.GetName(namebuf);
     EXPECT_STREQ(name, namebuf);
-    lfnde_getname(&e2, namebuf);
+    e2.GetName(namebuf);
     EXPECT_STREQ(name, namebuf);
 
     cchdir_destruct(&dir);
@@ -126,7 +127,7 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 
     char namebuf[255];
     uint32_t free_before_add;
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchdir dir;
     uint32_t count = 0;
 
@@ -165,7 +166,7 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     uint32_t free_before = fat.GetFreeClusterCount();
     uint32_t entries_before = alist_count(root.entries);
 
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchdir dir;
     const char *dir_name = "testdir";
     cchdir_adddir(&root, dir_name, &e, &dir);
@@ -193,7 +194,7 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchdir dir;
 
     EXPECT_TRUE(cchdir_adddir(&root, "home", &e, &dir));
@@ -222,7 +223,7 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde e;    
+    DirectoryEntry e;
 
     cchdir_addfile(&root, "oldfile", &e);
 
@@ -249,8 +250,8 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde fe;
-    struct lfnde de;
+    DirectoryEntry fe;
+    DirectoryEntry de;
     struct cchdir dir;
 
     EXPECT_TRUE(cchdir_adddir(&root, "home", &de, &dir));
@@ -279,12 +280,12 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde fe1;
-    struct lfnde fe2;
-    struct lfnde fe3;
+    DirectoryEntry fe1;
+    DirectoryEntry fe2;
+    DirectoryEntry fe3;
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry de1;
+    DirectoryEntry de2;
 
     struct cchdir dir1;
     struct cchdir dir2;
@@ -343,11 +344,11 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde orige;
-    struct lfnde copye;
+    DirectoryEntry orige;
+    DirectoryEntry copye;
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry de1;
+    DirectoryEntry de2;
 
     struct cchdir dir1;
     struct cchdir dir2;
@@ -415,10 +416,10 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde fe;
+    DirectoryEntry fe;
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry de1;
+    DirectoryEntry de2;
 
     struct cchdir dir1;
     struct cchdir dir2;
@@ -453,8 +454,8 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 
     EXPECT_TRUE(cchdir_copydir(this->device, &root, &de1, &dir2));
 
-    struct lfnde copyfe;
-    struct lfnde copyde1;
+    DirectoryEntry copyfe;
+    DirectoryEntry copyde1;
     struct cchdir copydir1;
     struct cchfile copyfile;
 

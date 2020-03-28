@@ -42,7 +42,7 @@ TEST_F(ClusterChainFileTest, SetLength)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchfile file;
 
     cchdir_addfile(&root, "index.htm", &e);
@@ -69,7 +69,7 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     struct cchdir root;
     cchdir_readroot(this->device, &fat, &root);
 
-    struct lfnde e;
+    DirectoryEntry e;
     struct cchfile file;
 
     cchdir_addfile(&root, "dump.bin", &e);

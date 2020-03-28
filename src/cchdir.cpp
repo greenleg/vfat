@@ -13,7 +13,7 @@ using namespace org::vfat;
 
 static bool check_unique_name(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
-    struct lfnde e;
+    DirectoryEntry e;
     if (cchdir_findentry(dir, name, &e)) {
         __vfat_errno = EALREADYEXISTS;
         return false;
@@ -26,7 +26,7 @@ static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
 {
     uint32_t offset = 0;
     uint8_t entry_type;
-    struct lfnde e;
+    DirectoryEntry e;
     uint32_t i;
 
     for (i = 0; i < dir->capacity; ++i) {
@@ -35,9 +35,9 @@ static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
             break;
         }
 
-        lfnde_readbuf(buffer + offset, &e);
+        e.Read(buffer + offset);
         alist_add(dir->entries, &e);
-        offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
+        offset += e.GetEntryCount() * FAT_DIR_ENTRY_SIZE;
     }
 }
 
@@ -46,11 +46,11 @@ static uint32_t cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, uint32
     uint32_t offset = 0;
     uint32_t i;
 
-    struct lfnde e;
+    DirectoryEntry e;
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, &e);
-        lfnde_writebuf(&e, buffer + offset);
-        offset += lfnde_count(&e) * FAT_DIR_ENTRY_SIZE;
+        e.Write(buffer + offset);
+        offset += e.GetEntryCount() * FAT_DIR_ENTRY_SIZE;
     }
 
     if (offset < bufsize) {
@@ -101,7 +101,7 @@ void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
     dir->root = root;
     dir->capacity = size / FAT_DIR_ENTRY_SIZE;
     dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-    alist_create(dir->entries, sizeof(struct lfnde));
+    alist_create(dir->entries, sizeof(DirectoryEntry));
 
     cchdir_read_entries(dir, buffer);
 }
@@ -120,7 +120,7 @@ void cchdir_create(ClusterChain *cc, struct cchdir *dir)
     dir->root = false;
     dir->capacity = cc->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE;
     dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-    alist_create(dir->entries, sizeof(struct lfnde));
+    alist_create(dir->entries, sizeof(DirectoryEntry));
 }
 
 void cchdir_createroot(Fat *fat, struct cchdir *dir)
@@ -134,7 +134,7 @@ void cchdir_createroot(Fat *fat, struct cchdir *dir)
     dir->root = true;
     dir->capacity = cc->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE;
     dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-    alist_create(dir->entries, sizeof(struct lfnde));
+    alist_create(dir->entries, sizeof(DirectoryEntry));
 }
 
 void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ Fat *fat, /*out*/ struct cchdir *dir)
@@ -153,20 +153,20 @@ static uint32_t get_fat32_entry_cnt(struct cchdir *dir)
 {
     uint32_t i;
     uint32_t n = 0;
-    struct lfnde e;
+    DirectoryEntry e;
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, &e);
-        n += 1 + e.fde->secondary_count;
+        n += e.GetEntryCount();
     }
 
     return n;
 }
 
-void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
+void cchdir_addentry(struct cchdir *dir, DirectoryEntry *e)
 {
     uint32_t new_cnt = get_fat32_entry_cnt(dir);
-    new_cnt += 1 + e->fde->secondary_count;
+    new_cnt += e->GetEntryCount();
 
     if (new_cnt > dir->capacity) {
         cchdir_changesize(dir, new_cnt);
@@ -175,19 +175,19 @@ void cchdir_addentry(struct cchdir *dir, struct lfnde *e)
     alist_add(dir->entries, e);
 }
 
-void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ uint32_t idx, /*out*/ struct lfnde *e)
+void cchdir_getentry(/*in*/ struct cchdir *dir, /*in*/ uint32_t idx, /*out*/ DirectoryEntry *e)
 {
     alist_get(dir->entries, idx, e);
 }
 
-bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ DirectoryEntry *e)
 {
     uint32_t i;
     char namebuf[256];
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, e);
-        lfnde_getname(e, namebuf);
+        e->GetName(namebuf);
         if (strcmp(name, namebuf) == 0) {
             return true;
         }
@@ -201,11 +201,11 @@ bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*o
 {
     uint32_t i;
     char namebuf[256];
-    struct lfnde e;
+    DirectoryEntry e;
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
         alist_get(dir->entries, i, &e);
-        lfnde_getname(&e, namebuf);
+        e.GetName(namebuf);
         if (strcmp(name, namebuf) == 0) {
             *idx = i;
             return true;
@@ -229,10 +229,10 @@ void cchdir_removeentry(struct cchdir *dir, uint32_t idx)
     }
 }
 
-bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ struct lfnde* subde)
+bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir *subdir, /*out*/ DirectoryEntry* subde)
 {
-    struct lfnde dot;
-    struct lfnde dotdot;
+    DirectoryEntry dot;
+    DirectoryEntry dotdot;
     Fat *fat = parentdir->chain->GetFat();
 
 //    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
@@ -243,25 +243,25 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
     ClusterChain *cc = new ClusterChain(fat, 0);
     cc->SetLength(1);
 
-    lfnde_create(subde);
-    lfnde_setisdir(subde, true);
-    lfnde_setstartcluster(subde, cc->GetStartCluster());
+    //lfnde_create(subde);
+    subde->SetIsDir(true);
+    subde->SetStartCluster(cc->GetStartCluster());
 
     cchdir_create(cc, subdir);
 
     /* Add "." entry */
-    lfnde_create(&dot);
-    lfnde_setname(&dot, ".");
-    lfnde_setisdir(&dot, true);
-    lfnde_setstartcluster(&dot, subdir->chain->GetStartCluster());
+    //lfnde_create(&dot);
+    dot.SetName(".");
+    dot.SetIsDir(true);
+    dot.SetStartCluster(subdir->chain->GetStartCluster());
     // TODO: copy date/time fields from entry to dot;
     cchdir_addentry(subdir, &dot);
 
     /* Add ".." entry */
-    lfnde_create(&dotdot);
-    lfnde_setname(&dotdot, "..");
-    lfnde_setisdir(&dotdot, true);
-    lfnde_setstartcluster(&dotdot, parentdir->chain->GetStartCluster());
+    //lfnde_create(&dotdot);
+    dotdot.SetName("..");
+    dotdot.SetIsDir(true);
+    dotdot.SetStartCluster(parentdir->chain->GetStartCluster());
     // TODO: copy date/time fields from entry to dotdot;
     cchdir_addentry(subdir, &dotdot);
 
@@ -271,7 +271,7 @@ bool cchdir_createsubdir(/*in*/ struct cchdir *parentdir, /*out*/ struct cchdir 
 
 bool cchdir_adddir(/*in*/ struct cchdir *dir,
                    /*in*/ const char *name,
-                   /*out*/ struct lfnde *subde,
+                   /*out*/ DirectoryEntry *subde,
                    /*out*/ struct cchdir *subdir)
 {
     if (!check_unique_name(dir, name)) {
@@ -282,7 +282,7 @@ bool cchdir_adddir(/*in*/ struct cchdir *dir,
         return false;
     }
 
-    lfnde_setname(subde, name);
+    subde->SetName(name);
     cchdir_addentry(dir, subde);
 
     return true;
@@ -290,7 +290,7 @@ bool cchdir_adddir(/*in*/ struct cchdir *dir,
 
 bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 {
-    struct lfnde e;    
+    DirectoryEntry e;
     uint32_t idx;
 
     if (!cchdir_findentryidx(dir, name, &idx)) {
@@ -304,37 +304,37 @@ bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
 //    if (!cch_setlen(&cc, 0)) {
 //        return false;
 //    }
-    ClusterChain cc(dir->chain->GetFat(), e.sede->first_cluster);
+    ClusterChain cc(dir->chain->GetFat(), e.GetStartCluster());
     cc.SetLength(0);
 
     cchdir_removeentry(dir, idx);
     return true;
 }
 
-bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ struct lfnde *e)
+bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ DirectoryEntry *e)
 {
     if (!check_unique_name(dir, name)) {
         return false;
     }
 
-    lfnde_create(e);
-    lfnde_setname(e, name);
-    lfnde_setisdir(e, false);
-    lfnde_setstartcluster(e, 0);
-    lfnde_setdatalen(e, 0);
+    //lfnde_create(e);
+    e->SetName(name);
+    e->SetIsDir(false);
+    e->SetStartCluster(0);
+    e->SetDataLength(0);
     cchdir_addentry(dir, e);
 
     return true;
 }
 
 void cchdir_getfile(/*in*/ struct cchdir *dir,
-                    /*in*/ struct lfnde *e,
+                    /*in*/ DirectoryEntry *e,
                     /*out*/ struct cchfile *file)
 {
 //    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
 //    cc->fat = dir->chain->fat;
 //    cc->start_cluster = lfnde_getstartcluster(e);
-    ClusterChain *cc = new ClusterChain(dir->chain->GetFat(), lfnde_getstartcluster(e));
+    ClusterChain *cc = new ClusterChain(dir->chain->GetFat(), e->GetStartCluster());
 
     file->chain = cc;
     file->entry = e;
@@ -342,10 +342,10 @@ void cchdir_getfile(/*in*/ struct cchdir *dir,
 
 bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
                    /*in*/ Fat *fat,
-                   /*in*/ struct lfnde *e,
+                   /*in*/ DirectoryEntry *e,
                    /*out*/ struct cchdir *dir)
 {
-    uint32_t first_cluster = lfnde_getstartcluster(e);
+    uint32_t first_cluster = e->GetStartCluster();
     cchdir_readdir(device, fat, first_cluster, false, dir);
 
     return true;
@@ -353,7 +353,7 @@ bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
 
 bool cchdir_move(/*in*/ org::vfat::FileDisk *device,
                  /*in*/ struct cchdir *src,
-                 /*in*/ struct lfnde *e,
+                 /*in*/ struct DirectoryEntry *e,
                  /*in*/ struct cchdir *dst,
                  /*in*/ const char *new_name)
 {
@@ -363,20 +363,20 @@ bool cchdir_move(/*in*/ org::vfat::FileDisk *device,
 
     uint32_t idx;
     char old_name[256];
-    lfnde_getname(e, old_name);
+    e->GetName(old_name);
     cchdir_findentryidx(src, old_name, &idx);
     cchdir_removeentry(src, idx);
-    lfnde_setname(e, new_name);
+    e->SetName(new_name);
     cchdir_addentry(dst, e);
 
-    if (lfnde_isdir(e)) {
+    if (e->IsDir()) {
         struct cchdir dir;
         cchdir_getdir(device, src->chain->GetFat(), e, &dir);
 
-        struct lfnde dotdot;
+        DirectoryEntry dotdot;
         cchdir_findentry(&dir, "..", &dotdot);
-        assert(lfnde_getstartcluster(&dotdot) == src->chain->GetStartCluster());
-        lfnde_setstartcluster(&dotdot, dst->chain->GetStartCluster());
+        assert(dotdot.GetStartCluster() == src->chain->GetStartCluster());
+        dotdot.SetStartCluster(dst->chain->GetStartCluster());
 
         // Write dir to the disk
         cchdir_write(&dir, device);
@@ -388,13 +388,13 @@ bool cchdir_move(/*in*/ org::vfat::FileDisk *device,
 
 bool cchdir_copyfile(/*in*/ org::vfat::FileDisk *device,
                      /*in*/ struct cchdir *src,
-                     /*in*/ struct lfnde *e,
+                     /*in*/ DirectoryEntry *e,
                      /*in*/ struct cchdir *dst)
 {
     char namebuf[256];
-    lfnde_getname(e, namebuf);
+    e->GetName(namebuf);
 
-    struct lfnde copye;
+    DirectoryEntry copye;
     if (!cchdir_addfile(dst, namebuf, &copye)) {
         return false;
     }
@@ -427,31 +427,31 @@ bool cchdir_copyfile(/*in*/ org::vfat::FileDisk *device,
 
 bool cchdir_copydir(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct cchdir *src,
-                    /*in*/ struct lfnde *e,
+                    /*in*/ DirectoryEntry *e,
                     /*in*/ struct cchdir *dst)
 {
     Fat *fat = src->chain->GetFat();
 
     char namebuf[256];
-    lfnde_getname(e, namebuf);
+    e->GetName(namebuf);
 
     struct cchdir orig;
     if (!cchdir_getdir(device, fat, e, &orig)) {
         return false;
     }
 
-    struct lfnde copye;
+    DirectoryEntry copye;
     struct cchdir copy;
     if (!cchdir_adddir(dst, namebuf, &copye, &copy)) {
         return false;
     }
 
-    struct lfnde child;
+    DirectoryEntry child;
     uint32_t i;
     for (i = 0; i < alist_count(orig.entries); ++i) {
         cchdir_getentry(&orig, i, &child);
-        if (lfnde_isdir(&child)) {
-            lfnde_getname(&child, namebuf);
+        if (child.IsDir()) {
+            child.GetName(namebuf);
             if (strcmp(namebuf, ".") == 0 || strcmp(namebuf, "..") == 0) {
                 continue;
             }
@@ -476,7 +476,7 @@ bool cchdir_copydir(/*in*/ org::vfat::FileDisk *device,
 
 bool cchdir_setname(/*in*/ org::vfat::FileDisk *device,
                     /*in*/ struct cchdir *dir,
-                    /*in*/ struct lfnde *e,
+                    /*in*/ DirectoryEntry *e,
                     /*in*/ const char *name)
 {
     return cchdir_move(device, dir, e, dir, name);
@@ -484,12 +484,12 @@ bool cchdir_setname(/*in*/ org::vfat::FileDisk *device,
 
 void cchdir_destruct(/*in*/ struct cchdir *dir)
 {
-    struct lfnde e;
     uint32_t i;
 
     for (i = 0; i < alist_count(dir->entries); ++i) {
+        DirectoryEntry e;
         alist_get(dir->entries, i, &e);
-        lfnde_destruct(&e);
+        //lfnde_destruct(&e);
     }
 
     alist_destruct(dir->entries);
