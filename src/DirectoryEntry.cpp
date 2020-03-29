@@ -3,8 +3,7 @@
 #include <assert.h>
 
 #include "../include/binaryreader.h"
-#include "../include/alist.h"
-#include "../include/lfnde.h"
+#include "../include/DirectoryEntry.h"
 
 using namespace org::vfat;
 
@@ -130,7 +129,7 @@ DirectoryEntry::~DirectoryEntry()
     delete this->fndeList;
 }
 
-uint16_t DirectoryEntry::GetEntryCount() const
+uint16_t DirectoryEntry::GetFat32EntryCount() const
 {
     return 1 + this->fndeList->size();
 }

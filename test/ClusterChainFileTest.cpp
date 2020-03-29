@@ -5,7 +5,7 @@
 #include "../include/ClusterChain.h"
 #include "../include/cchdir.h"
 #include "../include/cchfile.h"
-#include "../include/lfnde.h"
+#include "../include/DirectoryEntry.h"
 
 using namespace org::vfat;
 

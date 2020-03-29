@@ -49,7 +49,7 @@ set(vfat_lib_src
     include/Fat.h
     include/FileDisk.h
     include/filesys.h
-    include/lfnde.h
+    include/DirectoryEntry.h
     include/BootSector.h
     src/alist.cpp
     src/binaryreader.cpp
@@ -59,7 +59,7 @@ set(vfat_lib_src
     src/Fat.cpp
     src/FileDisk.cpp
     src/filesys.cpp
-    src/lfnde.cpp
+    src/DirectoryEntry.cpp
     src/BootSector.cpp)
 
 set(vfat_test_src

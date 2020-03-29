@@ -3,7 +3,7 @@
 #include "../include/alist.h"
 #include "../include/ClusterChain.h"
 #include "../include/cchdir.h"
-#include "../include/lfnde.h"
+#include "../include/DirectoryEntry.h"
 
 using namespace org::vfat;
 

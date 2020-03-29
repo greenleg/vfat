@@ -107,7 +107,7 @@ namespace org::vfat
         bool IsDir() const;
         bool IsFile() const;
         void SetIsDir(bool val);
-        uint16_t GetEntryCount() const;
+        uint16_t GetFat32EntryCount() const;
     };
 }
 
