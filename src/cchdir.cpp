@@ -763,46 +763,30 @@ void ClusterChainDirectory::CopyDirectory(FileDisk *device, DirectoryEntry *e, C
 {
     assert(e->IsDir());
 
-    Fat *fat = this->chain->GetFat();
-
     char nameBuf[256];
     e->GetName(nameBuf);
 
-    struct cchdir orig;
-    if (!cchdir_getdir(device, fat, e, &orig)) {
-        return false;
-    }
+    ClusterChainDirectory *orig = this->GetDirectory(device, e);
 
-    DirectoryEntry copye;
-    struct cchdir copy;
-    if (!cchdir_adddir(dst, namebuf, &copye, &copy)) {
-        return false;
-    }
+    DirectoryEntry *copye = dest->AddDirectory(nameBuf, device);
+    ClusterChainDirectory *copy = dest->GetDirectory(device, copye);
 
-    DirectoryEntry child;
-    uint32_t i;
-    for (i = 0; i < alist_count(orig.entries); ++i) {
-        cchdir_getentry(&orig, i, &child);
-        if (child.IsDir()) {
-            child.GetName(namebuf);
-            if (strcmp(namebuf, ".") == 0 || strcmp(namebuf, "..") == 0) {
-                continue;
-            }
-
-            if (!cchdir_copydir(device, &orig, &child, &copy)) {
-                return false;
+    for (uint32_t i = 0; i < orig->entries->size(); i++) {
+        DirectoryEntry *child = orig->entries->at(i);
+        if (child->IsDir()) {
+            child->GetName(nameBuf);
+            if (strcmp(nameBuf, ".") != 0 && strcmp(nameBuf, "..") != 0) {
+                orig->CopyDirectory(device, child, copy);
             }
         } else {
-            if (!cchdir_copyfile(device, &orig, &child, &copy)) {
-                return false;
-            }
+            orig->CopyFile(device, child, copy);
         }
     }
 
-    cchdir_write(&copy, device);
+    copy->Write(device);
 
-    cchdir_destruct(&orig);
-    cchdir_destruct(&copy);
+    delete orig;
+    delete copy;
 }
 
 void ClusterChainDirectory::CopyFile(FileDisk *device, DirectoryEntry *e, ClusterChainDirectory *dest) const

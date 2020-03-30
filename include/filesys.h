@@ -10,12 +10,12 @@ struct filesys
     org::vfat::FileDisk *device;
     org::vfat::BootSector *bootSector;
     Fat *fat;
-    struct cchdir *root;
+    org::vfat::ClusterChainDirectory *root;
 };
 
 struct vdir
 {
-    struct cchdir *ccdir;
+    org::vfat::ClusterChainDirectory *ccdir;
     uint32_t idx;
 };
 

@@ -108,7 +108,7 @@ namespace org::vfat
         DirectoryEntry* GetEntry(uint32_t index) const;
         DirectoryEntry* FindEntry(const char *name) const;
         void RemoveEntry(uint32_t index);
-        void FormatDevice(FileDisk * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster);
+        static void FormatDevice(FileDisk * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster);
 
         bool RemoveDirectory(const char *name);
         //void CreateSubDirectory(/*out*/ struct cchdir *subdir, /*out*/ DirectoryEntry* subde);
@@ -123,6 +123,8 @@ namespace org::vfat
 
         void CopyFile(FileDisk *device, DirectoryEntry *e, ClusterChainDirectory *dest) const;
         void CopyDirectory(FileDisk *device, DirectoryEntry *e, ClusterChainDirectory *dest) const;
+
+        std::vector<DirectoryEntry *> * GetEntries() const { return this->entries; }
     };
 }
 
