@@ -102,7 +102,7 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
             e = dir->AddDirectory(parts[i], fs->device);
         }
 
-        subDir = dir->GetDirectory(fs->device, e);
+        subDir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
 
         if (dir != fs->root) {
             delete dir;
@@ -144,7 +144,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
             break;
         }
 
-        subdir = dir->GetDirectory(fs->device, e);
+        subdir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
 
         if (dir != fs->root) {            
             delete dir;
@@ -212,7 +212,7 @@ struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir,
         return nullptr;
     }
 
-    ClusterChainDirectory *subccdir = dir->ccdir->GetDirectory(fs->device, e);
+    ClusterChainDirectory *subccdir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
     struct vdir *subdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     subdir->ccdir = subccdir;
     subdir->idx = 0;

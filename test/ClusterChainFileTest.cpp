@@ -19,7 +19,7 @@ protected:
         this->device = new FileDisk("disk0");
 
         this->device->Create();
-        cchdir_formatdev(this->device, 1024 * 1024, 512, 1);
+        ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override

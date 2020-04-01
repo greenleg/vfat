@@ -115,8 +115,8 @@ namespace org::vfat
         DirectoryEntry* AddDirectory(const char *name, FileDisk *device);
         DirectoryEntry* AddFile(const char *name);
 
-        ClusterChainDirectory* GetDirectory(FileDisk *device, DirectoryEntry *e) const;
-        ClusterChainFile* GetFile(DirectoryEntry *e) const;
+        static ClusterChainDirectory* GetDirectory(FileDisk *device, Fat *fat, DirectoryEntry *e);
+        static ClusterChainFile* GetFile(Fat *fat, DirectoryEntry *e);
 
         void SetName(FileDisk *device, DirectoryEntry *e, const char *name);
         void Move(FileDisk *device, DirectoryEntry *e, ClusterChainDirectory *dest, const char *newName);

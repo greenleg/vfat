@@ -582,9 +582,9 @@ DirectoryEntry * ClusterChainDirectory::AddFile(const char *name)
 //    file->entry = e;
 //}
 
-ClusterChainFile* ClusterChainDirectory::GetFile(DirectoryEntry *e) const
+ClusterChainFile* ClusterChainDirectory::GetFile(Fat *fat, DirectoryEntry *e)
 {
-    ClusterChain *cc = new ClusterChain(this->chain->GetFat(), e->GetStartCluster());
+    ClusterChain *cc = new ClusterChain(fat, e->GetStartCluster());
     ClusterChainFile *file = new ClusterChainFile(e, cc);
     return file;
 }
@@ -600,9 +600,8 @@ ClusterChainFile* ClusterChainDirectory::GetFile(DirectoryEntry *e) const
 //    return true;
 //}
 
-ClusterChainDirectory* ClusterChainDirectory::GetDirectory(FileDisk *device, DirectoryEntry *e) const
+ClusterChainDirectory* ClusterChainDirectory::GetDirectory(FileDisk *device, Fat *fat, DirectoryEntry *e)
 {
-    Fat *fat = this->chain->GetFat();
     uint32_t firstCluster = e->GetStartCluster();
 
     ClusterChainDirectory *dir = new ClusterChainDirectory();
@@ -659,7 +658,7 @@ void ClusterChainDirectory::Move(FileDisk *device, DirectoryEntry *e, ClusterCha
     dest->AddEntry(e);
 
     if (e->IsDir()) {
-        ClusterChainDirectory *dir = this->GetDirectory(device, e);
+        ClusterChainDirectory *dir = GetDirectory(device, dest->chain->GetFat(), e);
         DirectoryEntry *dotdot = dir->FindEntry("..");
         assert(dotdot->GetStartCluster() == this->chain->GetStartCluster());
         dotdot->SetStartCluster(dest->chain->GetStartCluster());
@@ -766,10 +765,10 @@ void ClusterChainDirectory::CopyDirectory(FileDisk *device, DirectoryEntry *e, C
     char nameBuf[256];
     e->GetName(nameBuf);
 
-    ClusterChainDirectory *orig = this->GetDirectory(device, e);
+    ClusterChainDirectory *orig = GetDirectory(device, dest->chain->GetFat(), e);
 
     DirectoryEntry *copye = dest->AddDirectory(nameBuf, device);
-    ClusterChainDirectory *copy = dest->GetDirectory(device, copye);
+    ClusterChainDirectory *copy = GetDirectory(device, dest->chain->GetFat(), copye);
 
     for (uint32_t i = 0; i < orig->entries->size(); i++) {
         DirectoryEntry *child = orig->entries->at(i);
@@ -796,14 +795,15 @@ void ClusterChainDirectory::CopyFile(FileDisk *device, DirectoryEntry *e, Cluste
     char nameBuf[256];
     e->GetName(nameBuf);
 
+    Fat *fat = dest->chain->GetFat();
     DirectoryEntry *copye = dest->AddFile(nameBuf);
 
     // Copy the file content via buffer
     const int nbytes = 4096;
     uint8_t buf[nbytes];
 
-    ClusterChainFile *orig = this->GetFile(e);
-    ClusterChainFile *copy = dest->GetFile(copye);
+    ClusterChainFile *orig = this->GetFile(fat, e);
+    ClusterChainFile *copy = dest->GetFile(fat, copye);
 
     uint32_t pos = 0;
     uint32_t nread = orig->Read(device, pos, nbytes, buf);
