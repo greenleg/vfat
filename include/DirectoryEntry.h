@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <vector>
 
-#include "common.h"
 #include "FileDisk.h"
 
 #define FAT_DIR_ENTRY_SIZE 32

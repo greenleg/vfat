@@ -44,8 +44,8 @@ set(vfat_lib_src
     include/alist.h
     include/binaryreader.h
     include/ClusterChain.h
-    include/cchdir.h
-    include/cchfile.h
+    include/ClusterChainDirectory.h
+    include/ClusterChainFile.h
     include/Fat.h
     include/FileDisk.h
     include/filesys.h
@@ -54,8 +54,8 @@ set(vfat_lib_src
     src/alist.cpp
     src/binaryreader.cpp
     src/ClusterChain.cpp
-    src/cchdir.cpp
-    src/cchfile.cpp
+    src/ClusterChainDirectory.cpp
+    src/ClusterChainFile.cpp
     src/Fat.cpp
     src/FileDisk.cpp
     src/filesys.cpp

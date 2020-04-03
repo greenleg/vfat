@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include <string.h>
 #include "../include/filesys.h"
 
 bool filesys_format(/*in*/ org::vfat::FileDisk *device,
@@ -176,8 +178,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
 void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir)
 {
     if (dir->ccdir != fs->root) {        
-        delete dir->ccdir;
-        free(dir->ccdir);
+        delete dir->ccdir;        
     }
 
     free(dir);

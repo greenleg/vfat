@@ -1,8 +1,6 @@
 #include "gtest/gtest.h"
-#include "../include/common.h"
-#include "../include/alist.h"
 #include "../include/ClusterChain.h"
-#include "../include/cchdir.h"
+#include "../include/ClusterChainDirectory.h"
 #include "../include/DirectoryEntry.h"
 
 using namespace org::vfat;
@@ -24,7 +22,6 @@ protected:
         this->device->Close();
         this->device->Delete();
         delete this->device;
-        ::__vfat_errno = 0;
     }
 };
 
@@ -44,11 +41,10 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     DirectoryEntry *e = new DirectoryEntry();
     root->AddEntry(e);
     ASSERT_EQ(1, root->GetEntries()->size());
-
     ASSERT_NE(0, bootSector.GetRootDirFirstCluster());
     //ASSERT_EQ(root.capacity, root->chain->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE);
 
-    delete e;
+//    delete e;
     delete root;
 }
 

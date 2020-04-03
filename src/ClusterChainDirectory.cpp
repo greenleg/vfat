@@ -1,13 +1,12 @@
 #include <assert.h>
 #include <stdexcept>
 
+#include "../include/string.h"
 #include "../include/Fat.h"
-#include "../include/cchdir.h"
-#include "../include/cchfile.h"
+#include "../include/ClusterChainDirectory.h"
+#include "../include/ClusterChainFile.h"
 #include "../include/DirectoryEntry.h"
 #include "../include/BootSector.h"
-
-int32_t __vfat_errno;
 
 using namespace org::vfat;
 
@@ -799,18 +798,18 @@ void ClusterChainDirectory::CopyFile(FileDisk *device, DirectoryEntry *e, Cluste
     DirectoryEntry *copye = dest->AddFile(nameBuf);
 
     // Copy the file content via buffer
-    const int nbytes = 4096;
-    uint8_t buf[nbytes];
+    const int bufferSize = 4096;
+    uint8_t buf[bufferSize];
 
     ClusterChainFile *orig = this->GetFile(fat, e);
     ClusterChainFile *copy = dest->GetFile(fat, copye);
 
     uint32_t pos = 0;
-    uint32_t nread = orig->Read(device, pos, nbytes, buf);
+    uint32_t nread = orig->Read(device, pos, bufferSize, buf);
     while (nread > 0) {
-        copy->Write(device, pos, nbytes, buf);
+        copy->Write(device, pos, nread, buf);
         pos += nread;
-        nread = orig->Read(device, pos, nbytes, buf);
+        nread = orig->Read(device, pos, bufferSize, buf);
     }
 
     // Free memory

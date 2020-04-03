@@ -3,11 +3,9 @@
 
 #include <stdbool.h>
 
-#include "common.h"
-#include "alist.h"
 #include "ClusterChain.h"
 #include "DirectoryEntry.h"
-#include "cchfile.h"
+#include "ClusterChainFile.h"
 #include "BootSector.h"
 
 using namespace org::vfat;

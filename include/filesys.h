@@ -3,7 +3,7 @@
 
 #include "FileDisk.h"
 #include "Fat.h"
-#include "cchdir.h"
+#include "ClusterChainDirectory.h"
 
 struct filesys
 {

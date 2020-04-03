@@ -1,5 +1,4 @@
 #include "gtest/gtest.h"
-#include "../include/common.h"
 #include "../include/ClusterChain.h"
 
 using namespace org::vfat;

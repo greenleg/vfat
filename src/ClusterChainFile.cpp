@@ -1,7 +1,7 @@
 #include <errno.h>
 #include <stdlib.h>
 
-#include "../include/cchfile.h"
+#include "../include/ClusterChainFile.h"
 #include "../include/DirectoryEntry.h"
 
 ///*
