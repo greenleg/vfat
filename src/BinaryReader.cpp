@@ -2,21 +2,23 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
-#include "../include/binaryreader.h"
+#include "../include/BinaryReader.h"
 
-uint8_t read_u8(uint8_t *data, uint32_t offset)
+using namespace org::vfat;
+
+uint8_t BinaryReader::ReadUInt8(uint8_t *data, uint32_t offset)
 {
     return data[offset];
 }
 
-uint16_t read_u16(uint8_t *data, uint32_t offset)
+uint16_t BinaryReader::ReadUInt16(uint8_t *data, uint32_t offset)
 {
     uint32_t b0 = data[offset + 0];
     uint32_t b1 = data[offset + 1];
     return (b1 << 8) | b0;
 }
 
-uint32_t read_u32(uint8_t *data, uint32_t offset)
+uint32_t BinaryReader::ReadUInt32(uint8_t *data, uint32_t offset)
 {
     uint32_t b0 = data[offset + 0];
     uint32_t b1 = data[offset + 1];
@@ -25,7 +27,7 @@ uint32_t read_u32(uint8_t *data, uint32_t offset)
     return (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
 }
 
-uint64_t read_u64(uint8_t *data, uint32_t offset)
+uint64_t BinaryReader::ReadUInt64(uint8_t *data, uint32_t offset)
 {
     uint64_t b0 = data[offset + 0];
     uint64_t b1 = data[offset + 1];
@@ -38,18 +40,18 @@ uint64_t read_u64(uint8_t *data, uint32_t offset)
     return (b7 << 56) | (b6 << 48) | (b5 << 40) | (b4 << 32) | (b3 << 24) | (b2 << 16) | (b1 << 8) | b0;
 }
 
-void write_u8(uint8_t *data, uint32_t offset, uint8_t val)
+void BinaryReader::WriteUInt8(uint8_t *data, uint32_t offset, uint8_t val)
 {
     data[offset] = val;
 }
 
-void write_u16(uint8_t *data, uint32_t offset, uint16_t val)
+void BinaryReader::WriteUInt16(uint8_t *data, uint32_t offset, uint16_t val)
 {
     data[offset + 0] = val & 0xFF;
     data[offset + 1] = (val >> 8) & 0xFF;
 }
 
-void write_u32(uint8_t *data, uint32_t offset, uint32_t val)
+void BinaryReader::WriteUInt32(uint8_t *data, uint32_t offset, uint32_t val)
 {
     data[offset + 0] = val & 0xFF;
     data[offset + 1] = (val >> 8) & 0xFF;
@@ -57,7 +59,7 @@ void write_u32(uint8_t *data, uint32_t offset, uint32_t val)
     data[offset + 3] = (val >> 24) & 0xFF;
 }
 
-void write_u64(uint8_t *data, uint32_t offset, uint64_t val)
+void BinaryReader::WriteUInt64(uint8_t *data, uint32_t offset, uint64_t val)
 {
     data[offset + 0] = val & 0xFF;
     data[offset + 1] = (val >> 8) & 0xFF;

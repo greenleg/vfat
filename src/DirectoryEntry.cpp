@@ -2,7 +2,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "../include/binaryreader.h"
+#include "../include/BinaryReader.h"
 #include "../include/DirectoryEntry.h"
 
 using namespace org::vfat;
@@ -175,22 +175,22 @@ uint16_t DirectoryEntry::GetFat32EntryCount() const
 
 void DirectoryEntry::Read(uint8_t *buffer)
 {
-    uint8_t entryType = read_u8(buffer, FDE_ENTRYTYPE_OFFSET);
+    uint8_t entryType = BinaryReader::ReadUInt8(buffer, FDE_ENTRYTYPE_OFFSET);
     assert(entryType == BASE_DIR_ENTRY);
 
-    this->attributes = read_u16(buffer, FDE_ATTRIBUTES_OFFSET);
-    this->created = read_u32(buffer, FDE_CREATED_OFFSET);
-    this->lastModified = read_u32(buffer, FDE_LASTMODIFIED_OFFSET);
-    this->lastAccessed = read_u32(buffer, FDE_LASTACCESSED_OFFSET);
-    this->nameLength = read_u8(buffer, FDE_NAMELENGTH_OFFSET);
-    this->firstCluster = read_u32(buffer, FDE_FIRSTCLUSTER_OFFSET);
-    this->dataLength = read_u32(buffer, FDE_DATALENGTH_OFFSET);
+    this->attributes = BinaryReader::ReadUInt16(buffer, FDE_ATTRIBUTES_OFFSET);
+    this->created = BinaryReader::ReadUInt32(buffer, FDE_CREATED_OFFSET);
+    this->lastModified = BinaryReader::ReadUInt32(buffer, FDE_LASTMODIFIED_OFFSET);
+    this->lastAccessed = BinaryReader::ReadUInt32(buffer, FDE_LASTACCESSED_OFFSET);
+    this->nameLength = BinaryReader::ReadUInt8(buffer, FDE_NAMELENGTH_OFFSET);
+    this->firstCluster = BinaryReader::ReadUInt32(buffer, FDE_FIRSTCLUSTER_OFFSET);
+    this->dataLength = BinaryReader::ReadUInt32(buffer, FDE_DATALENGTH_OFFSET);
 
     buffer += FAT_DIR_ENTRY_SIZE;
 
     int fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
     for (uint8_t i = 0; i < fndeCount; i++) {
-        uint8_t entryType = read_u8(buffer, FNDE_ENTRYTYPE_OFFSET);
+        uint8_t entryType = BinaryReader::ReadUInt8(buffer, FNDE_ENTRYTYPE_OFFSET);
         assert(entryType == FILENAME_DIR_ENTRY);
 
         struct FileNameDirectoryEntry *fnde = new FileNameDirectoryEntry();
@@ -223,20 +223,20 @@ void DirectoryEntry::Write(uint8_t *buffer) const
     uint8_t fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
     assert(this->fndeList->size() == fndeCount);
 
-    write_u8(buffer, FDE_ENTRYTYPE_OFFSET, BASE_DIR_ENTRY);
-    write_u16(buffer, FDE_ATTRIBUTES_OFFSET, this->attributes);
-    write_u32(buffer, FDE_CREATED_OFFSET, this->created);
-    write_u32(buffer, FDE_LASTMODIFIED_OFFSET, this->lastModified);
-    write_u32(buffer, FDE_LASTACCESSED_OFFSET, this->lastAccessed);
-    write_u8(buffer, FDE_NAMELENGTH_OFFSET, this->nameLength);
-    write_u32(buffer, FDE_FIRSTCLUSTER_OFFSET, this->firstCluster);
-    write_u32(buffer, FDE_DATALENGTH_OFFSET, this->dataLength);
+    BinaryReader::WriteUInt8(buffer, FDE_ENTRYTYPE_OFFSET, BASE_DIR_ENTRY);
+    BinaryReader::WriteUInt16(buffer, FDE_ATTRIBUTES_OFFSET, this->attributes);
+    BinaryReader::WriteUInt32(buffer, FDE_CREATED_OFFSET, this->created);
+    BinaryReader::WriteUInt32(buffer, FDE_LASTMODIFIED_OFFSET, this->lastModified);
+    BinaryReader::WriteUInt32(buffer, FDE_LASTACCESSED_OFFSET, this->lastAccessed);
+    BinaryReader::WriteUInt8(buffer, FDE_NAMELENGTH_OFFSET, this->nameLength);
+    BinaryReader::WriteUInt32(buffer, FDE_FIRSTCLUSTER_OFFSET, this->firstCluster);
+    BinaryReader::WriteUInt32(buffer, FDE_DATALENGTH_OFFSET, this->dataLength);
 
     buffer += FAT_DIR_ENTRY_SIZE;
 
     for (uint8_t i = 0; i < this->fndeList->size(); i++) {
         struct FileNameDirectoryEntry *fnde = this->fndeList->at(i);
-        write_u8(buffer, FNDE_ENTRYTYPE_OFFSET, FILENAME_DIR_ENTRY);
+        BinaryReader::WriteUInt8(buffer, FNDE_ENTRYTYPE_OFFSET, FILENAME_DIR_ENTRY);
         memcpy(buffer + FNDE_FILENAME_OFFSET, fnde->nameBuffer, FNDE_NAME_LENGTH);
 
         buffer += FAT_DIR_ENTRY_SIZE;

@@ -1,9 +1,12 @@
 #ifndef VFAT_FILESYS_H
 #define VFAT_FILESYS_H
 
-#include "FileDisk.h"
-#include "Fat.h"
-#include "ClusterChainDirectory.h"
+#include <string>
+#include <vector>
+
+#include "../FileDisk.h"
+#include "../Fat.h"
+#include "../ClusterChainDirectory.h"
 
 //struct filesys
 //{
@@ -13,23 +16,23 @@
 //    org::vfat::ClusterChainDirectory *root;
 //};
 
-//struct vdir
-//{
-//    org::vfat::ClusterChainDirectory *ccdir;
-//    uint32_t idx;
-//};
+struct vdir
+{
+    org::vfat::ClusterChainDirectory *ccdir;
+    uint32_t idx;
+};
 
-//struct vdirent
-//{
-//    char name[256];
-//    bool isdir;
-//    uint64_t datalen;
-//};
+struct vdirent
+{
+    char name[256];
+    bool isdir;
+    uint64_t datalen;
+};
 
-//struct vfile
-//{
-//    struct cchfile *file;
-//};
+struct vfile
+{
+    struct cchfile *file;
+};
 
 //bool filesys_format(/*in*/ org::vfat::FileDisk *device,
 //                    /*in*/ uint64_t volume_size,
@@ -50,5 +53,30 @@
 //struct vfile * filesys_fopen(/*in*/ struct filesys *fs,
 //                             /*in*/ const char *fname,
 //                             /*in*/ const char *mode);
+
+using namespace org::vfat;
+
+namespace org::vfat::api
+{
+    class FileSystem
+    {
+    private:
+        FileDisk *device;
+        BootSector *bootSector;
+        Fat *fat;
+        ClusterChainDirectory *root;
+        ClusterChainDirectory *currentDir;
+
+    public:
+        FileSystem(FileDisk *device);
+        ~FileSystem();
+        void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
+        void Open();
+        void Close();
+
+        void ChangeDirectory(std::string& path);
+        void CreateDirectory(std::string& name);
+    };
+}
 
 #endif /* VFAT_FILESYS_H */

@@ -40,25 +40,27 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
 endif()
 
 set(vfat_lib_src
-    include/common.h
+    include/Common.h
     include/alist.h
-    include/binaryreader.h
+    include/BinaryReader.h
     include/ClusterChain.h
     include/ClusterChainDirectory.h
     include/ClusterChainFile.h
     include/Fat.h
     include/FileDisk.h
-    include/filesys.h
+    include/api/FileSystem.h
+    include/api/Directory.h
     include/DirectoryEntry.h
     include/BootSector.h
     src/alist.cpp
-    src/binaryreader.cpp
+    src/BinaryReader.cpp
     src/ClusterChain.cpp
     src/ClusterChainDirectory.cpp
     src/ClusterChainFile.cpp
     src/Fat.cpp
     src/FileDisk.cpp
-    src/filesys.cpp
+    src/api/FileSystem.cpp
+    src/api/Directory.cpp
     src/DirectoryEntry.cpp
     src/BootSector.cpp)
 

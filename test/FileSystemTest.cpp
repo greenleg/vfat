@@ -1,7 +1,8 @@
 #include "gtest/gtest.h"
-#include "../include/filesys.h"
+#include "../include/api/FileSystem.h"
 
 using namespace org::vfat;
+using namespace org::vfat::api;
 
 class FileSystemTest : public ::testing::Test
 {
@@ -11,12 +12,11 @@ protected:
     void SetUp() override
     {
         this->device = new FileDisk("disk0");
-        struct filesys fs;
-
         this->device->Create();
-        filesys_format(this->device, 1024 * 1024, 512, 1, &fs);
 
-        filesys_destruct(&fs);
+        FileSystem fs(this->device);
+        fs.Format(1024 * 1024, 512, 1);
+        fs.Close();
     }
 
     void TearDown() override

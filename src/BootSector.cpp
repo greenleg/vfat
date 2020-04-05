@@ -4,7 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "../include/binaryreader.h"
+#include "../include/BinaryReader.h"
 #include "../include/BootSector.h"
 
 #define BS_HEADER_SIZE 32
@@ -68,14 +68,14 @@ void BootSector::Read(FileDisk *device)
     uint8_t buffer[BS_HEADER_SIZE];
     device->Read(buffer, 0, BS_HEADER_SIZE);
 
-    this->deviceSizeInBytes = read_u64(buffer, BS_VOLUMELENGTH_OFFSET);
-    this->bytesPerSector = read_u16(buffer, BS_BYTESPERSECTOR_OFFSET);
-    this->sectorsPerCluster = read_u16(buffer, BS_SECTORSPERCLUSTER_OFFSET);
-    this->fatOffset = read_u32(buffer, BS_FATOFFSET_OFFSET);
-    this->fatSizeInBytes = read_u32(buffer, BS_FATLENGTH_OFFSET);
-    this->clusterCount = read_u32(buffer, BS_CLUSTERCOUNT_OFFSET);
-    this->clusterHeapOffset = read_u32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET);
-    this->rootDirFirstCluster = read_u32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET);
+    this->deviceSizeInBytes = BinaryReader::ReadUInt64(buffer, BS_VOLUMELENGTH_OFFSET);
+    this->bytesPerSector = BinaryReader::ReadUInt16(buffer, BS_BYTESPERSECTOR_OFFSET);
+    this->sectorsPerCluster = BinaryReader::ReadUInt16(buffer, BS_SECTORSPERCLUSTER_OFFSET);
+    this->fatOffset = BinaryReader::ReadUInt32(buffer, BS_FATOFFSET_OFFSET);
+    this->fatSizeInBytes = BinaryReader::ReadUInt32(buffer, BS_FATLENGTH_OFFSET);
+    this->clusterCount = BinaryReader::ReadUInt32(buffer, BS_CLUSTERCOUNT_OFFSET);
+    this->clusterHeapOffset = BinaryReader::ReadUInt32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET);
+    this->rootDirFirstCluster = BinaryReader::ReadUInt32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET);
 }
 
 
@@ -83,14 +83,14 @@ void BootSector::Write(FileDisk *device) const
 {
     uint8_t buffer[BS_HEADER_SIZE];
 
-    write_u64(buffer, BS_VOLUMELENGTH_OFFSET, this->deviceSizeInBytes);
-    write_u16(buffer, BS_BYTESPERSECTOR_OFFSET, this->bytesPerSector);
-    write_u16(buffer, BS_SECTORSPERCLUSTER_OFFSET, this->sectorsPerCluster);
-    write_u32(buffer, BS_FATOFFSET_OFFSET, this->fatOffset);
-    write_u32(buffer, BS_FATLENGTH_OFFSET, this->fatSizeInBytes);
-    write_u32(buffer, BS_CLUSTERCOUNT_OFFSET, this->clusterCount);
-    write_u32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET, this->clusterHeapOffset);
-    write_u32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET, this->rootDirFirstCluster);
+    BinaryReader::WriteUInt64(buffer, BS_VOLUMELENGTH_OFFSET, this->deviceSizeInBytes);
+    BinaryReader::WriteUInt16(buffer, BS_BYTESPERSECTOR_OFFSET, this->bytesPerSector);
+    BinaryReader::WriteUInt16(buffer, BS_SECTORSPERCLUSTER_OFFSET, this->sectorsPerCluster);
+    BinaryReader::WriteUInt32(buffer, BS_FATOFFSET_OFFSET, this->fatOffset);
+    BinaryReader::WriteUInt32(buffer, BS_FATLENGTH_OFFSET, this->fatSizeInBytes);
+    BinaryReader::WriteUInt32(buffer, BS_CLUSTERCOUNT_OFFSET, this->clusterCount);
+    BinaryReader::WriteUInt32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET, this->clusterHeapOffset);
+    BinaryReader::WriteUInt32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET, this->rootDirFirstCluster);
 
     device->Write(buffer, 0, BS_HEADER_SIZE);
 }
