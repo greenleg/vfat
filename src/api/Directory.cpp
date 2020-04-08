@@ -1,4 +1,5 @@
 #include "../../include/api/Directory.h"
+#include "../../include/Common.h"
 
 using namespace org::vfat;
 using namespace org::vfat::api;
@@ -30,7 +31,8 @@ Directory::~Directory()
 void Directory::GetDirectories(std::vector<Directory*>& container) const
 {
     ClusterChainDirectory *cchDir;
-    if (this->entry == nullptr) {
+    bool pointToRoot = this->entry == nullptr || (this->entry->GetStartCluster() == this->fs->GetBootSector()->GetRootDirFirstCluster());
+    if (pointToRoot) {
         cchDir = this->fs->GetRootDirectory();
     } else {
         FileDisk *dev = this->fs->GetDevice();
@@ -46,13 +48,72 @@ void Directory::GetDirectories(std::vector<Directory*>& container) const
         container.push_back(dir);
     }
 
-    delete cchDir;
+    if (!pointToRoot) {
+        delete cchDir;
+    }
 }
 
 string Directory::GetName() const
 {
     char nameBuf[256];
+    if (this->entry == nullptr) {
+        return "/";
+    }
+
     this->entry->GetName(nameBuf);
     string s(nameBuf);
     return s; // return a copy of the local variable s;
+}
+
+Directory* Directory::ChangeDirectory(std::string path) const
+{
+    std::vector<std::string> dirNames;
+    Utils::StringSplit(path, dirNames, '/');
+
+    ClusterChainDirectory *rootDir = this->fs->GetRootDirectory();
+    FileDisk *device = this->fs->GetDevice();
+    Fat *fat = this->fs->GetFat();
+
+    ClusterChainDirectory *dir;
+    if (path.at(0) == '/') {
+        dir = rootDir;
+    } else {
+        dir = ClusterChainDirectory::GetDirectory(device, fat, this->entry);
+    }
+
+    for (std::string& dirName : dirNames) {
+        DirectoryEntry *e = dir->FindEntry(dirName.c_str());
+        if (e == nullptr) {
+            throw std::runtime_error("Directory doesn't exist.");
+        }
+
+        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(device, fat, e);
+        if (dir != rootDir) {
+            delete dir;
+        }
+
+        dir = subDir;
+    }
+
+    //return dir;
+}
+
+void Directory::CreateDirectory(std::string name) const
+{
+    FileDisk *device = this->fs->GetDevice();
+    Fat *fat = this->fs->GetFat();
+
+    ClusterChainDirectory *dir;
+    if (this->entry == nullptr) {
+        dir = this->fs->GetRootDirectory();
+    } else {
+        dir = ClusterChainDirectory::GetDirectory(device, fat, this->entry);
+    }
+
+    const char *cname = name.c_str();
+    dir->AddDirectory(cname, device);
+
+    if (this->entry != nullptr) {
+        delete dir;
+    }
 }

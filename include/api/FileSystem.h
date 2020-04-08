@@ -74,10 +74,10 @@ namespace org::vfat::api
         void Open();
         void Close();
 
-        void ChangeDirectory(std::string& path);
-        void ChangeDirectory(const char *path);
-        void CreateDirectory(std::string& name);
-        void CreateDirectory(const char *name);
+//        void ChangeDirectory(std::string& path);
+//        void ChangeDirectory(const char *path);
+//        void CreateDirectory(std::string& name);
+//        void CreateDirectory(const char *name);
 
         FileDisk* GetDevice() const { return this->device; }
         BootSector* GetBootSector() const { return this->bootSector; }

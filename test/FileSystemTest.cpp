@@ -53,16 +53,6 @@ protected:
 //    }
 };
 
-
-//TEST_F(FileSystemTest, MakeDirectory)
-//{
-//    struct filesys fs;
-
-//    filesys_open(this->device, &fs);
-//    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
-//    filesys_destruct(&fs);
-//}
-
 TEST_F(FileSystemTest, MakeDirectory)
 {
     FileSystem fs(this->device);
@@ -70,20 +60,28 @@ TEST_F(FileSystemTest, MakeDirectory)
     // Create directories
     fs.Open();
 
-    fs.CreateDirectory("home");
-    fs.ChangeDirectory("home");
-    fs.CreateDirectory("user");
+    Directory *rootDir = Directory::GetRoot(&fs);
+    ASSERT_EQ("/", rootDir->GetName());
 
-    //fs.Close();
+    rootDir->CreateDirectory("home");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
 
     // Check directories
-    //fs.Open();
+    fs.Open();
 
-    Directory *root = Directory::GetRoot(&fs);
+    rootDir = Directory::GetRoot(&fs);
+    ASSERT_EQ("/", rootDir->GetName());
+
     vector<Directory*> directories;
-    root->GetDirectories(directories);
+    rootDir->GetDirectories(directories);
     ASSERT_EQ(1, directories.size());
-    Directory *dir0 = directories.at(0);
+    dir0 = directories.at(0);
     ASSERT_EQ("home", dir0->GetName());
 
     directories.clear();
@@ -98,11 +96,21 @@ TEST_F(FileSystemTest, MakeDirectory)
 
     directories.clear();
     dir00->GetDirectories(directories);
-    ASSERT_EQ(0, directories.size());
+    ASSERT_EQ(3, directories.size());
+
+    directories.clear();
+    dir01->GetDirectories(directories);
+    ASSERT_EQ(1, directories.size());
+    Directory *dir011 = directories.at(0);
+    ASSERT_EQ("home", dir011->GetName());
+
+    directories.clear();
+    dir02->GetDirectories(directories);
+    ASSERT_EQ(2, directories.size());
 
     delete dir00;
     delete dir0;
-    delete root;
+    delete rootDir;
 
     fs.Close();
 }

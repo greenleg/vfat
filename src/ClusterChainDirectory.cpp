@@ -475,6 +475,7 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
     subde->SetIsDir(true);
     subde->SetStartCluster(cc->GetStartCluster());
     this->AddEntry(subde);
+    this->Write(device);
 
     ClusterChainDirectory *subDir = new ClusterChainDirectory();
     subDir->Create(cc);

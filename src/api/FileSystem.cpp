@@ -118,92 +118,17 @@ FileSystem::~FileSystem()
 //    return n;
 //}
 
-//bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
+//void FileSystem::CreateDirectory(const char *name)
 //{
-//    char *parts[256];
-//    int nparts = parse_path(path, parts);
-
-//    DirectoryEntry *e;
-//    ClusterChainDirectory *dir = fs->root;
-
-//    for (int i = 0; i < nparts; i++) {
-//        ClusterChainDirectory *subDir;
-//        e = dir->FindEntry(parts[i]);
-//        if (e == nullptr) {
-//            e = dir->AddDirectory(parts[i], fs->device);
-//        }
-
-//        subDir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
-
-//        if (dir != fs->root) {
-//            delete dir;
-//        }
-
-//        dir = subDir;
-//    }
-
-//    if (dir != fs->root) {
-//        delete dir;
-//    }
-
-//    for (int i = 0; i < nparts; i++) {
-//        free(parts[i]);
-//    }
-
-//    return true;
+//    string s(name);
+//    this->CreateDirectory(s);
 //}
 
-void FileSystem::CreateDirectory(const char *name)
-{
-    string s(name);
-    this->CreateDirectory(s);
-}
-
-void FileSystem::CreateDirectory(std::string& name)
-{
-    const char *cname = name.c_str();
-    DirectoryEntry *e = this->currentDir->FindEntry(cname);
-    if (e != nullptr) {
-        throw std::runtime_error("Directory already exists.");
-    }
-
-    this->currentDir->AddDirectory(cname, this->device);
-}
-
-void FileSystem::ChangeDirectory(const char *path)
-{
-    string s(path);
-    this->ChangeDirectory(s);
-}
-
-void FileSystem::ChangeDirectory(std::string& path)
-{
-    std::vector<std::string> dirNames;
-    Utils::StringSplit(path, dirNames, '/');
-
-    ClusterChainDirectory *dir;
-    if (path.at(0) == '/') {
-        dir = this->root;
-    } else {
-        dir = this->currentDir;
-    }
-
-    for (std::string& dirName : dirNames) {
-        DirectoryEntry *e = dir->FindEntry(dirName.c_str());
-        if (e == nullptr) {
-            throw std::runtime_error("Directory doesn't exist.");
-        }
-
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(this->device, this->fat, e);
-        if (dir != this->root) {
-            delete dir;
-        }
-
-        dir = subDir;
-    }
-
-    this->currentDir = dir;
-}
+//void FileSystem::ChangeDirectory(const char *path)
+//{
+//    string s(path);
+//    this->ChangeDirectory(s);
+//}
 
 //struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path)
 //{

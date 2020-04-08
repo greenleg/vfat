@@ -50,6 +50,7 @@ set(vfat_lib_src
     include/FileDisk.h
     include/api/FileSystem.h
     include/api/Directory.h
+    include/api/File.h
     include/DirectoryEntry.h
     include/BootSector.h
     src/alist.cpp
@@ -61,6 +62,7 @@ set(vfat_lib_src
     src/FileDisk.cpp
     src/api/FileSystem.cpp
     src/api/Directory.cpp
+    src/api/File.cpp
     src/DirectoryEntry.cpp
     src/BootSector.cpp)
 

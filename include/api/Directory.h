@@ -4,6 +4,7 @@
 #include <string>
 #include "../ClusterChainDirectory.h"
 #include "FileSystem.h"
+#include "File.h"
 
 using namespace std;
 using namespace org::vfat;
@@ -22,7 +23,18 @@ namespace org::vfat::api
         static Directory* GetRoot(FileSystem *fs);
         ~Directory();
         void GetDirectories(std::vector<Directory*>& container) const;
+        void GetFiles(std::vector<File*>& container) const;
+        void CreateFile(string name) const;
+        void DeleteFile(string name) const;
+        void CreateDirectory(string name) const;
+        void DeleteDirectory(string name) const;
+        File* GetFile(string name) const;
+        Directory* GetDirectory(string name) const;
+        Directory* ChangeDirectory(string path) const;
         string GetName() const;
+
+        static void MoveFile(FileSystem *fs, File *file, Directory *dest);
+        static void MoveDirectory(FileSystem *fs, Directory *dir, Directory *dest);
     };
 }
 
