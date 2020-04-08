@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "../include/api/FileSystem.h"
+#include "../include/api/Directory.h"
 
 using namespace org::vfat;
 using namespace org::vfat::api;
@@ -26,64 +27,112 @@ protected:
         delete this->device;
     }
 
-    static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
-    {
-        struct vdir *subdir;
-        struct vdirent e;
-        while(filesys_readdir(dir, &e)) {
-            if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
-                continue;
-            }
+//    static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
+//    {
+//        struct vdir *subdir;
+//        struct vdirent e;
+//        while(filesys_readdir(dir, &e)) {
+//            if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
+//                continue;
+//            }
 
-            for (int i = 0; i < level; ++i) {
-                printf("*\t");
-            }
+//            for (int i = 0; i < level; ++i) {
+//                printf("*\t");
+//            }
 
-            printf("%s\n", e.name);
+//            printf("%s\n", e.name);
 
-            subdir = filesys_getdir(fs, dir, e.name);
-            PrintDirectory(fs, subdir, level + 1);
-            filesys_closedir(fs, subdir);
-        }
-    }
+//            subdir = filesys_getdir(fs, dir, e.name);
+//            PrintDirectory(fs, subdir, level + 1);
+//            filesys_closedir(fs, subdir);
+//        }
+//    }
+//    static void PrintDirectory()
+//    {
+
+//    }
 };
 
 
+//TEST_F(FileSystemTest, MakeDirectory)
+//{
+//    struct filesys fs;
+
+//    filesys_open(this->device, &fs);
+//    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
+//    filesys_destruct(&fs);
+//}
+
 TEST_F(FileSystemTest, MakeDirectory)
 {
-    struct filesys fs;
+    FileSystem fs(this->device);
 
-    filesys_open(this->device, &fs);
-    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
-    filesys_destruct(&fs);    
+    // Create directories
+    fs.Open();
+
+    fs.CreateDirectory("home");
+    fs.ChangeDirectory("home");
+    fs.CreateDirectory("user");
+
+    //fs.Close();
+
+    // Check directories
+    //fs.Open();
+
+    Directory *root = Directory::GetRoot(&fs);
+    vector<Directory*> directories;
+    root->GetDirectories(directories);
+    ASSERT_EQ(1, directories.size());
+    Directory *dir0 = directories.at(0);
+    ASSERT_EQ("home", dir0->GetName());
+
+    directories.clear();
+    dir0->GetDirectories(directories);
+    ASSERT_EQ(3, directories.size());
+    Directory *dir00 = directories.at(0);
+    ASSERT_EQ(".", dir00->GetName());
+    Directory *dir01 = directories.at(1);
+    ASSERT_EQ("..", dir01->GetName());
+    Directory *dir02 = directories.at(2);
+    ASSERT_EQ("user", dir02->GetName());
+
+    directories.clear();
+    dir00->GetDirectories(directories);
+    ASSERT_EQ(0, directories.size());
+
+    delete dir00;
+    delete dir0;
+    delete root;
+
+    fs.Close();
 }
 
-TEST_F(FileSystemTest, ReadDirectory)
-{
-    struct filesys fs;
+//TEST_F(FileSystemTest, ReadDirectory)
+//{
+//    struct filesys fs;
 
-    filesys_open(this->device, &fs);
+//    filesys_open(this->device, &fs);
 
-    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
-    filesys_mkdir(&fs, "/home/pavel/projects/old");
-    filesys_mkdir(&fs, "/home/pavel/Desktop");
-    filesys_mkdir(&fs, "/home/pavel/Documents");
-    filesys_mkdir(&fs, "/home/pavel/Downloads");
-    filesys_mkdir(&fs, "/home/pavel/Downloads/astyle");
-    filesys_mkdir(&fs, "/home/pavel/Qt");
-    filesys_mkdir(&fs, "/home/pavel/Qt/Docs");
-    filesys_mkdir(&fs, "/home/pavel/Qt/Examples");
-    filesys_mkdir(&fs, "/home/pavel/Qt/Tools");
+//    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
+//    filesys_mkdir(&fs, "/home/pavel/projects/old");
+//    filesys_mkdir(&fs, "/home/pavel/Desktop");
+//    filesys_mkdir(&fs, "/home/pavel/Documents");
+//    filesys_mkdir(&fs, "/home/pavel/Downloads");
+//    filesys_mkdir(&fs, "/home/pavel/Downloads/astyle");
+//    filesys_mkdir(&fs, "/home/pavel/Qt");
+//    filesys_mkdir(&fs, "/home/pavel/Qt/Docs");
+//    filesys_mkdir(&fs, "/home/pavel/Qt/Examples");
+//    filesys_mkdir(&fs, "/home/pavel/Qt/Tools");
 
-    filesys_close(&fs);
-    filesys_destruct(&fs);
+//    filesys_close(&fs);
+//    filesys_destruct(&fs);
 
-    filesys_open(this->device, &fs);
+//    filesys_open(this->device, &fs);
 
-    struct vdir *dir = filesys_opendir(&fs, "/");
-    this->PrintDirectory(&fs, dir, 0);
+//    struct vdir *dir = filesys_opendir(&fs, "/");
+//    this->PrintDirectory(&fs, dir, 0);
 
-    filesys_closedir(&fs, dir);
-    filesys_close(&fs);
-    filesys_destruct(&fs);
-}
+//    filesys_closedir(&fs, dir);
+//    filesys_close(&fs);
+//    filesys_destruct(&fs);
+//}

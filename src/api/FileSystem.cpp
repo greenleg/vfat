@@ -153,6 +153,12 @@ FileSystem::~FileSystem()
 //    return true;
 //}
 
+void FileSystem::CreateDirectory(const char *name)
+{
+    string s(name);
+    this->CreateDirectory(s);
+}
+
 void FileSystem::CreateDirectory(std::string& name)
 {
     const char *cname = name.c_str();
@@ -164,12 +170,24 @@ void FileSystem::CreateDirectory(std::string& name)
     this->currentDir->AddDirectory(cname, this->device);
 }
 
+void FileSystem::ChangeDirectory(const char *path)
+{
+    string s(path);
+    this->ChangeDirectory(s);
+}
+
 void FileSystem::ChangeDirectory(std::string& path)
 {
     std::vector<std::string> dirNames;
     Utils::StringSplit(path, dirNames, '/');
 
-    ClusterChainDirectory *dir = this->currentDir;
+    ClusterChainDirectory *dir;
+    if (path.at(0) == '/') {
+        dir = this->root;
+    } else {
+        dir = this->currentDir;
+    }
+
     for (std::string& dirName : dirNames) {
         DirectoryEntry *e = dir->FindEntry(dirName.c_str());
         if (e == nullptr) {

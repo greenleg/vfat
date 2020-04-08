@@ -107,6 +107,7 @@ namespace org::vfat
         bool IsFile() const;
         void SetIsDir(bool val);
         uint16_t GetFat32EntryCount() const;
+        DirectoryEntry* Clone() const;
     };
 }
 

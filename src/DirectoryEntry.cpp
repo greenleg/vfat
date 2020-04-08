@@ -384,3 +384,24 @@ void DirectoryEntry::SetName(const char *name)
     this->fndeList->push_back(fnde);
     this->nameLength = len;
 }
+
+DirectoryEntry* DirectoryEntry::Clone() const
+{
+    DirectoryEntry *copy = new DirectoryEntry();
+    copy->attributes = this->attributes;
+    copy->created = this->created;
+    copy->lastModified = this->lastModified;
+    copy->lastAccessed = this->lastAccessed;
+    copy->nameLength = this->nameLength;
+    copy->firstCluster = this->firstCluster;
+    copy->dataLength = this->dataLength;
+
+    for (int i = 0; i < this->fndeList->size(); i++) {
+        FileNameDirectoryEntry *fnde = this->fndeList->at(i);
+        FileNameDirectoryEntry *copyFnde = new FileNameDirectoryEntry();
+        memcpy(copyFnde->nameBuffer, fnde->nameBuffer, FNDE_NAME_LENGTH);
+        copy->fndeList->push_back(copyFnde);
+    }
+
+    return copy;
+}

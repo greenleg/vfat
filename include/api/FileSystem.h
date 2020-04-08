@@ -1,5 +1,5 @@
-#ifndef VFAT_FILESYS_H
-#define VFAT_FILESYS_H
+#ifndef VFAT_FILESYSTEM_H
+#define VFAT_FILESYSTEM_H
 
 #include <string>
 #include <vector>
@@ -16,23 +16,23 @@
 //    org::vfat::ClusterChainDirectory *root;
 //};
 
-struct vdir
-{
-    org::vfat::ClusterChainDirectory *ccdir;
-    uint32_t idx;
-};
+//struct vdir
+//{
+//    org::vfat::ClusterChainDirectory *ccdir;
+//    uint32_t idx;
+//};
 
-struct vdirent
-{
-    char name[256];
-    bool isdir;
-    uint64_t datalen;
-};
+//struct vdirent
+//{
+//    char name[256];
+//    bool isdir;
+//    uint64_t datalen;
+//};
 
-struct vfile
-{
-    struct cchfile *file;
-};
+//struct vfile
+//{
+//    struct cchfile *file;
+//};
 
 //bool filesys_format(/*in*/ org::vfat::FileDisk *device,
 //                    /*in*/ uint64_t volume_size,
@@ -75,8 +75,15 @@ namespace org::vfat::api
         void Close();
 
         void ChangeDirectory(std::string& path);
+        void ChangeDirectory(const char *path);
         void CreateDirectory(std::string& name);
+        void CreateDirectory(const char *name);
+
+        FileDisk* GetDevice() const { return this->device; }
+        BootSector* GetBootSector() const { return this->bootSector; }
+        Fat* GetFat() const { return this->fat; }
+        ClusterChainDirectory* GetRootDirectory() const { return this->root; }
     };
 }
 
-#endif /* VFAT_FILESYS_H */
+#endif /* VFAT_FILESYSTEM_H */
