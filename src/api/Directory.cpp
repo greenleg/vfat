@@ -125,7 +125,7 @@ void Directory::CreateDirectory(std::string name) const
     const char *cname = name.c_str();
     dir->AddDirectory(cname, device);
 
-    if (!IsRoot()) {
+    if (dir != this->fs->GetRootDirectory()) {
         delete dir;
     }
 }
@@ -144,10 +144,9 @@ Directory* Directory::GetDirectory(string name) const
         throw std::runtime_error("Directory doesn't exist.");
     }
 
-    if (!IsRoot()) {
-        e = e->Clone();
+    if (dir != this->fs->GetRootDirectory()) {
         delete dir;
     }
 
-    return new Directory(this->fs, e);
+    return new Directory(this->fs, e->Clone());
 }
