@@ -11,6 +11,10 @@ namespace org::vfat::api
 {
     class File
     {
+    private:
+        FileSystem *fs;
+        DirectoryEntry *entry;
+
     public:
         File(FileSystem *fs, DirectoryEntry *e);
         ~File();

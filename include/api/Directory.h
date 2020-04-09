@@ -15,8 +15,10 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
-        DirectoryEntry *entry;        
-        Directory(FileSystem *fs);
+        DirectoryEntry *entry;
+
+        Directory(FileSystem *fs);        
+        bool IsRoot() const;
 
     public:        
         Directory(FileSystem *fs, DirectoryEntry *e);

@@ -61,8 +61,6 @@ TEST_F(FileSystemTest, MakeDirectory)
     fs.Open();
 
     Directory *rootDir = Directory::GetRoot(&fs);
-    ASSERT_EQ("/", rootDir->GetName());
-
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
     dir0->CreateDirectory("user");
