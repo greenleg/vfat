@@ -555,7 +555,7 @@ bool ClusterChainDirectory::RemoveDirectory(const char *name)
 //    return true;
 //}
 
-DirectoryEntry * ClusterChainDirectory::AddFile(const char *name)
+DirectoryEntry * ClusterChainDirectory::AddFile(const char *name, FileDisk *device)
 {
     this->CheckUniqueName(name);
 
@@ -565,6 +565,7 @@ DirectoryEntry * ClusterChainDirectory::AddFile(const char *name)
     e->SetStartCluster(0);
     e->SetDataLength(0);
     this->AddEntry(e);
+    this->Write(device);
 
     return e;
 }
@@ -768,7 +769,7 @@ void ClusterChainDirectory::CopyDirectory(FileDisk *device, DirectoryEntry *e, C
     ClusterChainDirectory *orig = GetDirectory(device, dest->chain->GetFat(), e);
 
     DirectoryEntry *copye = dest->AddDirectory(nameBuf, device);
-    ClusterChainDirectory *copy = GetDirectory(device, dest->chain->GetFat(), copye);
+    ClusterChainDirectory *copy = ClusterChainDirectory::GetDirectory(device, dest->chain->GetFat(), copye);
 
     for (uint32_t i = 0; i < orig->entries->size(); i++) {
         DirectoryEntry *child = orig->entries->at(i);
@@ -796,7 +797,7 @@ void ClusterChainDirectory::CopyFile(FileDisk *device, DirectoryEntry *e, Cluste
     e->GetName(nameBuf);
 
     Fat *fat = dest->chain->GetFat();
-    DirectoryEntry *copye = dest->AddFile(nameBuf);
+    DirectoryEntry *copye = dest->AddFile(nameBuf, device);
 
     // Copy the file content via buffer
     const int bufferSize = 4096;

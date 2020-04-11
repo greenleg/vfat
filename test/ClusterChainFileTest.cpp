@@ -40,7 +40,7 @@ TEST_F(ClusterChainFileTest, SetLength)
     ClusterChainDirectory *root = new ClusterChainDirectory();
     root->ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root->AddFile("index.htm");
+    DirectoryEntry *e = root->AddFile("index.htm", this->device);
     ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
 
     ASSERT_EQ(0, file->GetLength());
@@ -63,7 +63,7 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     ClusterChainDirectory *root = new ClusterChainDirectory();
     root->ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root->AddFile("dump.bin");
+    DirectoryEntry *e = root->AddFile("dump.bin", this->device);
     ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
 
     uint32_t len = 10000;

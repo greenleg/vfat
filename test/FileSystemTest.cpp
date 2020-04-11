@@ -113,6 +113,11 @@ TEST_F(FileSystemTest, MakeDirectory)
     fs.Close();
 }
 
+TEST_F(FileSystemTest, TestFile)
+{
+
+}
+
 //TEST_F(FileSystemTest, ReadDirectory)
 //{
 //    struct filesys fs;

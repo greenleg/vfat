@@ -53,7 +53,7 @@ void Directory::GetDirectories(std::vector<Directory*>& container) const
         container.push_back(dir);
     }
 
-    if (!IsRoot()) {
+    if (cchDir != this->fs->GetRootDirectory()) {
         delete cchDir;
     }
 }
@@ -130,6 +130,26 @@ void Directory::CreateDirectory(std::string name) const
     }
 }
 
+void Directory::CreateFile(std::string name) const
+{
+    FileDisk *device = this->fs->GetDevice();
+    Fat *fat = this->fs->GetFat();
+
+    ClusterChainDirectory *dir;
+    if (IsRoot()) {
+        dir = this->fs->GetRootDirectory();
+    } else {
+        dir = ClusterChainDirectory::GetDirectory(device, fat, this->entry);
+    }
+
+    const char *cname = name.c_str();
+    dir->AddFile(cname, device);
+
+    if (dir != this->fs->GetRootDirectory()) {
+        delete dir;
+    }
+}
+
 Directory* Directory::GetDirectory(string name) const
 {
     ClusterChainDirectory *dir;
@@ -144,9 +164,32 @@ Directory* Directory::GetDirectory(string name) const
         throw std::runtime_error("Directory doesn't exist.");
     }
 
+    e = e->Clone();
     if (dir != this->fs->GetRootDirectory()) {
         delete dir;
     }
 
-    return new Directory(this->fs, e->Clone());
+    return new Directory(this->fs, e);
+}
+
+File* Directory::GetFile(string name) const
+{
+    ClusterChainDirectory *dir;
+    if (IsRoot()) {
+        dir = this->fs->GetRootDirectory();
+    } else {
+        dir = ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), this->entry);
+    }
+
+    DirectoryEntry *e = dir->FindEntry(name.c_str());
+    if (e == nullptr) {
+        throw std::runtime_error("Directory doesn't exist.");
+    }
+
+    e = e->Clone();
+    if (dir != this->fs->GetRootDirectory()) {
+        delete dir;
+    }
+
+    return new File(this->fs, e);
 }

@@ -109,9 +109,9 @@ namespace org::vfat
         static void FormatDevice(FileDisk * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster);
 
         bool RemoveDirectory(const char *name);
-        //void CreateSubDirectory(/*out*/ struct cchdir *subdir, /*out*/ DirectoryEntry* subde);
+
         DirectoryEntry* AddDirectory(const char *name, FileDisk *device);
-        DirectoryEntry* AddFile(const char *name);
+        DirectoryEntry* AddFile(const char *name, FileDisk *device);
 
         static ClusterChainDirectory* GetDirectory(FileDisk *device, Fat *fat, DirectoryEntry *e);
         static ClusterChainFile* GetFile(Fat *fat, DirectoryEntry *e);

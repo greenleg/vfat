@@ -198,7 +198,7 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
     ClusterChainDirectory *root = new ClusterChainDirectory();
     root->ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root->AddFile("oldfile");
+    DirectoryEntry *e = root->AddFile("oldfile", this->device);
 
     ASSERT_NE(root->FindEntry("oldfile"), nullptr);
     ASSERT_EQ(root->FindEntry("newfile"), nullptr);
@@ -223,7 +223,7 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
     root->ReadRoot(this->device, &fat);
 
     DirectoryEntry *de = root->AddDirectory("home", this->device);
-    DirectoryEntry *fe = root->AddFile("dump.bin");
+    DirectoryEntry *fe = root->AddFile("dump.bin", this->device);
 
     ASSERT_NE(de, nullptr);
     ASSERT_NE(fe, nullptr);
@@ -257,9 +257,9 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     ClusterChainDirectory *dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
     ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    DirectoryEntry *fe1 = dir1->AddFile("dump1.bin");
-    DirectoryEntry *fe2 = dir1->AddFile("dump2.bin");
-    DirectoryEntry *fe3 = dir1->AddFile("dump3.bin");
+    DirectoryEntry *fe1 = dir1->AddFile("dump1.bin", this->device);
+    DirectoryEntry *fe2 = dir1->AddFile("dump2.bin", this->device);
+    DirectoryEntry *fe3 = dir1->AddFile("dump3.bin", this->device);
 
     ClusterChainFile *file3 = ClusterChainDirectory::GetFile(&fat, fe3);
 
@@ -307,7 +307,7 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
 
     ClusterChainDirectory *dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
     ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
-    DirectoryEntry *orige = dir1->AddFile("dump.bin");
+    DirectoryEntry *orige = dir1->AddFile("dump.bin", this->device);
 
     ASSERT_EQ(2, root->GetEntries()->size());
     ASSERT_EQ(3, dir1->GetEntries()->size()); // including "." and ".." directories
@@ -368,7 +368,7 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
     //EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &fe));
-    DirectoryEntry *fe = dir1->AddFile("dump.bin");
+    DirectoryEntry *fe = dir1->AddFile("dump.bin", this->device);
 
     // Keep in mind that all directories except root include "." and ".." sub-directories
     ASSERT_EQ(2, root->GetEntries()->size());
