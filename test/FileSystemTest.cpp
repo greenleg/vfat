@@ -1,6 +1,8 @@
+#include <cstring>
 #include "gtest/gtest.h"
 #include "../include/api/FileSystem.h"
 #include "../include/api/Directory.h"
+#include "../include/Common.h"
 
 using namespace org::vfat;
 using namespace org::vfat::api;
@@ -113,7 +115,65 @@ TEST_F(FileSystemTest, MakeDirectory)
     fs.Close();
 }
 
-TEST_F(FileSystemTest, TestFile)
+TEST_F(FileSystemTest, CreateFile)
+{
+    FileSystem fs(this->device);
+
+    // Create directories;
+    fs.Open();
+
+    Directory *rootDir = Directory::GetRoot(&fs);
+    rootDir->CreateDirectory("home");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+    Directory *dir00 = dir0->GetDirectory("user");
+
+    // Create a file and write data to it;
+    dir00->CreateFile("dump0.bin");
+    File *file0 = dir00->GetFile("dump0.bin");
+    file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
+
+    // The parent directory contains information about a file including name, size, creation time etc.
+    // This updated information should be stored to a device as well.
+    dir00->Write();
+
+    delete file0;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
+
+    // Check for a file content;
+    fs.Open();
+
+    rootDir = Directory::GetRoot(&fs);
+    dir0 = rootDir->GetDirectory("home");
+    dir00 = dir0->GetDirectory("user");
+
+    vector<File*> files;
+    dir00->GetFiles(files);
+    ASSERT_EQ(1, files.size());
+    file0 = files.at(0);
+    ASSERT_EQ("dump0.bin", file0->GetName());
+
+    string s = file0->ReadText(0, file0->GetSize());
+    ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
+
+    File *file0_copy = dir00->GetFile("dump0.bin");
+    string s_copy = file0->ReadText(0, file0_copy->GetSize());
+    ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s_copy);
+
+    delete file0_copy;
+    delete file0;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
+}
+
+TEST_F(FileSystemTest, DeleteDirectory)
 {
 
 }

@@ -16,8 +16,9 @@ namespace org::vfat::api
     private:
         FileSystem *fs;
         DirectoryEntry *entry;
+        ClusterChainDirectory *cchDir;
 
-        Directory(FileSystem *fs);        
+        //Directory(FileSystem *fs);
         bool IsRoot() const;
 
     public:        
@@ -37,6 +38,8 @@ namespace org::vfat::api
 
         static void MoveFile(FileSystem *fs, File *file, Directory *dest);
         static void MoveDirectory(FileSystem *fs, Directory *dir, Directory *dest);
+
+        void Write() const;
     };
 }
 

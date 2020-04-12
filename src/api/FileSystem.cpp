@@ -52,7 +52,7 @@ void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t s
     this->fat->Write(device);
     this->root->Write(device);
 
-    this->currentDir = this->root;
+    //this->currentDir = this->root;
 }
 
 void FileSystem::Open()
@@ -66,7 +66,7 @@ void FileSystem::Open()
     this->root = new ClusterChainDirectory();
     this->root->ReadRoot(device, this->fat);
 
-    this->currentDir = this->root;
+//    this->currentDir = this->root;
 }
 
 void FileSystem::Close()
@@ -78,9 +78,9 @@ void FileSystem::Close()
 
 FileSystem::~FileSystem()
 {
-    if (this->currentDir != this->root) {
-        delete this->currentDir;
-    }
+//    if (this->currentDir != this->root) {
+//        delete this->currentDir;
+//    }
 
     delete this->root;
     delete this->fat;

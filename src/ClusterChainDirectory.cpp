@@ -344,19 +344,6 @@ int32_t ClusterChainDirectory::FindEntryIndex(const char *name)
     return -1;
 }
 
-//void cchdir_removeentry(struct cchdir *dir, uint32_t idx)
-//{
-//    uint32_t new_cnt;
-
-//    alist_remove(dir->entries, idx);
-//    new_cnt = get_fat32_entry_cnt(dir);
-//    if (new_cnt > 0) {
-//        cchdir_changesize(dir, new_cnt);
-//    } else {
-//        cchdir_changesize(dir, 1); // Empty directory consists of 1 cluster
-//    }
-//}
-
 void ClusterChainDirectory::RemoveEntry(uint32_t index)
 {
     this->entries->erase(this->entries->begin() + index);
@@ -525,6 +512,21 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
 //}
 
 bool ClusterChainDirectory::RemoveDirectory(const char *name)
+{
+    uint32_t index = this->FindEntryIndex(name);
+    if (index < 0) {
+        return false;
+    }
+
+    DirectoryEntry *e = this->GetEntry(index);
+    ClusterChain cc(this->chain->GetFat(), e->GetStartCluster());
+    cc.SetLength(0);
+
+    this->RemoveEntry(index);
+    return true;
+}
+
+bool ClusterChainDirectory::RemoveFile(const char *name)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {

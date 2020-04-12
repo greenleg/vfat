@@ -19,8 +19,11 @@ namespace org::vfat::api
         File(FileSystem *fs, DirectoryEntry *e);
         ~File();
         string GetName() const;
-        uint32_t Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer);
-        void Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        uint32_t GetSize() const;
+        uint32_t Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
+        void Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
+        string ReadText(uint32_t offset, uint32_t nchars) const;
+        void WriteText(string s, uint32_t offset) const;
     };
 }
 

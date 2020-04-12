@@ -109,6 +109,7 @@ namespace org::vfat
         static void FormatDevice(FileDisk * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster);
 
         bool RemoveDirectory(const char *name);
+        bool RemoveFile(const char *name);
 
         DirectoryEntry* AddDirectory(const char *name, FileDisk *device);
         DirectoryEntry* AddFile(const char *name, FileDisk *device);
