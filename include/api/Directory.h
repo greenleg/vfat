@@ -17,8 +17,8 @@ namespace org::vfat::api
         FileSystem *fs;
         DirectoryEntry *entry;
         ClusterChainDirectory *cchDir;
+        ClusterChainDirectory *parentCchDir;
 
-        //Directory(FileSystem *fs);
         bool IsRoot() const;
 
     public:        

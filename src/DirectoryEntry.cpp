@@ -396,7 +396,7 @@ DirectoryEntry* DirectoryEntry::Clone() const
     copy->firstCluster = this->firstCluster;
     copy->dataLength = this->dataLength;
 
-    for (int i = 0; i < this->fndeList->size(); i++) {
+    for (size_t i = 0; i < this->fndeList->size(); i++) {
         FileNameDirectoryEntry *fnde = this->fndeList->at(i);
         FileNameDirectoryEntry *copyFnde = new FileNameDirectoryEntry();
         memcpy(copyFnde->nameBuffer, fnde->nameBuffer, FNDE_NAME_LENGTH);

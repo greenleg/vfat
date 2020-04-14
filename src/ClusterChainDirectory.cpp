@@ -606,7 +606,6 @@ ClusterChainFile* ClusterChainDirectory::GetFile(Fat *fat, DirectoryEntry *e)
 ClusterChainDirectory* ClusterChainDirectory::GetDirectory(FileDisk *device, Fat *fat, DirectoryEntry *e)
 {
     uint32_t firstCluster = e->GetStartCluster();
-
     ClusterChainDirectory *dir = new ClusterChainDirectory();
     dir->Read(device, fat, firstCluster, false);
 

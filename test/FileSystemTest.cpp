@@ -72,7 +72,7 @@ TEST_F(FileSystemTest, MakeDirectory)
 
     fs.Close();
 
-    // Check directories
+    // Check directories;
     fs.Open();
 
     rootDir = Directory::GetRoot(&fs);
@@ -98,16 +98,29 @@ TEST_F(FileSystemTest, MakeDirectory)
     dir00->GetDirectories(directories);
     ASSERT_EQ(3, directories.size());
 
+    for (size_t i = 0; i < directories.size(); i++) {
+        delete directories.at(i);
+    }
+
     directories.clear();
     dir01->GetDirectories(directories);
     ASSERT_EQ(1, directories.size());
-    Directory *dir011 = directories.at(0);
-    ASSERT_EQ("home", dir011->GetName());
+    ASSERT_EQ("home", directories.at(0)->GetName());
+
+    for (size_t i = 0; i < directories.size(); i++) {
+        delete directories.at(i);
+    }
 
     directories.clear();
     dir02->GetDirectories(directories);
     ASSERT_EQ(2, directories.size());
 
+    for (size_t i = 0; i < directories.size(); i++) {
+        delete directories.at(i);
+    }
+
+    delete dir02;
+    delete dir01;
     delete dir00;
     delete dir0;
     delete rootDir;
@@ -173,9 +186,61 @@ TEST_F(FileSystemTest, CreateFile)
     fs.Close();
 }
 
+TEST_F(FileSystemTest, ChangeDirectory)
+{
+    FileSystem fs(this->device);
+
+    fs.Open();
+
+    // Create directories;
+    Directory *rootDir = Directory::GetRoot(&fs);
+    rootDir->CreateDirectory("home");
+    rootDir->CreateDirectory("lib");
+    rootDir->CreateDirectory("var");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+    Directory *dir00 = dir0->GetDirectory("user");
+    dir00->CreateDirectory("Documents");
+    dir00->CreateDirectory("Projects");
+    Directory *dir001 = dir00->GetDirectory("Projects");
+    Directory *dir00_copy = dir001->ChangeDirectory("..");
+
+    // Check directories;
+    vector<Directory*> directories;
+    dir00_copy->GetDirectories(directories);
+    ASSERT_EQ(4, directories.size());
+    ASSERT_EQ(".", directories.at(0)->GetName());
+    ASSERT_EQ("..", directories.at(1)->GetName());
+    ASSERT_EQ("Documents", directories.at(2)->GetName());
+    ASSERT_EQ("Projects", directories.at(3)->GetName());
+
+    for (size_t i = 0; i < directories.size(); i++) {
+        delete directories.at(i);
+    }
+
+    Directory *dir1 = dir001->ChangeDirectory("../../../lib");
+    directories.clear();
+    dir1->GetDirectories(directories);
+    ASSERT_EQ(2, directories.size());
+    ASSERT_EQ(".", directories.at(0)->GetName());
+    ASSERT_EQ("..", directories.at(1)->GetName());
+
+    for (size_t i = 0; i < directories.size(); i++) {
+        delete directories.at(i);
+    }
+
+    delete dir1;
+    delete dir00_copy;
+    delete dir001;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
+}
+
 TEST_F(FileSystemTest, DeleteDirectory)
 {
-
 }
 
 //TEST_F(FileSystemTest, ReadDirectory)
