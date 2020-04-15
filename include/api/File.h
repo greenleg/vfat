@@ -4,6 +4,7 @@
 #include <string>
 #include "../DirectoryEntry.h"
 #include "FileSystem.h"
+#include "Path.h"
 
 using namespace std;
 
@@ -13,10 +14,13 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
+        ClusterChainDirectory *parentCchDir;
         DirectoryEntry *entry;
+        Path *path;
 
     public:
-        File(FileSystem *fs, DirectoryEntry *e);
+        //File(FileSystem *fs, DirectoryEntry *e);
+        File(FileSystem *fs, Path *path);
         ~File();
         string GetName() const;
         uint32_t GetSize() const;

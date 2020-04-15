@@ -5,6 +5,7 @@
 #include "../ClusterChainDirectory.h"
 #include "FileSystem.h"
 #include "File.h"
+#include "Path.h"
 
 using namespace std;
 using namespace org::vfat;
@@ -15,14 +16,16 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
+        ClusterChainDirectory *parentCchDir;
         DirectoryEntry *entry;
         ClusterChainDirectory *cchDir;
-        ClusterChainDirectory *parentCchDir;
+        Path *path;
 
         bool IsRoot() const;
 
     public:        
-        Directory(FileSystem *fs, DirectoryEntry *e);
+        //Directory(FileSystem *fs, DirectoryEntry *e);
+        Directory(FileSystem *fs, Path *path);
         static Directory* GetRoot(FileSystem *fs);
         ~Directory();
         void GetDirectories(std::vector<Directory*>& container) const;

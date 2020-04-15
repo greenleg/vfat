@@ -5,10 +5,13 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-File::File(FileSystem *fs, DirectoryEntry *e)
+File::File(FileSystem *fs, Path *path)
 {
     this->fs = fs;
-    this->entry = e;
+    this->path = path;
+
+    this->parentCchDir = fs->GetRootDirectory();
+    this->entry = this->parentCchDir->Fin
 }
 
 File::~File()

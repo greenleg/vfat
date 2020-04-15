@@ -51,6 +51,7 @@ set(vfat_lib_src
     include/api/FileSystem.h
     include/api/Directory.h
     include/api/File.h
+    include/api/Path.h
     include/DirectoryEntry.h
     include/BootSector.h
     src/alist.cpp
