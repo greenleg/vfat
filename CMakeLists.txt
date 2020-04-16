@@ -64,6 +64,7 @@ set(vfat_lib_src
     src/api/FileSystem.cpp
     src/api/Directory.cpp
     src/api/File.cpp
+    src/api/Path.cpp
     src/DirectoryEntry.cpp
     src/BootSector.cpp)
 

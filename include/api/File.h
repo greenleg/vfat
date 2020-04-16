@@ -20,7 +20,7 @@ namespace org::vfat::api
 
     public:
         //File(FileSystem *fs, DirectoryEntry *e);
-        File(FileSystem *fs, Path *path);
+        File(FileSystem *fs, ClusterChainDirectory *parentDir, DirectoryEntry *entry, Path *path);
         ~File();
         string GetName() const;
         uint32_t GetSize() const;

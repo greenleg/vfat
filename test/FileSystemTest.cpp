@@ -203,7 +203,7 @@ TEST_F(FileSystemTest, ChangeDirectory)
     dir00->CreateDirectory("Documents");
     dir00->CreateDirectory("Projects");
     Directory *dir001 = dir00->GetDirectory("Projects");
-    Directory *dir00_copy = dir001->ChangeDirectory("..");
+    Directory *dir00_copy = dir001->GetDirectory("..");
 
     // Check directories;
     vector<Directory*> directories;
@@ -218,7 +218,7 @@ TEST_F(FileSystemTest, ChangeDirectory)
         delete directories.at(i);
     }
 
-    Directory *dir1 = dir001->ChangeDirectory("../../../lib");
+    Directory *dir1 = dir001->GetDirectory("../../../lib");
     directories.clear();
     dir1->GetDirectories(directories);
     ASSERT_EQ(2, directories.size());

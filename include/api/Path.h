@@ -2,8 +2,10 @@
 #define VFAT_PATH_H
 
 #include <string>
+#include <vector>
 
 //using namespace org::vfat;
+using namespace std;
 
 namespace org::vfat::api
 {
@@ -11,17 +13,21 @@ namespace org::vfat::api
     {
     private:
         //static Path *root = nullptr;// = new Path("/");
+        vector<string> *items;
 
     public:
-        static Path* GetRoot() { return new Path("/"); }
+        //static Path* GetRoot() { return new Path(); }
 
-        Path(std::string path);
-        Path* Combine(std::string path);
+        Path();
+        ~Path();
+        //Path* Combine(std::string path) const;
+        void Combine(std::string path, bool normalize = false);
+        Path* Clone() const;
         std::string ToString() const;
         bool IsRoot() const;
 
-        std::string GetName(size_t index) const;
-        size_t GetSize() const;
+        string GetItem(size_t index) const;
+        size_t GetItemCount() const;
     };
 }
 

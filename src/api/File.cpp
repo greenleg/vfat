@@ -5,18 +5,17 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-File::File(FileSystem *fs, Path *path)
+File::File(FileSystem *fs, ClusterChainDirectory *parentDir, DirectoryEntry *entry, Path *path)
 {
     this->fs = fs;
     this->path = path;
-
-    this->parentCchDir = fs->GetRootDirectory();
-    this->entry = this->parentCchDir->Fin
+    this->parentCchDir = parentDir;
+    this->entry = entry;
 }
 
 File::~File()
 {
-    //delete this->entry;
+    delete this->path;
 }
 
 uint32_t File::GetSize() const
