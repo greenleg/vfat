@@ -33,6 +33,11 @@ void Path::Combine(std::string path, bool normalize)
     vector<string> items;
     Utils::StringSplit(path, items, '/');
 
+    if (!path.empty() && path.at(0) == '/') {
+        // This is an absolute path which starts from root;
+        this->items->clear();
+    }
+
     vector<string>::iterator iter;
     if (normalize) {
         for (iter = items.begin(); iter < items.end(); ++iter) {

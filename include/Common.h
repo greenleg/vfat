@@ -19,7 +19,9 @@ namespace org::vfat
             std::stringstream ss(str);
             std::string token;
             while (std::getline(ss, token, delim)) {
-                container.push_back(token);
+                if (!token.empty()) {
+                    container.push_back(token);
+                }
             }
         }
 

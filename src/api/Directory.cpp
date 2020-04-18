@@ -138,42 +138,6 @@ string Directory::GetName() const
 
 Directory* Directory::GetDirectory(std::string path) const
 {
-//    std::vector<std::string> dirNames;
-//    Utils::StringSplit(path, dirNames, '/');
-
-//    ClusterChainDirectory *rootDir = this->fs->GetRootDirectory();
-//    FileDisk *device = this->fs->GetDevice();
-//    Fat *fat = this->fs->GetFat();
-
-//    ClusterChainDirectory *dir;
-//    if (path.at(0) == '/') {
-//        dir = rootDir;
-//    } else {
-//        dir = this->cchDir;
-//    }
-
-//    DirectoryEntry *e = nullptr;
-//    for (std::string& dirName : dirNames) {
-//        e = dir->FindEntry(dirName.c_str());
-//        if (e == nullptr) {
-//            throw std::runtime_error("Directory doesn't exist.");
-//        }
-
-//        //e = e->Clone();
-//        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(device, fat, e);
-//        if (dir != rootDir && dir != this->cchDir) {
-//            delete dir;
-//        }
-
-//        dir = subDir;
-//    }
-
-//    if (dir != rootDir && dir != this->cchDir) {
-//        delete dir;
-//    }
-
-//    Path *pathObj = this->path->Combine(path);
-
     Path *dirPath = this->path->Clone();
     dirPath->Combine(path);
     return new Directory(this->fs, dirPath);
@@ -216,16 +180,80 @@ File* Directory::GetFile(string name) const
 void Directory::DeleteDirectory(string name) const
 {
     const char *cname = name.c_str();
-    this->cchDir->RemoveDirectory(cname);
+    this->cchDir->RemoveDirectory(cname, this->fs->GetDevice());
 }
 
 void Directory::DeleteFile(string name) const
 {
     const char *cname = name.c_str();
-    this->cchDir->RemoveFile(cname);
+    this->cchDir->RemoveFile(cname, this->fs->GetDevice());
 }
 
 void Directory::Write() const
 {
     this->cchDir->Write(this->fs->GetDevice());
+}
+
+void Directory::MoveFile(string srcPath, string destPath)
+{
+    Path *srcPathObj = this->path->Clone();
+    srcPathObj->Combine(srcPath);
+
+    ClusterChainDirectory *srcDir = this->fs->GetRootDirectory();
+    DirectoryEntry *srcEntry = nullptr;
+    size_t i;
+    for (i = 0; i < srcPathObj->GetItemCount() - 1; i++) {
+        const char *cname = srcPathObj->GetItem(i).c_str();
+        srcEntry = srcDir->FindEntry(cname);
+        if (srcEntry == nullptr) {
+            throw std::runtime_error("Directory doesn't exist.");
+        }
+
+        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), srcEntry);
+        if (srcDir != this->fs->GetRootDirectory()) {
+            delete srcDir;
+        }
+
+        srcDir = subDir;
+    }
+
+    const char *cname = srcPathObj->GetItem(i).c_str();
+    srcEntry = srcDir->FindEntry(cname);
+
+    Path *destPathObj = this->path->Clone();
+    destPathObj->Combine(destPath);
+
+    ClusterChainDirectory *destDir = this->fs->GetRootDirectory();
+    for (i = 0; i < destPathObj->GetItemCount(); i++) {
+        const char *cname = destPathObj->GetItem(i).c_str();
+        DirectoryEntry *e = destDir->FindEntry(cname);
+        if (e == nullptr) {
+            throw std::runtime_error("Directory doesn't exist.");
+        }
+
+        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
+        if (destDir != this->fs->GetRootDirectory()) {
+            delete destDir;
+        }
+
+        destDir = subDir;
+    }
+
+    Path *srcNormalizedPathObj = this->path->Clone();
+    srcNormalizedPathObj->Combine(srcPath, true);
+    string fileName = srcNormalizedPathObj->GetItem(srcNormalizedPathObj->GetItemCount() - 1);
+
+    srcDir->Move(this->fs->GetDevice(), srcEntry, destDir, fileName.c_str());
+
+    delete srcPathObj;
+    delete destPathObj;
+    delete srcNormalizedPathObj;
+
+    if (srcDir != this->fs->GetRootDirectory()) {
+        delete srcDir;
+    }
+
+    if (destDir != this->fs->GetRootDirectory()) {
+        delete destDir;
+    }
 }

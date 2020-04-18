@@ -28,31 +28,6 @@ protected:
         this->device->Delete();
         delete this->device;
     }
-
-//    static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
-//    {
-//        struct vdir *subdir;
-//        struct vdirent e;
-//        while(filesys_readdir(dir, &e)) {
-//            if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
-//                continue;
-//            }
-
-//            for (int i = 0; i < level; ++i) {
-//                printf("*\t");
-//            }
-
-//            printf("%s\n", e.name);
-
-//            subdir = filesys_getdir(fs, dir, e.name);
-//            PrintDirectory(fs, subdir, level + 1);
-//            filesys_closedir(fs, subdir);
-//        }
-//    }
-//    static void PrintDirectory()
-//    {
-
-//    }
 };
 
 TEST_F(FileSystemTest, MakeDirectory)
@@ -146,9 +121,7 @@ TEST_F(FileSystemTest, CreateFile)
     File *file0 = dir00->GetFile("dump0.bin");
     file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
 
-    // The parent directory contains information about a file including name, size, creation time etc.
-    // This updated information should be stored to a device as well.
-    dir00->Write();
+
 
     delete file0;
     delete dir00;
@@ -186,7 +159,7 @@ TEST_F(FileSystemTest, CreateFile)
     fs.Close();
 }
 
-TEST_F(FileSystemTest, ChangeDirectory)
+TEST_F(FileSystemTest, GetDirectory)
 {
     FileSystem fs(this->device);
 
@@ -218,7 +191,7 @@ TEST_F(FileSystemTest, ChangeDirectory)
         delete directories.at(i);
     }
 
-    Directory *dir1 = dir001->GetDirectory("../../../lib");
+    Directory *dir1 = dir001->GetDirectory("../../../lib"); // !
     directories.clear();
     dir1->GetDirectories(directories);
     ASSERT_EQ(2, directories.size());
@@ -241,7 +214,99 @@ TEST_F(FileSystemTest, ChangeDirectory)
 
 TEST_F(FileSystemTest, DeleteDirectory)
 {
+    FileSystem fs(this->device);
+
+    fs.Open();
+
+    // Create directories;
+    Directory *rootDir = Directory::GetRoot(&fs);
+    rootDir->CreateDirectory("home");
+    rootDir->CreateDirectory("lib");
+    rootDir->CreateDirectory("var");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+    Directory *dir00 = dir0->GetDirectory("user");
+    dir00->CreateDirectory("Documents");
+    dir00->CreateDirectory("Projects");
+    Directory *dir001 = dir00->GetDirectory("Projects");
+
+    dir00->DeleteDirectory("Projects");
+
+    bool errorWasThrown = false;
+    try {
+        rootDir->GetDirectory("/home/user/Projects");
+    } catch (std::runtime_error error) {
+        ASSERT_STREQ("Directory doesn't exist.", error.what());
+        errorWasThrown = true;
+    }
+
+    ASSERT_TRUE(errorWasThrown);
+
+    delete dir001;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
 }
+
+TEST_F(FileSystemTest, MoveDirectory)
+{
+    FileSystem fs(this->device);
+
+    fs.Open();
+
+    // Create directories;
+    Directory *rootDir = Directory::GetRoot(&fs);
+    rootDir->CreateDirectory("home");
+    rootDir->CreateDirectory("lib");
+    rootDir->CreateDirectory("var");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+    Directory *dir00 = dir0->GetDirectory("user");
+    dir00->CreateDirectory("Documents");
+    dir00->CreateDirectory("Projects");
+    Directory *dir011 = dir00->GetDirectory("Projects");
+    dir011->CreateDirectory("vfat");
+
+    //    DirectoryEntry *de = root->AddDirectory("home", this->device);
+    //    DirectoryEntry *fe = root->AddFile("dump.bin", this->device);
+
+    //    ClusterChainDirectory *dir = ClusterChainDirectory::GetDirectory(this->device, &fat, de);
+    //    root->Move(this->device, fe, dir, "dump2.bin");
+    // Perform moving folder '/home/user' to '/'
+    dir0->MoveFile("user", "..");
+
+    delete dir011;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
+
+    // Check directories;
+    fs.Open();
+    rootDir = Directory::GetRoot(&fs);
+    dir0 = rootDir->GetDirectory("home");
+
+    bool errorWasThrown = false;
+    try {
+        rootDir->GetDirectory("/home/user");
+    } catch (std::runtime_error error) {
+        ASSERT_STREQ("Directory doesn't exist.", error.what());
+        errorWasThrown = true;
+    }
+
+    ASSERT_TRUE(errorWasThrown);
+
+    Directory *dir110 = rootDir->GetDirectory("/user/Projects/vfat");
+
+    delete dir0;
+    delete dir110;
+
+    fs.Close();
+}
+
 
 //TEST_F(FileSystemTest, ReadDirectory)
 //{
@@ -272,3 +337,28 @@ TEST_F(FileSystemTest, DeleteDirectory)
 //    filesys_close(&fs);
 //    filesys_destruct(&fs);
 //}
+
+//    static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
+//    {
+//        struct vdir *subdir;
+//        struct vdirent e;
+//        while(filesys_readdir(dir, &e)) {
+//            if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
+//                continue;
+//            }
+
+//            for (int i = 0; i < level; ++i) {
+//                printf("*\t");
+//            }
+
+//            printf("%s\n", e.name);
+
+//            subdir = filesys_getdir(fs, dir, e.name);
+//            PrintDirectory(fs, subdir, level + 1);
+//            filesys_closedir(fs, subdir);
+//        }
+//    }
+//    static void PrintDirectory()
+//    {
+
+//    }

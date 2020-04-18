@@ -151,7 +151,7 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     ASSERT_EQ(entriesBefore + 1, root->GetEntries()->size());
     ASSERT_NE(root->FindEntry(dirName), nullptr);
 
-    ASSERT_TRUE(root->RemoveDirectory(dirName));
+    root->RemoveDirectory(dirName, this->device);
     ASSERT_EQ(freeBefore, fat.GetFreeClusterCount());
     ASSERT_EQ(entriesBefore, root->GetEntries()->size());
     ASSERT_FALSE(root->FindEntry(dirName));
@@ -181,7 +181,7 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
     ASSERT_TRUE(errorWasThrown);
 
     // Reuse name
-    ASSERT_TRUE(root->RemoveDirectory("home"));
+    root->RemoveDirectory("home", this->device);
     ASSERT_NE(root->AddDirectory("home", this->device), nullptr);
 
     delete root;
@@ -228,11 +228,12 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
     ASSERT_NE(de, nullptr);
     ASSERT_NE(fe, nullptr);
     ClusterChainDirectory *dir = ClusterChainDirectory::GetDirectory(this->device, &fat, de);
-    root->Move(this->device, fe, dir, "dump2.bin");
+    root->Move(this->device, fe, dir, "dump2.bin");    
 
     ASSERT_EQ(1, root->GetEntries()->size());
-    ASSERT_EQ(3, dir->GetEntries()->size());  // including "." and ".." directories.
+    ASSERT_EQ(3, dir->GetEntries()->size());  // including "." and ".." directories.    
     ASSERT_NE(root->FindEntry("home"), nullptr);
+    ASSERT_EQ(root->FindEntry("dump.bin"), nullptr);
     ASSERT_EQ(root->FindEntry("dump2.bin"), nullptr);
     ASSERT_NE(dir->FindEntry("dump2.bin"), nullptr);
 

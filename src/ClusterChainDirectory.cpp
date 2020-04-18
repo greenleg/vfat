@@ -511,34 +511,64 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
 //    return true;
 //}
 
-bool ClusterChainDirectory::RemoveDirectory(const char *name)
+void ClusterChainDirectory::RemoveDirectory(const char *name, FileDisk *device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
-        return false;
+        throw std::runtime_error("Directory doesn't exist.");
     }
 
-    DirectoryEntry *e = this->GetEntry(index);
-    ClusterChain cc(this->chain->GetFat(), e->GetStartCluster());
-    cc.SetLength(0);
-
-    this->RemoveEntry(index);
-    return true;
+    return this->RemoveDirectory(index, device);
 }
 
-bool ClusterChainDirectory::RemoveFile(const char *name)
+void ClusterChainDirectory::RemoveDirectory(uint32_t index, FileDisk *device)
+{
+    DirectoryEntry *e = this->GetEntry(index);
+    char nameBuf[256];
+    e->GetName(nameBuf);
+    if (strcmp(nameBuf, ".") == 0 || strcmp(nameBuf, "..") == 0) {
+        return;
+    }
+
+    Fat *fat = this->chain->GetFat();
+
+    ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(device, fat, e);
+    for (size_t i = 0; i < subDir->GetEntries()->size(); i++) {
+        DirectoryEntry * subde = subDir->GetEntry(i);
+        if (subde->IsDir()) {
+            subDir->RemoveDirectory(i, device);
+        } else {
+            subDir->RemoveFile(i, device);
+        }
+    }
+
+    delete subDir;
+
+    ClusterChain cc(this->chain->GetFat(), e->GetStartCluster());
+    cc.SetLength(0);
+
+    this->RemoveEntry(index);
+    this->Write(device);
+}
+
+void ClusterChainDirectory::RemoveFile(const char *name, FileDisk *device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
-        return false;
+        throw std::runtime_error("File doesn't exist.");
     }
 
+    this->RemoveFile(index, device);
+}
+
+void ClusterChainDirectory::RemoveFile(uint32_t index, FileDisk *device)
+{
     DirectoryEntry *e = this->GetEntry(index);
     ClusterChain cc(this->chain->GetFat(), e->GetStartCluster());
     cc.SetLength(0);
 
     this->RemoveEntry(index);
-    return true;
+    this->Write(device);
 }
 
 //bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ DirectoryEntry *e)
@@ -655,9 +685,11 @@ void ClusterChainDirectory::Move(FileDisk *device, DirectoryEntry *e, ClusterCha
     e->GetName(oldName);
     uint32_t index = this->FindEntryIndex(oldName);
     this->RemoveEntry(index);
+    this->Write(device);
 
     e->SetName(newName);
     dest->AddEntry(e);
+    this->Write(device);
 
     if (e->IsDir()) {
         ClusterChainDirectory *dir = GetDirectory(device, dest->chain->GetFat(), e);

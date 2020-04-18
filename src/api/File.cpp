@@ -44,6 +44,11 @@ void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
     ClusterChainFile *cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), this->entry);
     cchFile->Write(this->fs->GetDevice(), offset, nbytes, buffer);
+
+    // The parent directory contains information about a file including name, size, creation time etc.
+    // This updated information should be stored to a device as well.
+    this->parentCchDir->Write(this->fs->GetDevice());
+
     delete cchFile;
 }
 

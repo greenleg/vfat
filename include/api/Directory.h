@@ -23,8 +23,7 @@ namespace org::vfat::api
 
         bool IsRoot() const;
 
-    public:        
-        //Directory(FileSystem *fs, DirectoryEntry *e);
+    public:
         Directory(FileSystem *fs, Path *path);
         static Directory* GetRoot(FileSystem *fs);
         ~Directory();
@@ -35,11 +34,11 @@ namespace org::vfat::api
         void CreateDirectory(string name) const;
         void DeleteDirectory(string name) const;
         File* GetFile(string name) const;
-        Directory* GetDirectory(string name) const;
-        Directory* ChangeDirectory(string path) const;
+        Directory* GetDirectory(string path) const;
+        //Directory* ChangeDirectory(string path) const;
         string GetName() const;
 
-        static void MoveFile(FileSystem *fs, File *file, Directory *dest);
+        void MoveFile(string srcPath, string destPath);
         static void MoveDirectory(FileSystem *fs, Directory *dir, Directory *dest);
 
         void Write() const;
