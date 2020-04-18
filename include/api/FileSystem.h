@@ -1,9 +1,12 @@
-#ifndef VFAT_FILESYS_H
-#define VFAT_FILESYS_H
+#ifndef VFAT_FILESYSTEM_H
+#define VFAT_FILESYSTEM_H
 
-#include "FileDisk.h"
-#include "Fat.h"
-#include "ClusterChainDirectory.h"
+#include <string>
+#include <vector>
+
+#include "../FileDisk.h"
+#include "../Fat.h"
+#include "../ClusterChainDirectory.h"
 
 //struct filesys
 //{
@@ -51,4 +54,30 @@
 //                             /*in*/ const char *fname,
 //                             /*in*/ const char *mode);
 
-#endif /* VFAT_FILESYS_H */
+using namespace org::vfat;
+
+namespace org::vfat::api
+{
+    class FileSystem
+    {
+    private:
+        FileDisk *device;
+        BootSector *bootSector;
+        Fat *fat;
+        //ClusterChainDirectory *root;
+
+    public:
+        FileSystem(FileDisk *device);
+        ~FileSystem();
+        void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
+        void Open();
+        void Close();
+
+        FileDisk* GetDevice() const { return this->device; }
+        BootSector* GetBootSector() const { return this->bootSector; }
+        Fat* GetFat() const { return this->fat; }
+        ClusterChainDirectory* GetRootDirectory() const;// { return this->root; }
+    };
+}
+
+#endif /* VFAT_FILESYSTEM_H */

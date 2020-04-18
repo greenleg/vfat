@@ -1,121 +1,106 @@
 #include "gtest/gtest.h"
-#include "../include/fdisk.h"
-#include "../include/vbr.h"
-#include "../include/fat.h"
+#include "../include/FileDisk.h"
+#include "../include/BootSector.h"
+#include "../include/Fat.h"
+
+using namespace org::vfat;
 
 class FatTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
-        struct vbr br;
-        struct fat fat;
+        this->device = new FileDisk("disk0");
+        this->device->Create();
 
-        fdisk_create(DISK_FNAME, &disk);
+        BootSector bootSector;
+        bootSector.Create(1024 * 1024, 512, 1);
+        bootSector.Write(this->device);
 
-        vbr_create(&br, 1024 * 1024, 512, 1);
-        vbr_write(&br, &disk);
-
-        fat_create(&br, &fat);
-        fat_write(&fat, &disk);
-
-        fdisk_close(&disk);
+        Fat fat(&bootSector);
+        fat.Create();
+        fat.Write(this->device);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
+        this->device->Close();
+        device->Delete();
+
+        delete this->device;
     }
 };
 
 TEST_F(FatTest, ReadFat)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    u32 i;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    EXPECT_EQ(FAT_FIRST_CLUSTER - 1, fat.last_alloc_cluster);
+    ASSERT_EQ(FAT_FIRST_CLUSTER - 1, fat.GetLastAllocatedCluster());
 
-    EXPECT_EQ(FAT_MEDIA_DESCRIPTOR, fat.entries[0]);
-    EXPECT_EQ(FAT_EOF, fat.entries[1]);
+    ASSERT_EQ(FAT_MEDIA_DESCRIPTOR, fat.GetEntry(0));
+    ASSERT_EQ(FAT_EOF, fat.GetEntry(1));
 
-    for (i = FAT_FIRST_CLUSTER; i < br.cluster_count; ++i) {
-        EXPECT_EQ(0, fat.entries[i]);
+    for (uint32_t i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); i++) {
+        ASSERT_EQ(0, fat.GetEntry(i));
     }
 
     /* TODO: Additional checks */
-
-    fat_destruct(&fat);
-    fdisk_close(&disk);
 }
 
 TEST_F(FatTest, AllocateCluster)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    u32 new_cluster;
-    EXPECT_TRUE(fat_alloc_chain(&fat, 1, &new_cluster));
-    EXPECT_EQ(new_cluster, fat.last_alloc_cluster);
-
-    fat_destruct(&fat);
-    fdisk_close(&disk);
+    uint32_t newCluster = fat.AllocateChain(1);
+    ASSERT_EQ(newCluster, fat.GetLastAllocatedCluster());
 }
 
 TEST_F(FatTest, GetFreeClusterCount)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    EXPECT_EQ(br.cluster_count - FAT_FIRST_CLUSTER, fat_get_free_cluster_count(&fat));
-
-    fat_destruct(&fat);
-    fdisk_close(&disk);
+    ASSERT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat.GetFreeClusterCount());
 }
 
 TEST_F(FatTest, GetFreeClusterCount2)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    u32 max;
-    u32 i;
-    u32 cluster;
+    BootSector bootSector;    
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    max = fat_get_free_cluster_count(&fat);
-    for (i = max; i > 0; --i) {
-        EXPECT_EQ(i, fat_get_free_cluster_count(&fat));
-        EXPECT_TRUE(fat_alloc_chain(&fat, 1, &cluster));
+    uint32_t cluster;
+    uint32_t max = fat.GetFreeClusterCount();
+    for (uint32_t i = max; i > 0; --i) {
+        ASSERT_EQ(i, fat.GetFreeClusterCount());
+        cluster = fat.AllocateChain(1);
     }
 
-    EXPECT_EQ(0, fat_get_free_cluster_count(&fat));
+    ASSERT_EQ(0, fat.GetFreeClusterCount());
 
-    /* Allocated too many clusters */
-    EXPECT_FALSE(fat_alloc_chain(&fat, 1, &cluster));
-    EXPECT_EQ(EFATFULL, ::__vfat_errno);
+    /* Allocated too many clusters */    
+    bool errorWasThrown = false;
+    try {
+        cluster = fat.AllocateChain(1);
+    } catch (std::runtime_error error) {
+        // FAT is full;
+        errorWasThrown = true;
+    }
 
-    fat_destruct(&fat);
-    fdisk_close(&disk);
+    ASSERT_TRUE(errorWasThrown);
 }

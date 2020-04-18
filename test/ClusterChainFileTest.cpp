@@ -1,105 +1,94 @@
 #include <errno.h>
 #include "gtest/gtest.h"
-#include "../include/common.h"
-#include "../include/alist.h"
-#include "../include/cch.h"
-#include "../include/cchdir.h"
-#include "../include/cchfile.h"
-#include "../include/lfnde.h"
+#include "../include/ClusterChain.h"
+#include "../include/ClusterChainDirectory.h"
+#include "../include/ClusterChainFile.h"
+#include "../include/DirectoryEntry.h"
+
+using namespace org::vfat;
 
 class ClusterChainFileTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
+        this->device = new FileDisk("disk0");
 
-        fdisk_create(DISK_FNAME, &disk);
-        cchdir_formatdev(&disk, 1024 * 1024, 512, 1);
-
-        fdisk_close(&disk);
+        this->device->Create();
+        ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
-        ::__vfat_errno = 0;
+        this->device->Close();
+        this->device->Delete();
+        delete this->device;
+        //::__vfat_errno = 0;
     }
 };
 
 TEST_F(ClusterChainFileTest, SetLength)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;    
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde e;
-    struct cchfile file;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    cchdir_addfile(&root, "index.htm", &e);
-    cchdir_getfile(&root, &e, &file);
+    DirectoryEntry *e = root->AddFile("index.htm", this->device);
+    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
 
-    EXPECT_EQ(0, cchfile_getlen(&file));
-    cchfile_setlen(&file, 100);
-    EXPECT_EQ(100, cchfile_getlen(&file));
-    EXPECT_GE(cch_getsize(file.chain), 100);
+    ASSERT_EQ(0, file->GetLength());
+    file->SetLength(100);
+    ASSERT_EQ(100, file->GetLength());
+    //ASSERT_GE(file->chain->GetSizeInBytes(), 100);
 
-    cchfile_destruct(&file);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete file;
+    delete root;
 }
 
 TEST_F(ClusterChainFileTest, ReadWrite)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;    
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde e;
-    struct cchfile file;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    cchdir_addfile(&root, "dump.bin", &e);
-    cchdir_getfile(&root, &e, &file);
+    DirectoryEntry *e = root->AddFile("dump.bin", this->device);
+    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
 
-    u32 i, nread;
-    u32 len = 10000;
-    u8 writebuf[len];
-    u8 readbuf[len];
+    uint32_t len = 10000;
+    uint8_t writeBuf[len];
+    uint8_t readBuf[len];
 
-    for (i = 0; i < len; ++i) {
-        writebuf[i] = i % 256;
+    for (uint32_t i = 0; i < len; i++) {
+        writeBuf[i] = i % 256;
     }
 
     // Write to device
-    cchfile_write(&disk, &file, 0, len, writebuf);
+    file->Write(this->device, 0, len, writeBuf);
 
-    // Read from device
-    cchfile_read(&disk, &file, 0, len, &nread, readbuf);
-    EXPECT_EQ(len, nread);
+    // Read from device    
+    uint32_t nread = file->Read(this->device, 0, len, readBuf);
+    ASSERT_EQ(len, nread);
 
-    for (i = 0; i < len; ++i) {
-        EXPECT_EQ(i % 256, readbuf[i]);
+    for (uint32_t i = 0; i < len; i++) {
+        ASSERT_EQ(i % 256, readBuf[i]);
     }
 
-    // Read too long
-    cchfile_read(&disk, &file, 0, len + 1, &nread, readbuf);
-    EXPECT_EQ(len, nread);
+    // Read too long    
+    nread = file->Read(this->device, 0, len + 1, readBuf);
+    ASSERT_EQ(len, nread);
 
-    cchfile_destruct(&file);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete file;
+    delete root;
 }

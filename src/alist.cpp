@@ -4,7 +4,7 @@
 
 #define INIT_CAPACITY 4
 
-static void alist_realloc(struct alist *list, u32 new_capacity)
+static void alist_realloc(struct alist *list, uint32_t new_capacity)
 {
     void *new_items = malloc(list->item_size * new_capacity);
     memcpy(new_items, list->items, list->item_size * list->cnt);
@@ -12,7 +12,7 @@ static void alist_realloc(struct alist *list, u32 new_capacity)
     list->items = new_items;
 }
 
-void alist_create(struct alist* list, u32 item_size)
+void alist_create(struct alist* list, uint32_t item_size)
 {
     list->cnt = 0;
     list->item_size = item_size;
@@ -32,7 +32,7 @@ void alist_add(struct alist *list, void *item)
 
 }
 
-void alist_remove(struct alist *list, u32 idx)
+void alist_remove(struct alist *list, uint32_t idx)
 {
     assert(idx < list->cnt);
 
@@ -51,12 +51,12 @@ void alist_remove(struct alist *list, u32 idx)
     --(list->cnt);
 }
 
-void alist_get(struct alist *list, u32 idx, void *item)
+void alist_get(struct alist *list, uint32_t idx, void *item)
 {
     memcpy(item, static_cast<char *>(list->items) + list->item_size * idx, list->item_size);
 }
 
-u32 alist_count(struct alist *list)
+uint32_t alist_count(struct alist *list)
 {
     return list->cnt;
 }

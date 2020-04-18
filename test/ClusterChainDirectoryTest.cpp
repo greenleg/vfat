@@ -1,505 +1,435 @@
 #include "gtest/gtest.h"
-#include "../include/common.h"
-#include "../include/alist.h"
-#include "../include/cch.h"
-#include "../include/cchdir.h"
-#include "../include/lfnde.h"
+#include "../include/ClusterChain.h"
+#include "../include/ClusterChainDirectory.h"
+#include "../include/DirectoryEntry.h"
+
+using namespace org::vfat;
 
 class ClusterChainDirectoryTest : public ::testing::Test
 {
 protected:
-    const char *DISK_FNAME = "disk0";
+    FileDisk *device;
 
     void SetUp() override
     {
-        struct fdisk disk;
-
-        fdisk_create(DISK_FNAME, &disk);
-        cchdir_formatdev(&disk, 1024 * 1024, 512, 1);
-
-        fdisk_close(&disk);
+        this->device = new FileDisk("disk0");
+        this->device->Create();
+        ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
     {
-        remove(DISK_FNAME);
-        ::__vfat_errno = 0;
+        this->device->Close();
+        this->device->Delete();
+        delete this->device;
     }
 };
 
 TEST_F(ClusterChainDirectoryTest, AddEntry)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    EXPECT_EQ(0, alist_count(root.entries));
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde e;
-    lfnde_create(&e);
-    cchdir_addentry(&root, &e);
-    EXPECT_EQ(1, alist_count(root.entries));
+    ASSERT_EQ(0, root->GetEntries()->size());
 
-    EXPECT_NE(0, br.rootdir_first_cluster);
-    EXPECT_EQ(root.capacity, cch_getsize(root.chain) / FAT_DIR_ENTRY_SIZE);
+    DirectoryEntry *e = new DirectoryEntry();
+    root->AddEntry(e);
+    ASSERT_EQ(1, root->GetEntries()->size());
+    ASSERT_NE(0, bootSector.GetRootDirFirstCluster());
+    //ASSERT_EQ(root.capacity, root->chain->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE);
 
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+//    delete e;
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
 {
-    u32 i;
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    EXPECT_EQ(0, alist_count(root.entries));
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde e;
-    for(i = 0; i < 100; ++i) {
-        lfnde_create(&e);
-        cchdir_addentry(&root, &e);
+    ASSERT_EQ(0, root->GetEntries()->size());
+
+    for (uint32_t i = 0; i < 100; i++) {
+        DirectoryEntry *e = new DirectoryEntry();
+        root->AddEntry(e);
     }
 
-    for(i = 0; i < 100; ++i) {
-        EXPECT_EQ(100 - i, alist_count(root.entries));
-        cchdir_getentry(&root, 0, &e);
-        lfnde_destruct(&e);
-        cchdir_removeentry(&root, 0);
+    for (uint32_t i = 0; i < 100; i++) {
+        ASSERT_EQ(100 - i, root->GetEntries()->size());
+        root->RemoveEntry(0);
     }
 
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    ASSERT_EQ(0, root->GetEntries()->size());
+
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;    
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
+
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
     const char *name = "A nice directory";
-    struct lfnde e1;
-    struct lfnde e2;
-    struct cchdir dir;
 
-    cchdir_adddir(&root, name, &e1, &dir);
-    cchdir_findentry(&root, name, &e2);
+    DirectoryEntry *e1 = root->AddDirectory(name, this->device);
+    DirectoryEntry *e2 = root->FindEntry(name);
 
-    char namebuf[32];
-    lfnde_getname(&e1, namebuf);
-    EXPECT_STREQ(name, namebuf);
-    lfnde_getname(&e2, namebuf);
-    EXPECT_STREQ(name, namebuf);
+    char nameBuf[32];
+    e1->GetName(nameBuf);
+    ASSERT_STREQ(name, nameBuf);
 
-    cchdir_destruct(&dir);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    e2->GetName(nameBuf);
+    ASSERT_STREQ(name, nameBuf);
+
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    char namebuf[255];
-    u32 free_before_add;
-    struct lfnde e;
-    struct cchdir dir;
-    u32 count = 0;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
+
+    char nameBuf[255];
+    uint32_t count = 0;
 
     do {
-        free_before_add = fat_get_free_cluster_count(&fat);
-        sprintf(namebuf, "this is test directory with index %d", count++);
-        if (!cchdir_adddir(&root, namebuf, &e, &dir)) {
-            EXPECT_EQ(EFATFULL, ::__vfat_errno);
-            EXPECT_EQ(free_before_add, fat_get_free_cluster_count(&fat));
+        uint32_t freeBeforeAdd = fat.GetFreeClusterCount();
+        sprintf(nameBuf, "this is test directory with index %d", count++);
+        //bool errorWasThrown = false;
+        try {
+            DirectoryEntry *e = root->AddDirectory(nameBuf, this->device);
+        } catch (std::runtime_error error) {
+            ASSERT_EQ(freeBeforeAdd, fat.GetFreeClusterCount());
             break;
         }
     } while (true);
 
-    cchdir_destruct(&dir);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    u32 free_before = fat_get_free_cluster_count(&fat);
-    u32 entries_before = alist_count(root.entries);
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde e;
-    struct cchdir dir;
-    const char *dir_name = "testdir";
-    cchdir_adddir(&root, dir_name, &e, &dir);
-    EXPECT_EQ(free_before - 1, fat_get_free_cluster_count(&fat));
-    EXPECT_EQ(entries_before + 1, alist_count(root.entries));
-    EXPECT_TRUE(cchdir_findentry(&root, dir_name, &e));
+    uint32_t freeBefore = fat.GetFreeClusterCount();
+    uint32_t entriesBefore = root->GetEntries()->size();
 
-    EXPECT_TRUE(cchdir_removedir(&root, dir_name));
-    EXPECT_EQ(free_before, fat_get_free_cluster_count(&fat));
-    EXPECT_EQ(entries_before, alist_count(root.entries));
-    EXPECT_FALSE(cchdir_findentry(&root, dir_name, &e));
+    const char *dirName = "testdir";
+    root->AddDirectory(dirName, this->device);
+    ASSERT_EQ(freeBefore - 1, fat.GetFreeClusterCount());
+    ASSERT_EQ(entriesBefore + 1, root->GetEntries()->size());
+    ASSERT_NE(root->FindEntry(dirName), nullptr);
 
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    root->RemoveDirectory(dirName, this->device);
+    ASSERT_EQ(freeBefore, fat.GetFreeClusterCount());
+    ASSERT_EQ(entriesBefore, root->GetEntries()->size());
+    ASSERT_FALSE(root->FindEntry(dirName));
+
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;    
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde e;
-    struct cchdir dir;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    EXPECT_TRUE(cchdir_adddir(&root, "home", &e, &dir));
-    EXPECT_FALSE(cchdir_adddir(&root, "home", &e, &dir));
-    EXPECT_EQ(EALREADYEXISTS, ::__vfat_errno);
+    ASSERT_TRUE(root->AddDirectory("home", this->device));
+    bool errorWasThrown = false;
+    try {
+        DirectoryEntry *e = root->AddDirectory("home", this->device);
+    } catch (std::runtime_error error) {
+        errorWasThrown = true;
+    }
 
-    cchdir_destruct(&dir);
+    ASSERT_TRUE(errorWasThrown);
 
     // Reuse name
-    EXPECT_TRUE(cchdir_removedir(&root, "home"));
-    EXPECT_TRUE(cchdir_adddir(&root, "home", &e, &dir));
+    root->RemoveDirectory("home", this->device);
+    ASSERT_NE(root->AddDirectory("home", this->device), nullptr);
 
-    cchdir_destruct(&dir);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, RenameFile)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde e;    
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    cchdir_addfile(&root, "oldfile", &e);
+    DirectoryEntry *e = root->AddFile("oldfile", this->device);
 
-    EXPECT_TRUE(cchdir_findentry(&root, "oldfile", &e));
-    EXPECT_FALSE(cchdir_findentry(&root, "newfile", &e));
+    ASSERT_NE(root->FindEntry("oldfile"), nullptr);
+    ASSERT_EQ(root->FindEntry("newfile"), nullptr);
 
-    cchdir_setname(&disk, &root, &e, "newfile");
+    root->SetName(this->device, e, "newfile");
 
-    EXPECT_FALSE(cchdir_findentry(&root, "oldfile", &e));
-    EXPECT_TRUE(cchdir_findentry(&root, "newfile", &e));
+    ASSERT_EQ(root->FindEntry("oldfile"), nullptr);
+    ASSERT_NE(root->FindEntry("newfile"), nullptr);
 
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveFile)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde fe;
-    struct lfnde de;
-    struct cchdir dir;    
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    EXPECT_TRUE(cchdir_adddir(&root, "home", &de, &dir));
-    EXPECT_TRUE(cchdir_addfile(&root, "dump.bin", &fe));
+    DirectoryEntry *de = root->AddDirectory("home", this->device);
+    DirectoryEntry *fe = root->AddFile("dump.bin", this->device);
 
-    EXPECT_TRUE(cchdir_move(&disk, &root, &fe, &dir, "dump2.bin"));
+    ASSERT_NE(de, nullptr);
+    ASSERT_NE(fe, nullptr);
+    ClusterChainDirectory *dir = ClusterChainDirectory::GetDirectory(this->device, &fat, de);
+    root->Move(this->device, fe, dir, "dump2.bin");    
 
-    EXPECT_EQ(1, alist_count(root.entries));
-    EXPECT_EQ(3, alist_count(dir.entries));  // including "." and ".." directories.
-    EXPECT_TRUE(cchdir_findentry(&root, "home", &de));
-    EXPECT_FALSE(cchdir_findentry(&root, "dump2.bin", &de));
-    EXPECT_TRUE(cchdir_findentry(&dir, "dump2.bin", &de));
+    ASSERT_EQ(1, root->GetEntries()->size());
+    ASSERT_EQ(3, dir->GetEntries()->size());  // including "." and ".." directories.    
+    ASSERT_NE(root->FindEntry("home"), nullptr);
+    ASSERT_EQ(root->FindEntry("dump.bin"), nullptr);
+    ASSERT_EQ(root->FindEntry("dump2.bin"), nullptr);
+    ASSERT_NE(dir->FindEntry("dump2.bin"), nullptr);
 
-    cchdir_destruct(&dir);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete dir;
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveDirectory)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde fe1;
-    struct lfnde fe2;
-    struct lfnde fe3;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry *de1 = root->AddDirectory("dir1", this->device);
+    DirectoryEntry *de2 = root->AddDirectory("dir2", this->device);
 
-    struct cchdir dir1;
-    struct cchdir dir2;
+    ClusterChainDirectory *dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
+    ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    struct cchfile file3;
+    DirectoryEntry *fe1 = dir1->AddFile("dump1.bin", this->device);
+    DirectoryEntry *fe2 = dir1->AddFile("dump2.bin", this->device);
+    DirectoryEntry *fe3 = dir1->AddFile("dump3.bin", this->device);
 
-    EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
+    ClusterChainFile *file3 = ClusterChainDirectory::GetFile(&fat, fe3);
 
-    EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
+    ASSERT_EQ(2, root->GetEntries()->size());
+    ASSERT_EQ(5, dir1->GetEntries()->size()); // including "." and ".." directories
+    ASSERT_EQ(2, dir2->GetEntries()->size());
 
-    EXPECT_TRUE(cchdir_addfile(&dir1, "dump1.bin", &fe1));
-    EXPECT_TRUE(cchdir_addfile(&dir1, "dump2.bin", &fe2));
-    EXPECT_TRUE(cchdir_addfile(&dir1, "dump3.bin", &fe3));
+    root->Move(this->device, de1, dir2, "dir1");
 
-    cchdir_getfile(&dir1, &fe3, &file3);
+    dir1->Write(this->device);
+    dir2->Write(this->device);
 
-    EXPECT_EQ(2, alist_count(root.entries));
-    EXPECT_EQ(5, alist_count(dir1.entries)); // including "." and ".." directories
-    EXPECT_EQ(2, alist_count(dir2.entries));
+    delete dir1;
+    delete dir2;
 
-    EXPECT_TRUE(cchdir_move(&disk, &root, &de1, &dir2, "dir1"));
+    ASSERT_NE(root->FindEntry("dir2"), nullptr);
+    dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    cchdir_write(&dir1, &disk);
-    cchdir_write(&dir2, &disk);
+    ASSERT_NE(dir2->FindEntry("dir1"), nullptr);
+    dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
 
-    cchdir_destruct(&dir1);
-    cchdir_destruct(&dir2);
+    ASSERT_EQ(1, root->GetEntries()->size());
+    ASSERT_EQ(5, dir1->GetEntries()->size());
+    ASSERT_EQ(3, dir2->GetEntries()->size());
 
-    EXPECT_TRUE(cchdir_findentry(&root, "dir2", &de2));
-    cchdir_getdir(&disk, &fat, &de2, &dir2);
-
-    EXPECT_TRUE(cchdir_findentry(&dir2, "dir1", &de1));
-    cchdir_getdir(&disk, &fat, &de1, &dir1);
-
-    EXPECT_EQ(1, alist_count(root.entries));
-    EXPECT_EQ(5, alist_count(dir1.entries));
-    EXPECT_EQ(3, alist_count(dir2.entries));
-
-    cchfile_destruct(&file3);
-    cchdir_destruct(&dir1);
-    cchdir_destruct(&dir2);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete file3;
+    delete dir1;
+    delete dir2;
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyFile)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde orige;
-    struct lfnde copye;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry *de1 = root->AddDirectory("dir1", this->device);
+    DirectoryEntry *de2 = root->AddDirectory("dir2", this->device);
 
-    struct cchdir dir1;
-    struct cchdir dir2;
+    ClusterChainDirectory *dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
+    ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
+    DirectoryEntry *orige = dir1->AddFile("dump.bin", this->device);
 
-    struct cchfile orig;
-    struct cchfile copy;
+    ASSERT_EQ(2, root->GetEntries()->size());
+    ASSERT_EQ(3, dir1->GetEntries()->size()); // including "." and ".." directories
+    ASSERT_EQ(2, dir2->GetEntries()->size());
 
-    EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
-
-    EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
-
-    EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &orige));
-
-    EXPECT_EQ(2, alist_count(root.entries));
-    EXPECT_EQ(3, alist_count(dir1.entries)); // including "." and ".." directories
-    EXPECT_EQ(2, alist_count(dir2.entries));
-
-    u32 i, nread;
-    u32 len = 4096 * 4;
-    u8 buf[len];
-    for (i = 0; i < len; ++i) {
+    uint32_t len = 4096 * 4;
+    uint8_t buf[len];
+    for (uint32_t i = 0; i < len; i++) {
         buf[i] = i % 256;
     }    
 
-    // Write to source file
-    cchdir_getfile(&dir1, &orige, &orig);
-    cchfile_write(&disk, &orig, 0, len, buf);
+    // Write to source file    
+    ClusterChainFile *orig = ClusterChainDirectory::GetFile(&fat, orige);
+    orig->Write(this->device, 0, len, buf);
 
-    EXPECT_TRUE(cchdir_copyfile(&disk, &dir1, &orige, &dir2));
+    dir1->CopyFile(this->device, orige, dir2);
 
-    EXPECT_TRUE(cchdir_findentry(&dir1, "dump.bin", &orige));
-    EXPECT_TRUE(cchdir_findentry(&dir2, "dump.bin", &copye));
+    orige = dir1->FindEntry("dump.bin");
+    DirectoryEntry *copye = dir2->FindEntry("dump.bin");
+    ASSERT_NE(orige, nullptr);
+    ASSERT_NE(copye, nullptr);
 
     // Read from copy
-    cchdir_getfile(&dir2, &copye, &copy);
-    EXPECT_EQ(len, cchfile_getlen(&copy));
-    cchfile_read(&disk, &copy, 0, len, &nread, buf);
+    ClusterChainFile *copy = ClusterChainDirectory::GetFile(&fat, copye);
+    ASSERT_EQ(len, copy->GetLength());
+    uint32_t nread = copy->Read(this->device, 0, len, buf);
 
-    for (i = 0; i < len; ++i) {
-        EXPECT_EQ(i % 256, buf[i]);
+    for (uint32_t i = 0; i < len; i++) {
+        ASSERT_EQ(i % 256, buf[i]);
     }
 
-    EXPECT_EQ(2, alist_count(root.entries));
-    EXPECT_EQ(3, alist_count(dir1.entries));
-    EXPECT_EQ(3, alist_count(dir2.entries));
+    ASSERT_EQ(2, root->GetEntries()->size());
+    ASSERT_EQ(3, dir1->GetEntries()->size());
+    ASSERT_EQ(3, dir2->GetEntries()->size());
 
-    cchfile_destruct(&orig);
-    cchfile_destruct(&copy);
-    cchdir_destruct(&dir1);
-    cchdir_destruct(&dir2);
-    cchdir_destruct(&root);
-    fdisk_close(&disk);
+    delete orig;
+    delete copy;
+    delete dir1;
+    delete dir2;
+    delete root;
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 {
-    struct fdisk disk;
-    struct vbr br;
-    struct fat fat;
-    struct cchdir root;
+    BootSector bootSector;
+    bootSector.Read(this->device);
 
-    fdisk_open(DISK_FNAME, &disk);
-    vbr_read(&disk, &br);
-    fat_read(&disk, &br, &fat);
-    cchdir_readroot(&disk, &fat, &root);
+    Fat fat(&bootSector);
+    fat.Read(this->device);
 
-    struct lfnde fe;
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(this->device, &fat);
 
-    struct lfnde de1;
-    struct lfnde de2;
+    DirectoryEntry *de1 = root->AddDirectory("dir1", this->device);
 
-    struct cchdir dir1;
-    struct cchdir dir2;
+    DirectoryEntry *de2 = root->AddDirectory("dir2", this->device);
+    ClusterChainDirectory *dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
+    ClusterChainDirectory *dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    EXPECT_TRUE(cchdir_adddir(&root, "dir1", &de1, &dir1));
-    cchdir_write(&dir1, &disk);
-
-    EXPECT_TRUE(cchdir_adddir(&root, "dir2", &de2, &dir2));
-    cchdir_write(&dir2, &disk);
-
-    EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &fe));
+    //EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &fe));
+    DirectoryEntry *fe = dir1->AddFile("dump.bin", this->device);
 
     // Keep in mind that all directories except root include "." and ".." sub-directories
-    EXPECT_EQ(2, alist_count(root.entries));
-    EXPECT_EQ(3, alist_count(dir1.entries));
-    EXPECT_EQ(2, alist_count(dir2.entries));
+    ASSERT_EQ(2, root->GetEntries()->size());
+    ASSERT_EQ(3, dir1->GetEntries()->size());
+    ASSERT_EQ(2, dir2->GetEntries()->size());
 
-    u32 i, nread;
-    u32 len = 4096 * 4 + 100;
-    u8 buf[len];
-    for (i = 0; i < len; ++i) {
+    uint32_t len = 4096 * 4 + 100;
+    uint8_t buf[len];
+    for (uint32_t i = 0; i < len; i++) {
         buf[i] = i % 256;
     }
 
     // Write to file
-    struct cchfile file;
-    cchdir_getfile(&dir1, &fe, &file);
-    cchfile_write(&disk, &file, 0, len, buf);
+    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, fe);
+    file->Write(this->device, 0, len, buf);
 
-    cchdir_write(&dir1, &disk);
-    cchdir_write(&dir2, &disk);
+    dir1->Write(this->device);
+    dir2->Write(this->device);
 
-    EXPECT_TRUE(cchdir_copydir(&disk, &root, &de1, &dir2));
+    root->CopyDirectory(this->device, de1, dir2);
 
-    struct lfnde copyfe;
-    struct lfnde copyde1;
-    struct cchdir copydir1;
-    struct cchfile copyfile;
+    DirectoryEntry *copyde1 = dir2->FindEntry("dir1");
+    ClusterChainFile *copyfile;
 
-    EXPECT_TRUE(cchdir_findentry(&root, "dir1", &de1));
-    EXPECT_TRUE(cchdir_findentry(&root, "dir2", &de2));
-    EXPECT_TRUE(cchdir_findentry(&dir1, "dump.bin", &fe));
-    EXPECT_TRUE(cchdir_findentry(&dir2, "dir1", &copyde1));
-    EXPECT_TRUE(cchdir_getdir(&disk, &fat, &copyde1, &copydir1));
-    EXPECT_TRUE(cchdir_findentry(&copydir1, "dump.bin", &copyfe));
+    ASSERT_NE(root->FindEntry("dir1"), nullptr);
+    ASSERT_NE(root->FindEntry("dir2"), nullptr);
+    ASSERT_NE(copyde1, nullptr);
+    ASSERT_NE(dir1->FindEntry("dump.bin"), nullptr);
 
-    EXPECT_EQ(2, alist_count(root.entries));
-    EXPECT_EQ(3, alist_count(dir1.entries));
-    EXPECT_EQ(3, alist_count(dir2.entries));
-    EXPECT_EQ(3, alist_count(copydir1.entries));
+    ClusterChainDirectory *copydir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, copyde1);
+    DirectoryEntry *copyfe = copydir1->FindEntry("dump.bin");
+    ASSERT_NE(nullptr, copyfe);
+
+    ASSERT_EQ(2, root->GetEntries()->size());
+    ASSERT_EQ(3, dir1->GetEntries()->size());
+    ASSERT_EQ(3, dir2->GetEntries()->size());
+    ASSERT_EQ(3, copydir1->GetEntries()->size());
 
     // Read from copy
-    cchdir_getfile(&copydir1, &copyfe, &copyfile);
-    EXPECT_EQ(len, cchfile_getlen(&copyfile));
-    cchfile_read(&disk, &copyfile, 0, len, &nread, buf);
+    copyfile = ClusterChainDirectory::GetFile(&fat, copyfe);
+    ASSERT_EQ(len, copyfile->GetLength());
+    uint32_t nread = copyfile->Read(this->device, 0, len, buf);
 
-    for (i = 0; i < len; ++i) {
-        EXPECT_EQ(i % 256, buf[i]);
+    for (uint32_t i = 0; i < len; i++) {
+        ASSERT_EQ(i % 256, buf[i]);
     }
 
     // Writing to the copy doesn't affect to the origin file.
     buf[0] = 50;
-    cchfile_write(&disk, &copyfile, 0, 1, buf);
-    cchfile_read(&disk, &file, 0, 1, &nread, buf);
-    EXPECT_EQ(0, buf[0]);
-    cchfile_read(&disk, &copyfile, 0, 1, &nread, buf);
-    EXPECT_EQ(50, buf[0]);
+    copyfile->Write(this->device, 0, 1, buf);
+    nread = file->Read(this->device, 0, 1, buf);
+    ASSERT_EQ(0, buf[0]);
+    nread = copyfile->Read(this->device, 0, 1, buf);
+    ASSERT_EQ(50, buf[0]);
 
-    cchfile_destruct(&copyfile);
-    cchfile_destruct(&file);
+    delete copyfile;
+    delete file;
 
-    cchdir_destruct(&copydir1);
-    cchdir_destruct(&dir1);
-    cchdir_destruct(&dir2);
-    cchdir_destruct(&root);
-
-    fdisk_close(&disk);
+    delete copydir1;
+    delete dir1;
+    delete dir2;
+    delete root;
 }

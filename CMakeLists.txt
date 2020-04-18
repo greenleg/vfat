@@ -40,27 +40,33 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
 endif()
 
 set(vfat_lib_src
-    include/common.h
+    include/Common.h
     include/alist.h
-    include/binaryreader.h
-    include/cch.h
-    include/cchdir.h
-    include/cchfile.h
-    include/fat.h
-    include/fdisk.h
-    include/filesys.h
-    include/lfnde.h
-    include/vbr.h
+    include/BinaryReader.h
+    include/ClusterChain.h
+    include/ClusterChainDirectory.h
+    include/ClusterChainFile.h
+    include/Fat.h
+    include/FileDisk.h
+    include/api/FileSystem.h
+    include/api/Directory.h
+    include/api/File.h
+    include/api/Path.h
+    include/DirectoryEntry.h
+    include/BootSector.h
     src/alist.cpp
-    src/binaryreader.cpp
-    src/cch.cpp
-    src/cchdir.cpp
-    src/cchfile.cpp
-    src/fat.cpp
-    src/fdisk.cpp
-    src/filesys.cpp
-    src/lfnde.cpp
-    src/vbr.cpp)
+    src/BinaryReader.cpp
+    src/ClusterChain.cpp
+    src/ClusterChainDirectory.cpp
+    src/ClusterChainFile.cpp
+    src/Fat.cpp
+    src/FileDisk.cpp
+    src/api/FileSystem.cpp
+    src/api/Directory.cpp
+    src/api/File.cpp
+    src/api/Path.cpp
+    src/DirectoryEntry.cpp
+    src/BootSector.cpp)
 
 set(vfat_test_src
     test/BootSectorTest.cpp
@@ -77,4 +83,4 @@ add_executable(vfat.test ${vfat_lib_src} ${vfat_test_src})
 target_link_libraries(vfat.test gtest)
 
 #gtest_add_tests(TARGET vfat TEST_PREFIX source:)
-gtest_discover_tests(vfat.test TEST_PREFIX "runtime:")
+gtest_discover_tests(vfat.test)

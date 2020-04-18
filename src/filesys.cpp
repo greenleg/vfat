@@ -1,59 +1,59 @@
+#include <stdlib.h>
+#include <string.h>
 #include "../include/filesys.h"
 
-bool filesys_format(/*in*/ struct fdisk *dev,
-                    /*in*/ u64 volume_size,
-                    /*in*/ u16 bytes_per_sector,
-                    /*in*/ u16 sectors_per_cluster,
+bool filesys_format(/*in*/ org::vfat::FileDisk *device,
+                    /*in*/ uint64_t volume_size,
+                    /*in*/ uint16_t bytes_per_sector,
+                    /*in*/ uint16_t sectors_per_cluster,
                     /*out*/ struct filesys *fs)
 {
-    fs->dev = dev;
-    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
-    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
-    fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
+    fs->device = device;
+    fs->bootSector = new BootSector();
+    fs->bootSector->Create(volume_size, bytes_per_sector, sectors_per_cluster);
 
-    vbr_create(fs->vbr, volume_size, bytes_per_sector, sectors_per_cluster);
-    vbr_write(fs->vbr, dev);
+    fs->fat = new Fat(fs->bootSector);
+    fs->root = new ClusterChainDirectory();
 
-    fat_create(fs->vbr, fs->fat);
-    cchdir_createroot(fs->fat, fs->root);
+    fs->bootSector->Write(device);
 
-    fat_write(fs->fat, dev);
-    cchdir_write(fs->root, dev);
+    fs->fat->Create();    
+    fs->root->CreateRoot(fs->fat);
+
+    fs->fat->Write(device);
+    fs->root->Write(device);
 
     return true;
 }
 
-bool filesys_open(/*in*/ struct fdisk *dev, /*out*/ struct filesys *fs)
+bool filesys_open(/*in*/ org::vfat::FileDisk *device, /*out*/ struct filesys *fs)
 {
-    fs->dev = dev;
-    fs->vbr = static_cast<struct vbr *>(malloc(sizeof(struct vbr)));
-    fs->fat = static_cast<struct fat *>(malloc(sizeof(struct fat)));
-    fs->root = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
+    fs->device = device;
+    fs->bootSector = new BootSector();    
+    fs->root = new ClusterChainDirectory();
 
-    vbr_read(dev, fs->vbr);
-    fat_read(dev, fs->vbr, fs->fat);
-    cchdir_readroot(dev, fs->fat, fs->root);
+    fs->bootSector->Read(device);
+    fs->fat = new Fat(fs->bootSector);
+    fs->fat->Read(device);
+    fs->root->ReadRoot(device, fs->fat);
 
     return true;
 }
 
 bool filesys_close(/*in*/ struct filesys *fs)
 {
-    cchdir_write(fs->root, fs->dev);
-    fat_write(fs->fat, fs->dev);
-    vbr_write(fs->vbr, fs->dev);
+    fs->root->Write(fs->device);
+    fs->fat->Write(fs->device);
+    fs->bootSector->Write(fs->device);
 
     return true;
 }
 
 bool filesys_destruct(/*in*/ struct filesys *fs)
 {
-    cchdir_destruct(fs->root);
-    fat_destruct(fs->fat);
-
-    free(fs->root);
-    free(fs->fat);
-    free(fs->vbr);
+    delete fs->root;
+    delete fs->fat;
+    delete fs->bootSector;
 
     return true;
 }
@@ -94,37 +94,30 @@ bool filesys_mkdir(/*in*/ struct filesys *fs, /*in*/ const char *path)
     char *parts[256];
     int nparts = parse_path(path, parts);
 
-    struct lfnde e;    
-    struct cchdir *dir = fs->root;
-    struct cchdir *subdir;
+    DirectoryEntry *e;
+    ClusterChainDirectory *dir = fs->root;
 
-    for (int i = 0; i < nparts; ++i) {
-        subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-
-        if (cchdir_findentry(dir, parts[i], &e)) {
-            cchdir_getdir(fs->dev, fs->fat, &e, subdir);
-        } else {
-            cchdir_adddir(dir, parts[i], &e, subdir);
-            cchdir_write(dir, fs->dev);
-            if (i == nparts - 1) {
-                cchdir_write(subdir, fs->dev);
-            }
+    for (int i = 0; i < nparts; i++) {
+        ClusterChainDirectory *subDir;
+        e = dir->FindEntry(parts[i]);
+        if (e == nullptr) {
+            e = dir->AddDirectory(parts[i], fs->device);
         }
+
+        subDir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
 
         if (dir != fs->root) {
-            cchdir_destruct(dir);
-            free(dir);
+            delete dir;
         }
 
-        dir = subdir;
+        dir = subDir;
     }
 
     if (dir != fs->root) {
-        cchdir_destruct(dir);
-        free(dir);
+        delete dir;
     }    
 
-    for (int i = 0; i < nparts; ++i) {
+    for (int i = 0; i < nparts; i++) {
         free(parts[i]);
     }
 
@@ -136,23 +129,27 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
     char *parts[256];
     int nparts = parse_path(path, parts);
 
-    struct lfnde e;
-    struct cchdir *dir = fs->root;
-    struct cchdir *subdir;
+    DirectoryEntry *e;
+    ClusterChainDirectory *dir = fs->root;
+    ClusterChainDirectory *subdir;
 
     bool notfound = false;
     for (int i = 0; i < nparts; ++i) {
-        if (!cchdir_findentry(dir, parts[i], &e)) {
+//        if (!cchdir_findentry(dir, parts[i], &e)) {
+//            notfound = true;
+//            break;
+//        }
+
+        e = dir->FindEntry(parts[i]);
+        if (e == nullptr) {
             notfound = true;
             break;
         }
 
-        subdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-        cchdir_getdir(fs->dev, fs->fat, &e, subdir);
+        subdir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
 
-        if (dir != fs->root) {
-            cchdir_destruct(dir);
-            free(dir);
+        if (dir != fs->root) {            
+            delete dir;
         }
 
         dir = subdir;
@@ -163,7 +160,7 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
         free(dir);
     }*/
 
-    for (int i = 0; i < nparts; ++i) {
+    for (int i = 0; i < nparts; i++) {
         free(parts[i]);
     }
 
@@ -180,9 +177,8 @@ struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path
 
 void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir)
 {
-    if (dir->ccdir != fs->root) {
-        cchdir_destruct(dir->ccdir);
-        free(dir->ccdir);
+    if (dir->ccdir != fs->root) {        
+        delete dir->ccdir;        
     }
 
     free(dir);
@@ -190,17 +186,15 @@ void filesys_closedir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir)
 
 bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
 {
-    u32 n = alist_count(dir->ccdir->entries);
+    uint32_t n = dir->ccdir->GetEntries()->size();
     if (dir->idx == n) {
         return false;
     }
 
-    struct lfnde e;
-    cchdir_getentry(dir->ccdir, dir->idx, &e);
-
-    lfnde_getname(&e, entry->name);
-    entry->isdir = lfnde_isdir(&e);
-    entry->datalen = lfnde_getdatalen(&e);
+    DirectoryEntry *e = dir->ccdir->GetEntry(dir->idx);
+    e->GetName(entry->name);
+    entry->isdir = e->IsDir();
+    entry->datalen = e->GetDataLength();
 
     ++(dir->idx);
 
@@ -209,14 +203,17 @@ bool filesys_readdir(/*in*/ struct vdir *dir, /*out*/ struct vdirent *entry)
 
 struct vdir * filesys_getdir(/*in*/ struct filesys *fs, /*in*/ struct vdir *dir, /*in*/ const char *name)
 {
-    struct lfnde e;
-    if (!cchdir_findentry(dir->ccdir, name, &e)) {
-        return NULL;
+//    DirectoryEntry e;
+//    if (!cchdir_findentry(dir->ccdir, name, &e)) {
+//        return NULL;
+//    }
+
+    DirectoryEntry *e = dir->ccdir->FindEntry(name);
+    if (e == nullptr) {
+        return nullptr;
     }
 
-    struct cchdir *subccdir = static_cast<struct cchdir *>(malloc(sizeof(struct cchdir)));
-    cchdir_getdir(fs->dev, dir->ccdir->chain->fat, &e, subccdir);
-
+    ClusterChainDirectory *subccdir = ClusterChainDirectory::GetDirectory(fs->device, fs->fat, e);
     struct vdir *subdir = static_cast<struct vdir *>(malloc(sizeof(struct vdir)));
     subdir->ccdir = subccdir;
     subdir->idx = 0;
