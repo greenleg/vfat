@@ -64,8 +64,7 @@ namespace org::vfat::api
         FileDisk *device;
         BootSector *bootSector;
         Fat *fat;
-        ClusterChainDirectory *root;
-        //ClusterChainDirectory *currentDir;
+        //ClusterChainDirectory *root;
 
     public:
         FileSystem(FileDisk *device);
@@ -74,15 +73,10 @@ namespace org::vfat::api
         void Open();
         void Close();
 
-//        void ChangeDirectory(std::string& path);
-//        void ChangeDirectory(const char *path);
-//        void CreateDirectory(std::string& name);
-//        void CreateDirectory(const char *name);
-
         FileDisk* GetDevice() const { return this->device; }
         BootSector* GetBootSector() const { return this->bootSector; }
         Fat* GetFat() const { return this->fat; }
-        ClusterChainDirectory* GetRootDirectory() const { return this->root; }
+        ClusterChainDirectory* GetRootDirectory() const;// { return this->root; }
     };
 }
 

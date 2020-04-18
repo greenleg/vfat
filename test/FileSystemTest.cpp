@@ -121,8 +121,6 @@ TEST_F(FileSystemTest, CreateFile)
     File *file0 = dir00->GetFile("dump0.bin");
     file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
 
-
-
     delete file0;
     delete dir00;
     delete dir0;
@@ -130,7 +128,7 @@ TEST_F(FileSystemTest, CreateFile)
 
     fs.Close();
 
-    // Check for a file content;
+    // Check for the file content;
     fs.Open();
 
     rootDir = Directory::GetRoot(&fs);
@@ -269,11 +267,6 @@ TEST_F(FileSystemTest, MoveDirectory)
     Directory *dir011 = dir00->GetDirectory("Projects");
     dir011->CreateDirectory("vfat");
 
-    //    DirectoryEntry *de = root->AddDirectory("home", this->device);
-    //    DirectoryEntry *fe = root->AddFile("dump.bin", this->device);
-
-    //    ClusterChainDirectory *dir = ClusterChainDirectory::GetDirectory(this->device, &fat, de);
-    //    root->Move(this->device, fe, dir, "dump2.bin");
     // Perform moving folder '/home/user' to '/'
     dir0->MoveFile("user", "..");
 
@@ -303,6 +296,50 @@ TEST_F(FileSystemTest, MoveDirectory)
 
     delete dir0;
     delete dir110;
+
+    fs.Close();
+}
+
+TEST_F(FileSystemTest, MoveFile)
+{
+    FileSystem fs(this->device);
+
+    // Create directories;
+    fs.Open();
+
+    Directory *rootDir = Directory::GetRoot(&fs);
+    rootDir->CreateDirectory("home");
+    Directory *dir0 = rootDir->GetDirectory("home");
+    dir0->CreateDirectory("user");
+    Directory *dir00 = dir0->GetDirectory("user");
+
+    // Create a file and write data to it;
+    dir00->CreateFile("dump0.bin");
+    File *file0 = dir00->GetFile("dump0.bin");
+    file0->WriteText("A journey of thousand miles begins with a single step.", 0);
+
+    // Re-read 'home' directory.
+    Directory *dir0_copy = rootDir->GetDirectory("home");
+    dir0_copy->MoveFile("./user/dump0.bin", "..");
+
+    delete dir0_copy;
+    delete file0;
+    delete dir00;
+    delete dir0;
+    delete rootDir;
+
+    fs.Close();
+
+    // Check that the file was properly moved;
+    fs.Open();
+
+    rootDir = Directory::GetRoot(&fs);
+    file0 = rootDir->GetFile("/dump0.bin");
+    string text = file0->ReadText(0, file0->GetSize());
+    ASSERT_EQ("A journey of thousand miles begins with a single step.", text);
+
+    delete file0;
+    delete rootDir;
 
     fs.Close();
 }

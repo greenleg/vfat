@@ -1,3 +1,4 @@
+#include <queue>
 #include "../../include/Common.h"
 #include "../../include/api/File.h"
 #include "../../include/api/FileSystem.h"
@@ -5,12 +6,35 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-File::File(FileSystem *fs, ClusterChainDirectory *parentDir, DirectoryEntry *entry, Path *path)
+File::File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *entry,*/ Path *path)
 {
     this->fs = fs;
     this->path = path;
-    this->parentCchDir = parentDir;
-    this->entry = entry;
+
+    std::queue<ClusterChainDirectory*> subDirectories;
+    ClusterChainDirectory *dir = fs->GetRootDirectory();
+    DirectoryEntry *e;
+    size_t i;
+    for (i = 0; i < path->GetItemCount() - 1; i++) {
+        const char *cname = path->GetItem(i).c_str();
+        e = dir->FindEntry(cname);
+        if (e == nullptr) {
+            throw std::runtime_error("Directory doesn't exist.");
+        }
+
+        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
+        delete dir;
+        dir = subDir;
+    }
+
+    const char *cname = path->GetItem(i).c_str();
+    e = dir->FindEntry(cname);
+    if (e == nullptr) {
+        throw std::runtime_error("File doesn't exist.");
+    }
+
+    this->parentCchDir = dir;
+    this->entry = e;
 }
 
 File::~File()

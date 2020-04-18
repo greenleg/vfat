@@ -33,14 +33,11 @@ namespace org::vfat::api
         void DeleteFile(string name) const;
         void CreateDirectory(string name) const;
         void DeleteDirectory(string name) const;
-        File* GetFile(string name) const;
+        File* GetFile(string path) const;
         Directory* GetDirectory(string path) const;
-        //Directory* ChangeDirectory(string path) const;
         string GetName() const;
 
-        void MoveFile(string srcPath, string destPath);
-        static void MoveDirectory(FileSystem *fs, Directory *dir, Directory *dest);
-
+        void Move(string srcPath, string destPath);
         void Write() const;
     };
 }

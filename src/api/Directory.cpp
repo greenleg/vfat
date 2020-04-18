@@ -5,18 +5,6 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-//Directory::Directory(FileSystem *fs, DirectoryEntry *e)
-//{
-//    this->fs = fs;
-//    this->entry = e;
-
-//    if (this->IsRoot()) {
-//        this->cchDir = fs->GetRootDirectory();
-//    } else {
-//        this->cchDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-//    }
-//}
-
 Directory::Directory(FileSystem *fs, Path *path)
 {
     this->fs = fs;
@@ -63,26 +51,11 @@ Directory* Directory::GetRoot(FileSystem *fs)
 
 Directory::~Directory()
 {
-//    if (this->entry != nullptr) {
-//        delete this->entry;
-//    }
-
-//    if (!this->path->IsRoot()) {
-//        if (this->parentCchDir != nullptr && this->parentCchDir != this->fs->GetRootDirectory()) {
-//            delete this->parentCchDir; // delete this->entry;  will be invoked automatically;
-//        }
-
-//        delete this->cchDir;
-//    }
-
-    if (this->parentCchDir != nullptr && this->parentCchDir != this->fs->GetRootDirectory()) {
+    if (this->parentCchDir != nullptr) {
         delete this->parentCchDir; // delete this->entry;  will be invoked automatically;
     }
 
-    if (this->cchDir != this->fs->GetRootDirectory()) {
-        delete this->cchDir;
-    }
-
+    delete this->cchDir;
     delete this->path;
 }
 
@@ -118,7 +91,7 @@ void Directory::GetFiles(std::vector<File*>& container) const
             e->GetName(nameBuf);
             Path *filePath = this->path->Clone();
             filePath->Combine(nameBuf);
-            File *file = new File(this->fs, this->cchDir, e, filePath);
+            File *file = new File(this->fs, /*this->cchDir, e,*/ filePath);
             container.push_back(file);
         }
     }
@@ -155,26 +128,23 @@ void Directory::CreateFile(std::string name) const
     this->cchDir->AddFile(cname, this->fs->GetDevice());
 }
 
-//Directory* Directory::GetDirectory(string name) const
+//File* Directory::GetFile(string name) const
 //{
 //    DirectoryEntry *e = this->cchDir->FindEntry(name.c_str());
 //    if (e == nullptr) {
-//        throw std::runtime_error("Directory doesn't exist.");
+//        throw std::runtime_error("File doesn't exist.");
 //    }
 
-//    return new Directory(this->fs, e);
+//    Path *filePath = this->path->Clone();
+//    filePath->Combine(name);
+//    return new File(this->fs, this->cchDir, e, filePath);
 //}
 
-File* Directory::GetFile(string name) const
+File* Directory::GetFile(string path) const
 {
-    DirectoryEntry *e = this->cchDir->FindEntry(name.c_str());
-    if (e == nullptr) {
-        throw std::runtime_error("File doesn't exist.");
-    }
-
     Path *filePath = this->path->Clone();
-    filePath->Combine(name);
-    return new File(this->fs, this->cchDir, e, filePath);
+    filePath->Combine(path);
+    return new File(this->fs, filePath);
 }
 
 void Directory::DeleteDirectory(string name) const
@@ -194,7 +164,7 @@ void Directory::Write() const
     this->cchDir->Write(this->fs->GetDevice());
 }
 
-void Directory::MoveFile(string srcPath, string destPath)
+void Directory::Move(string srcPath, string destPath)
 {
     Path *srcPathObj = this->path->Clone();
     srcPathObj->Combine(srcPath);
@@ -210,15 +180,16 @@ void Directory::MoveFile(string srcPath, string destPath)
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), srcEntry);
-        if (srcDir != this->fs->GetRootDirectory()) {
-            delete srcDir;
-        }
+        delete srcDir;
 
         srcDir = subDir;
     }
 
     const char *cname = srcPathObj->GetItem(i).c_str();
     srcEntry = srcDir->FindEntry(cname);
+    if (srcEntry == nullptr) {
+        throw std::runtime_error("Directory doesn't exist.");
+    }
 
     Path *destPathObj = this->path->Clone();
     destPathObj->Combine(destPath);
@@ -232,10 +203,7 @@ void Directory::MoveFile(string srcPath, string destPath)
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-        if (destDir != this->fs->GetRootDirectory()) {
-            delete destDir;
-        }
-
+        delete destDir;
         destDir = subDir;
     }
 

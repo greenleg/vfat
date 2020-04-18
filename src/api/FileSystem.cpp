@@ -43,16 +43,18 @@ void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t s
     this->bootSector->Create(volumeSize, bytesPerSector, sectorsPerCluster);
 
     this->fat = new Fat(this->bootSector);
-    this->root = new ClusterChainDirectory();
-
     this->fat->Create();
-    this->root->CreateRoot(this->fat);
+
+    //this->root = new ClusterChainDirectory();
+    //this->root->CreateRoot(this->fat);
 
     this->bootSector->Write(device);
     this->fat->Write(device);
-    this->root->Write(device);
+    //this->root->Write(device);
 
-    //this->currentDir = this->root;
+    ClusterChainDirectory root;
+    root.CreateRoot(fat);
+    root.Write(device);
 }
 
 void FileSystem::Open()
@@ -63,28 +65,29 @@ void FileSystem::Open()
     this->fat = new Fat(this->bootSector);
     this->fat->Read(device);
 
-    this->root = new ClusterChainDirectory();
-    this->root->ReadRoot(device, this->fat);
-
-//    this->currentDir = this->root;
+//    this->root = new ClusterChainDirectory();
+//    this->root->ReadRoot(device, this->fat);
 }
 
 void FileSystem::Close()
 {
-    this->root->Write(this->device);
+    //this->root->Write(this->device);
     this->fat->Write(this->device);
     this->bootSector->Write(this->device);
 }
 
 FileSystem::~FileSystem()
 {
-//    if (this->currentDir != this->root) {
-//        delete this->currentDir;
-//    }
-
-    delete this->root;
+    //delete this->root;
     delete this->fat;
     delete this->bootSector;
+}
+
+ClusterChainDirectory* FileSystem::GetRootDirectory() const
+{
+    ClusterChainDirectory *root = new ClusterChainDirectory();
+    root->ReadRoot(device, this->fat);
+    return root;
 }
 
 //static int parse_path(/*in*/ const char *path, /*out*/ char *parts[256])
@@ -116,18 +119,6 @@ FileSystem::~FileSystem()
 //    }
 
 //    return n;
-//}
-
-//void FileSystem::CreateDirectory(const char *name)
-//{
-//    string s(name);
-//    this->CreateDirectory(s);
-//}
-
-//void FileSystem::ChangeDirectory(const char *path)
-//{
-//    string s(path);
-//    this->ChangeDirectory(s);
 //}
 
 //struct vdir * filesys_opendir(/*in*/ struct filesys *fs, /*in*/ const char *path)

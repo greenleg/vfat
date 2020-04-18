@@ -689,7 +689,7 @@ void ClusterChainDirectory::Move(FileDisk *device, DirectoryEntry *e, ClusterCha
 
     e->SetName(newName);
     dest->AddEntry(e);
-    this->Write(device);
+    dest->Write(device);
 
     if (e->IsDir()) {
         ClusterChainDirectory *dir = GetDirectory(device, dest->chain->GetFat(), e);
