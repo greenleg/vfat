@@ -48,28 +48,28 @@ void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t s
     //this->root = new ClusterChainDirectory();
     //this->root->CreateRoot(this->fat);
 
-    this->bootSector->Write(device);
-    this->fat->Write(device);
+    this->bootSector->Write(this->device);
+    this->fat->Write(this->device);
     //this->root->Write(device);
 
     ClusterChainDirectory root;
-    root.CreateRoot(fat);
-    root.Write(device);
+    root.CreateRoot(this->fat);
+    root.Write(this->device);
 }
 
-void FileSystem::Open()
+void FileSystem::Read()
 {
     this->bootSector = new BootSector();
-    this->bootSector->Read(device);
+    this->bootSector->Read(this->device);
 
     this->fat = new Fat(this->bootSector);
-    this->fat->Read(device);
+    this->fat->Read(this->device);
 
 //    this->root = new ClusterChainDirectory();
 //    this->root->ReadRoot(device, this->fat);
 }
 
-void FileSystem::Close()
+void FileSystem::Write()
 {
     //this->root->Write(this->device);
     this->fat->Write(this->device);

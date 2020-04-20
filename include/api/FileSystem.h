@@ -70,8 +70,8 @@ namespace org::vfat::api
         FileSystem(FileDisk *device);
         ~FileSystem();
         void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
-        void Open();
-        void Close();
+        void Read();
+        void Write();
 
         FileDisk* GetDevice() const { return this->device; }
         BootSector* GetBootSector() const { return this->bootSector; }

@@ -19,7 +19,7 @@ protected:
 
         FileSystem fs(this->device);
         fs.Format(1024 * 1024, 512, 1);
-        fs.Close();
+        fs.Write();
     }
 
     void TearDown() override
@@ -32,12 +32,12 @@ protected:
 
 TEST_F(FileSystemTest, MakeDirectory)
 {
-    FileSystem fs(this->device);
+    FileSystem *fs = new FileSystem(this->device);
 
     // Create directories
-    fs.Open();
+    fs->Read();
 
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
     dir0->CreateDirectory("user");
@@ -45,12 +45,14 @@ TEST_F(FileSystemTest, MakeDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 
     // Check directories;
-    fs.Open();
+    fs = new FileSystem(this->device);
+    fs->Read();
 
-    rootDir = Directory::GetRoot(&fs);
+    rootDir = Directory::GetRoot(fs);
     ASSERT_EQ("/", rootDir->GetName());
 
     vector<Directory*> directories;
@@ -100,17 +102,18 @@ TEST_F(FileSystemTest, MakeDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 TEST_F(FileSystemTest, CreateFile)
 {
-    FileSystem fs(this->device);
+    FileSystem *fs = new FileSystem(this->device);
 
     // Create directories;
-    fs.Open();
+    fs->Read();
 
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
     dir0->CreateDirectory("user");
@@ -126,12 +129,14 @@ TEST_F(FileSystemTest, CreateFile)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 
     // Check for the file content;
-    fs.Open();
+    fs = new FileSystem(this->device);
+    fs->Read();
 
-    rootDir = Directory::GetRoot(&fs);
+    rootDir = Directory::GetRoot(fs);
     dir0 = rootDir->GetDirectory("home");
     dir00 = dir0->GetDirectory("user");
 
@@ -154,17 +159,17 @@ TEST_F(FileSystemTest, CreateFile)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 TEST_F(FileSystemTest, GetDirectory)
 {
-    FileSystem fs(this->device);
-
-    fs.Open();
+    FileSystem *fs = new FileSystem(this->device);
+    fs->Read();
 
     // Create directories;
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     rootDir->CreateDirectory("lib");
     rootDir->CreateDirectory("var");
@@ -207,17 +212,17 @@ TEST_F(FileSystemTest, GetDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 TEST_F(FileSystemTest, DeleteDirectory)
 {
-    FileSystem fs(this->device);
-
-    fs.Open();
+    FileSystem *fs = new FileSystem(this->device);
+    fs->Read();
 
     // Create directories;
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     rootDir->CreateDirectory("lib");
     rootDir->CreateDirectory("var");
@@ -245,17 +250,17 @@ TEST_F(FileSystemTest, DeleteDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 TEST_F(FileSystemTest, MoveDirectory)
 {
-    FileSystem fs(this->device);
-
-    fs.Open();
+    FileSystem *fs = new FileSystem(this->device);
+    fs->Read();
 
     // Create directories;
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     rootDir->CreateDirectory("lib");
     rootDir->CreateDirectory("var");
@@ -268,18 +273,21 @@ TEST_F(FileSystemTest, MoveDirectory)
     dir011->CreateDirectory("vfat");
 
     // Perform moving folder '/home/user' to '/'
-    dir0->MoveFile("user", "..");
+    dir0->Move("user", "..");
 
     delete dir011;
     delete dir00;
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 
     // Check directories;
-    fs.Open();
-    rootDir = Directory::GetRoot(&fs);
+    fs = new FileSystem(this->device);
+    fs->Read();
+
+    rootDir = Directory::GetRoot(fs);
     dir0 = rootDir->GetDirectory("home");
 
     bool errorWasThrown = false;
@@ -297,17 +305,17 @@ TEST_F(FileSystemTest, MoveDirectory)
     delete dir0;
     delete dir110;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 TEST_F(FileSystemTest, MoveFile)
 {
-    FileSystem fs(this->device);
+    FileSystem *fs = new FileSystem(this->device);
+    fs->Read();
 
     // Create directories;
-    fs.Open();
-
-    Directory *rootDir = Directory::GetRoot(&fs);
+    Directory *rootDir = Directory::GetRoot(fs);
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
     dir0->CreateDirectory("user");
@@ -320,7 +328,7 @@ TEST_F(FileSystemTest, MoveFile)
 
     // Re-read 'home' directory.
     Directory *dir0_copy = rootDir->GetDirectory("home");
-    dir0_copy->MoveFile("./user/dump0.bin", "..");
+    dir0_copy->Move("./user/dump0.bin", "..");
 
     delete dir0_copy;
     delete file0;
@@ -328,12 +336,14 @@ TEST_F(FileSystemTest, MoveFile)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 
     // Check that the file was properly moved;
-    fs.Open();
+    fs = new FileSystem(this->device);
+    fs->Read();
 
-    rootDir = Directory::GetRoot(&fs);
+    rootDir = Directory::GetRoot(fs);
     file0 = rootDir->GetFile("/dump0.bin");
     string text = file0->ReadText(0, file0->GetSize());
     ASSERT_EQ("A journey of thousand miles begins with a single step.", text);
@@ -341,7 +351,8 @@ TEST_F(FileSystemTest, MoveFile)
     delete file0;
     delete rootDir;
 
-    fs.Close();
+    fs->Write();
+    delete fs;
 }
 
 
