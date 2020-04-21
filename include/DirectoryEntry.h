@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <time.h>
 #include <vector>
 
 #include "FileDisk.h"
@@ -103,6 +104,10 @@ namespace org::vfat
         void SetStartCluster(uint32_t val);
         void GetName(/*out*/ char *name) const;
         void SetName(const char *name);
+        time_t GetLastModifiedTime() const;
+        void SetLastModifiedTime(time_t val);
+        time_t GetCreatedTime() const;
+        void SetCreatedTime(time_t time);
         bool IsDir() const;
         bool IsFile() const;
         void SetIsDir(bool val);

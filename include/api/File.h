@@ -18,9 +18,8 @@ namespace org::vfat::api
         DirectoryEntry *entry;
         Path *path;
 
-    public:
-        //File(FileSystem *fs, DirectoryEntry *e);
-        File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *entry, */Path *path);
+    public:        
+        File(FileSystem *fs, Path *path);
         ~File();
         string GetName() const;
         uint32_t GetSize() const;
@@ -28,6 +27,8 @@ namespace org::vfat::api
         void Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
         string ReadText(uint32_t offset, uint32_t nchars) const;
         void WriteText(string s, uint32_t offset) const;
+        tm* GetCreatedTime() const;
+        tm* GetLastModifiedTime() const;
     };
 }
 

@@ -211,15 +211,8 @@ void ClusterChainDirectory::CreateRoot(Fat *fat)
     this->chain = cc;
     this->isRoot = true;
     this->capacity = cc->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE;
-//    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(dir->entries, sizeof(DirectoryEntry));
     this->entries = new std::vector<DirectoryEntry *>();
 }
-
-//void cchdir_readroot(/*in*/ org::vfat::FileDisk *device, /*in*/ Fat *fat, /*out*/ struct cchdir *dir)
-//{
-//    cchdir_readdir(device, fat, fat->GetBootSector()->GetRootDirFirstCluster(), true, dir);
-//}
 
 void ClusterChainDirectory::ReadRoot(FileDisk *device, Fat *fat)
 {
@@ -457,10 +450,15 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
     ClusterChain *cc = new ClusterChain(fat, 0);
     cc->SetLength(1);
 
+    time_t now = time(0);
+
     DirectoryEntry *subde = new DirectoryEntry();
     subde->SetName(name);
     subde->SetIsDir(true);
     subde->SetStartCluster(cc->GetStartCluster());
+    subde->SetCreatedTime(now);
+    subde->SetLastModifiedTime(now);
+
     this->AddEntry(subde);
     this->Write(device);
 
@@ -472,7 +470,8 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
     dot->SetName(".");
     dot->SetIsDir(true);
     dot->SetStartCluster(subDir->chain->GetStartCluster());
-    // TODO: copy date/time fields from entry to dot;
+    dot->SetCreatedTime(now);
+    dot->SetLastModifiedTime(now);
     subDir->AddEntry(dot);
 
     // Add `..` entry
@@ -480,9 +479,10 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
     dotdot->SetName("..");
     dotdot->SetIsDir(true);
     dotdot->SetStartCluster(this->chain->GetStartCluster());
-    // TODO: copy date/time fields from entry to dotdot;
-    subDir->AddEntry(dotdot);
 
+    // TODO: copy date/time fields from entry to dotdot;
+
+    subDir->AddEntry(dotdot);
     subDir->Write(device);
 
     return subde;
@@ -571,49 +571,25 @@ void ClusterChainDirectory::RemoveFile(uint32_t index, FileDisk *device)
     this->Write(device);
 }
 
-//bool cchdir_addfile(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ DirectoryEntry *e)
-//{
-//    if (!check_unique_name(dir, name)) {
-//        return false;
-//    }
-
-//    //lfnde_create(e);
-//    e->SetName(name);
-//    e->SetIsDir(false);
-//    e->SetStartCluster(0);
-//    e->SetDataLength(0);
-//    cchdir_addentry(dir, e);
-
-//    return true;
-//}
-
 DirectoryEntry * ClusterChainDirectory::AddFile(const char *name, FileDisk *device)
 {
     this->CheckUniqueName(name);
+
+    time_t now = time(0);
 
     DirectoryEntry *e = new DirectoryEntry();
     e->SetName(name);
     e->SetIsDir(false);
     e->SetStartCluster(0);
     e->SetDataLength(0);
+    e->SetCreatedTime(now);
+    e->SetLastModifiedTime(now);
+
     this->AddEntry(e);
     this->Write(device);
 
     return e;
 }
-
-//void cchdir_getfile(/*in*/ struct cchdir *dir,
-//                    /*in*/ DirectoryEntry *e,
-//                    /*out*/ struct cchfile *file)
-//{
-////    struct cch *cc = static_cast<struct cch *>(malloc(sizeof(struct cch)));
-////    cc->fat = dir->chain->fat;
-////    cc->start_cluster = lfnde_getstartcluster(e);
-//    ClusterChain *cc = new ClusterChain(dir->chain->GetFat(), e->GetStartCluster());
-
-//    file->chain = cc;
-//    file->entry = e;
-//}
 
 ClusterChainFile* ClusterChainDirectory::GetFile(Fat *fat, DirectoryEntry *e)
 {
@@ -621,17 +597,6 @@ ClusterChainFile* ClusterChainDirectory::GetFile(Fat *fat, DirectoryEntry *e)
     ClusterChainFile *file = new ClusterChainFile(e, cc);
     return file;
 }
-
-//bool cchdir_getdir(/*in*/ org::vfat::FileDisk *device,
-//                   /*in*/ Fat *fat,
-//                   /*in*/ DirectoryEntry *e,
-//                   /*out*/ struct cchdir *dir)
-//{
-//    uint32_t first_cluster = e->GetStartCluster();
-//    cchdir_readdir(device, fat, first_cluster, false, dir);
-
-//    return true;
-//}
 
 ClusterChainDirectory* ClusterChainDirectory::GetDirectory(FileDisk *device, Fat *fat, DirectoryEntry *e)
 {
@@ -852,33 +817,10 @@ void ClusterChainDirectory::CopyFile(FileDisk *device, DirectoryEntry *e, Cluste
     delete copy;
 }
 
-//bool cchdir_setname(/*in*/ org::vfat::FileDisk *device,
-//                    /*in*/ struct cchdir *dir,
-//                    /*in*/ DirectoryEntry *e,
-//                    /*in*/ const char *name)
-//{
-//    return cchdir_move(device, dir, e, dir, name);
-//}
-
 void ClusterChainDirectory::SetName(FileDisk *device, DirectoryEntry *e, const char *name)
 {
     this->Move(device, e, this, name);
 }
-
-//void cchdir_destruct(/*in*/ struct cchdir *dir)
-//{
-//    uint32_t i;
-
-//    for (i = 0; i < alist_count(dir->entries); ++i) {
-//        DirectoryEntry e;
-//        alist_get(dir->entries, i, &e);
-//        //lfnde_destruct(&e);
-//    }
-
-//    alist_destruct(dir->entries);
-//    free(dir->entries);
-//    free(dir->chain);
-//}
 
 ClusterChainDirectory::~ClusterChainDirectory()
 {

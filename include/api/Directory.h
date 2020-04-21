@@ -36,6 +36,8 @@ namespace org::vfat::api
         File* GetFile(string path) const;
         Directory* GetDirectory(string path) const;
         string GetName() const;
+        tm* GetCreatedTime() const;
+        tm* GetLastModifiedTime() const;
 
         void Move(string srcPath, string destPath);
         void Write() const;

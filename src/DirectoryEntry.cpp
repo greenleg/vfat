@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
+#include "../include/Common.h"
 #include "../include/BinaryReader.h"
 #include "../include/DirectoryEntry.h"
 
@@ -404,4 +406,24 @@ DirectoryEntry* DirectoryEntry::Clone() const
     }
 
     return copy;
+}
+
+time_t DirectoryEntry::GetCreatedTime() const
+{
+    return (time_t) this->created;
+}
+
+void DirectoryEntry::SetCreatedTime(time_t time)
+{
+    this->created = (uint32_t) time;
+}
+
+time_t DirectoryEntry::GetLastModifiedTime() const
+{
+    return (time_t) this->lastModified;
+}
+
+void DirectoryEntry::SetLastModifiedTime(time_t time)
+{
+    this->lastModified = (uint32_t) time;
 }

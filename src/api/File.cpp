@@ -104,3 +104,15 @@ void File::WriteText(string s, uint32_t offset) const
     memcpy(buf, cstr, s.size());
     this->Write(offset, s.size(), buf);
 }
+
+tm* File::GetCreatedTime() const
+{
+    time_t time = this->entry->GetCreatedTime();
+    return localtime(&time);
+}
+
+tm* File::GetLastModifiedTime() const
+{
+    time_t time = this->entry->GetLastModifiedTime();
+    return localtime(&time);
+}

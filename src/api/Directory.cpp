@@ -225,3 +225,15 @@ void Directory::Move(string srcPath, string destPath)
         delete destDir;
     }
 }
+
+tm* Directory::GetCreatedTime() const
+{
+    time_t time = this->entry->GetCreatedTime();
+    return localtime(&time);
+}
+
+tm* Directory::GetLastModifiedTime() const
+{
+    time_t time = this->entry->GetLastModifiedTime();
+    return localtime(&time);
+}
