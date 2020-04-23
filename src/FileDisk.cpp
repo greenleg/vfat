@@ -1,3 +1,4 @@
+#include <cstring>
 #include <ios>
 #include <iostream>
 #include <sstream>
@@ -10,7 +11,10 @@
  */
 org::vfat::FileDisk::FileDisk(const char *fileName)
 {
-    this->fileName = fileName;
+    size_t len = strlen(fileName);
+    this->fileName = new char[len + 1];
+    strcpy(this->fileName, fileName);
+
     this->filePtr = nullptr;
 }
 

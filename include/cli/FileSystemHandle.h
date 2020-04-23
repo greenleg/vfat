@@ -14,6 +14,7 @@ namespace org::vfat::cli
         FileDisk *dev = nullptr;
         FileSystem *fs = nullptr;
         Directory *dir = nullptr;
+        Path *path = nullptr;
 
     public:
         FileSystemHandle(string deviceName);

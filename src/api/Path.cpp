@@ -58,20 +58,27 @@ void Path::Combine(std::string path, bool normalize)
     }
 }
 
-std::string Path::ToString() const
+std::string Path::ToString(bool normalize) const
 {
     if (this->IsRoot()) {
         return "/";
     }
 
-    string s = "";
-    vector<string>::iterator iter;
-    for (iter = this->items->begin(); iter < this->items->end(); ++iter) {
-        s.append("/");
-        s.append(*iter);
-    }
+    if (normalize) {
+        Path normalizedPath;
+        normalizedPath.Combine(this->ToString(false), true);
+        return normalizedPath.ToString(false);
+    } else {
+        // Print as is;
+        string s = "";
+        vector<string>::iterator iter;
+        for (iter = this->items->begin(); iter < this->items->end(); ++iter) {
+            s.append("/");
+            s.append(*iter);
+        }
 
-    return s;
+        return s;
+    }
 }
 
 bool Path::IsRoot() const

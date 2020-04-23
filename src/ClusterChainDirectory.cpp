@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <stdexcept>
+#include <sstream>
 
 #include "../include/string.h"
 #include "../include/Fat.h"
@@ -515,7 +516,9 @@ void ClusterChainDirectory::RemoveDirectory(const char *name, FileDisk *device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
-        throw std::runtime_error("Directory doesn't exist.");
+        std::ostringstream msgStream;
+        msgStream << "Couldn't find '" << name << "': No such file or directory.";
+        throw std::runtime_error(msgStream.str());
     }
 
     return this->RemoveDirectory(index, device);
@@ -555,7 +558,9 @@ void ClusterChainDirectory::RemoveFile(const char *name, FileDisk *device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
-        throw std::runtime_error("File doesn't exist.");
+        std::ostringstream msgStream;
+        msgStream << "Couldn't find '" << name << "': No such file or directory.";
+        throw std::runtime_error(msgStream.str());
     }
 
     this->RemoveFile(index, device);

@@ -25,6 +25,15 @@ int main(int argc, char *argv[])
         fsh.Read();
     }
 
+//    ProcessCommand("import ../CMakeLists.txt.user", &fsh);
+//    fsh.GetFileSystem()->Write();
+//    ProcessCommand("ls", &fsh);
+//    fsh.GetFileSystem()->Write();
+
+    // Print a command line prompt;
+    string fullPath = fsh.GetCurrentDirectory()->GetPath()->ToString(true);
+    cout << fullPath << "$ ";
+
     string input;
     std::getline(std::cin, input);
 
@@ -34,6 +43,10 @@ int main(int argc, char *argv[])
         if (res != 0) {
             break;
         }
+
+        // Print a command line prompt;
+        string fullPath = fsh.GetCurrentDirectory()->GetPath()->ToString(true);
+        cout << fullPath << "$ ";
 
         std::getline(std::cin, input);
     }
@@ -58,17 +71,32 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
         }
 
         if (cmdName == "ls") {
-            Commands::ls(&cmdLine, fsh);
+            Commands::Ls(&cmdLine, fsh);
             return 0;
         }
 
         if (cmdName == "mkdir") {
-            Commands::mkdir(&cmdLine, fsh);
+            Commands::Mkdir(&cmdLine, fsh);
             return 0;
         }
 
         if (cmdName == "cd") {
-            Commands::cd(&cmdLine, fsh);
+            Commands::Cd(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "touch") {
+            Commands::Touch(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "cat") {
+            Commands::Cat(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "import") {
+            Commands::Import(&cmdLine, fsh);
             return 0;
         }
 

@@ -9,9 +9,12 @@ namespace org::vfat::cli
     class Commands
     {
     public:
-        static void ls(CommandLine *cmdLine, FileSystemHandle *fsh);
-        static void mkdir(CommandLine *cmdLine, FileSystemHandle *fsh);
-        static void cd(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Ls(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Cd(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Touch(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Cat(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Import(CommandLine *cmdLine, FileSystemHandle *fsh);
     };
 }
 

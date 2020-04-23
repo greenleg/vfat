@@ -38,9 +38,12 @@ namespace org::vfat::api
         string GetName() const;
         tm* GetCreatedTime() const;
         tm* GetLastModifiedTime() const;
+        Path* GetPath() const { return this->path; }
 
         void Move(string srcPath, string destPath);
         void Write() const;
+
+        void Import(string path);
     };
 }
 

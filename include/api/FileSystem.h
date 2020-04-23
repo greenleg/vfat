@@ -64,7 +64,6 @@ namespace org::vfat::api
         FileDisk *device;
         BootSector *bootSector;
         Fat *fat;
-        //ClusterChainDirectory *root;
 
     public:
         FileSystem(FileDisk *device);

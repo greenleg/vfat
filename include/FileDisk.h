@@ -11,7 +11,7 @@ namespace org::vfat
     class FileDisk
     {
     private:
-        const char *fileName;
+        char *fileName;
         FILE *filePtr;
 
     public:

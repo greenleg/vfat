@@ -1,3 +1,5 @@
+#include <iostream>
+#include <stdio.h>
 #include <queue>
 #include "../../include/api/Directory.h"
 #include "../../include/Common.h"
@@ -20,10 +22,12 @@ Directory::Directory(FileSystem *fs, Path *path)
         DirectoryEntry *e;
         ClusterChainDirectory *parentDir;
         for (size_t i = 0; i < path->GetItemCount(); i++) {
-            const char *cname = path->GetItem(i).c_str();
-            e = dir->FindEntry(cname);
+            string name = path->GetItem(i);
+            e = dir->FindEntry(name.c_str());
             if (e == nullptr) {
-                throw std::runtime_error("Directory doesn't exist.");
+                std::ostringstream msgStream;
+                msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory.";
+                throw std::runtime_error(msgStream.str());
             }
 
             ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
@@ -91,7 +95,7 @@ void Directory::GetFiles(std::vector<File*>& container) const
             e->GetName(nameBuf);
             Path *filePath = this->path->Clone();
             filePath->Combine(nameBuf);
-            File *file = new File(this->fs, /*this->cchDir, e,*/ filePath);
+            File *file = new File(this->fs, filePath);
             container.push_back(file);
         }
     }
@@ -128,18 +132,6 @@ void Directory::CreateFile(std::string name) const
     this->cchDir->AddFile(cname, this->fs->GetDevice());
 }
 
-//File* Directory::GetFile(string name) const
-//{
-//    DirectoryEntry *e = this->cchDir->FindEntry(name.c_str());
-//    if (e == nullptr) {
-//        throw std::runtime_error("File doesn't exist.");
-//    }
-
-//    Path *filePath = this->path->Clone();
-//    filePath->Combine(name);
-//    return new File(this->fs, this->cchDir, e, filePath);
-//}
-
 File* Directory::GetFile(string path) const
 {
     Path *filePath = this->path->Clone();
@@ -173,10 +165,12 @@ void Directory::Move(string srcPath, string destPath)
     DirectoryEntry *srcEntry = nullptr;
     size_t i;
     for (i = 0; i < srcPathObj->GetItemCount() - 1; i++) {
-        const char *cname = srcPathObj->GetItem(i).c_str();
-        srcEntry = srcDir->FindEntry(cname);
+        string name = srcPathObj->GetItem(i);
+        srcEntry = srcDir->FindEntry(name.c_str());
         if (srcEntry == nullptr) {
-            throw std::runtime_error("Directory doesn't exist.");
+            std::ostringstream msgStream;
+            msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
+            throw std::runtime_error(msgStream.str());
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), srcEntry);
@@ -185,10 +179,12 @@ void Directory::Move(string srcPath, string destPath)
         srcDir = subDir;
     }
 
-    const char *cname = srcPathObj->GetItem(i).c_str();
-    srcEntry = srcDir->FindEntry(cname);
+    string name = srcPathObj->GetItem(i);
+    srcEntry = srcDir->FindEntry(name.c_str());
     if (srcEntry == nullptr) {
-        throw std::runtime_error("Directory doesn't exist.");
+        std::ostringstream msgStream;
+        msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
+        throw std::runtime_error(msgStream.str());
     }
 
     Path *destPathObj = this->path->Clone();
@@ -199,7 +195,9 @@ void Directory::Move(string srcPath, string destPath)
         const char *cname = destPathObj->GetItem(i).c_str();
         DirectoryEntry *e = destDir->FindEntry(cname);
         if (e == nullptr) {
-            throw std::runtime_error("Directory doesn't exist.");
+            std::ostringstream msgStream;
+            msgStream << "Couldn't find '" << destPathObj->ToString() << "': No such file or directory.";
+            throw std::runtime_error(msgStream.str());
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
@@ -236,4 +234,39 @@ tm* Directory::GetLastModifiedTime() const
 {
     time_t time = this->entry->GetLastModifiedTime();
     return localtime(&time);
+}
+
+void Directory::Import(string filePath)
+{
+    FILE *fp = fopen(filePath.c_str(), "r+b");
+    if (fp == nullptr) {
+        std::ostringstream msgStream;
+        msgStream << "Couldn't open the file '" << filePath << "'";
+        std::error_code errorCode(errno, std::generic_category());
+        throw std::ios_base::failure(msgStream.str(), errorCode);
+    }
+
+    Path path;
+    path.Combine(filePath);
+    string fileName = path.GetItem(path.GetItemCount() - 1);
+
+    std::cout << "The file to be imported " << fileName << endl;
+
+    this->CreateFile(fileName);
+    File *file = this->GetFile(fileName);
+
+    const size_t BUFFER_SIZE = 4096;
+    uint8_t buf[BUFFER_SIZE];
+
+    uint32_t offset = 0;
+    fseek(fp, 0, SEEK_SET);
+    size_t nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
+    while (nread > 0) {
+        file->Write(offset, nread, buf);
+        offset += nread;
+        nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
+    }
+
+    fclose(fp);
+    delete file;
 }

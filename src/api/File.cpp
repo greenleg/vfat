@@ -6,7 +6,7 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-File::File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *entry,*/ Path *path)
+File::File(FileSystem *fs, Path *path)
 {
     this->fs = fs;
     this->path = path;
@@ -14,12 +14,14 @@ File::File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *e
     std::queue<ClusterChainDirectory*> subDirectories;
     ClusterChainDirectory *dir = fs->GetRootDirectory();
     DirectoryEntry *e;
-    size_t i;
-    for (i = 0; i < path->GetItemCount() - 1; i++) {
-        const char *cname = path->GetItem(i).c_str();
-        e = dir->FindEntry(cname);
+    size_t i = 0;
+    for (; i < path->GetItemCount() - 1; i++) {
+        string name = path->GetItem(i);
+        e = dir->FindEntry(name.c_str());
         if (e == nullptr) {
-            throw std::runtime_error("Directory doesn't exist.");
+            std::ostringstream msgStream;
+            msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory.";
+            throw std::runtime_error(msgStream.str());
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
@@ -27,10 +29,12 @@ File::File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *e
         dir = subDir;
     }
 
-    const char *cname = path->GetItem(i).c_str();
-    e = dir->FindEntry(cname);
+    string name = path->GetItem(i);
+    e = dir->FindEntry(name.c_str());
     if (e == nullptr) {
-        throw std::runtime_error("File doesn't exist.");
+        std::ostringstream msgStream;
+        msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory.";
+        throw std::runtime_error(msgStream.str());
     }
 
     this->parentCchDir = dir;
@@ -39,6 +43,7 @@ File::File(FileSystem *fs, /*ClusterChainDirectory *parentDir, DirectoryEntry *e
 
 File::~File()
 {
+    delete this->parentCchDir;
     delete this->path;
 }
 

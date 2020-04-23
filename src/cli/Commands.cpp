@@ -4,7 +4,7 @@
 using namespace std;
 using namespace org::vfat::cli;
 
-void Commands::ls(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     vector<Directory *> directories;
     fsh->GetCurrentDirectory()->GetDirectories(directories);
@@ -15,14 +15,14 @@ void Commands::ls(CommandLine *cmdLine, FileSystemHandle *fsh)
     vector<File *>::iterator fileIter;
 
     if (cmdLine->HasOption("-all")) {
-        string delim(30 + 20 + 12, '-');
+        //string delim(30 + 20 + 12, '-');
 
-        cout << Utils::StringPadding("Name", 30)
-             << Utils::StringPadding("Created", 20)
-             << Utils::StringPadding("Size", 12)
+        cout << Utils::StringPadding("NAME", 30)
+             << Utils::StringPadding("CREATED", 20)
+             << Utils::StringPadding("SIZE", 12)
              << endl;
 
-        cout << delim << endl;
+        //cout << delim << endl;
 
         for (dirIter = directories.begin(); dirIter < directories.end(); dirIter++) {
             Directory *subDir = *dirIter;
@@ -61,24 +61,58 @@ void Commands::ls(CommandLine *cmdLine, FileSystemHandle *fsh)
             delete file;
         }
 
-        if (directories.size() > 0) {
+        if (directories.size() + files.size() > 0) {
             std::cout << endl;
         }
     }
 }
 
-void Commands::mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
-        throw std::logic_error("Directory name is not specified.");
+        throw std::logic_error("Directory is not specified.");
     }
 
     string dirName = cmdLine->GetArg(1);
     fsh->GetCurrentDirectory()->CreateDirectory(dirName);
 }
 
-void Commands::cd(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cd(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     string dirPath = cmdLine->GetArg(1);
     fsh->ChangeDirectory(dirPath);
+}
+
+void Commands::Touch(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 2) {
+        throw std::logic_error("File is not specified.");
+    }
+
+    string fileName = cmdLine->GetArg(1);
+    fsh->GetCurrentDirectory()->CreateFile(fileName);
+}
+
+void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 2) {
+        throw std::logic_error("File is not specified.");
+    }
+
+    string fileName = cmdLine->GetArg(1);
+    File *file = fsh->GetCurrentDirectory()->GetFile(fileName);
+    string text = file->ReadText(0, file->GetSize());
+    delete file;
+
+    cout << text << endl;
+}
+
+void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 2) {
+        throw std::logic_error("File is not specified.");
+    }
+
+    string fileName = cmdLine->GetArg(1);
+    fsh->GetCurrentDirectory()->Import(fileName);
 }

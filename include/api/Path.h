@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-//using namespace org::vfat;
 using namespace std;
 
 namespace org::vfat::api
@@ -12,7 +11,6 @@ namespace org::vfat::api
     class Path
     {
     private:
-        //static Path *root = nullptr;// = new Path("/");
         vector<string> *items;
 
     public:
@@ -20,10 +18,9 @@ namespace org::vfat::api
 
         Path();
         ~Path();
-        //Path* Combine(std::string path) const;
         void Combine(std::string path, bool normalize = false);
         Path* Clone() const;
-        std::string ToString() const;
+        std::string ToString(bool normalize = true) const;
         bool IsRoot() const;
 
         string GetItem(size_t index) const;

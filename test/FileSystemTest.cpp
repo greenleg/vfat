@@ -239,7 +239,7 @@ TEST_F(FileSystemTest, DeleteDirectory)
     try {
         rootDir->GetDirectory("/home/user/Projects");
     } catch (std::runtime_error error) {
-        ASSERT_STREQ("Directory doesn't exist.", error.what());
+        ASSERT_STREQ("Couldn't find '/home/user/Projects': No such file or directory.", error.what());
         errorWasThrown = true;
     }
 
@@ -294,7 +294,7 @@ TEST_F(FileSystemTest, MoveDirectory)
     try {
         rootDir->GetDirectory("/home/user");
     } catch (std::runtime_error error) {
-        ASSERT_STREQ("Directory doesn't exist.", error.what());
+        ASSERT_STREQ("Couldn't find '/home/user': No such file or directory.", error.what());
         errorWasThrown = true;
     }
 
