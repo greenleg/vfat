@@ -14,7 +14,17 @@ Directory::Directory(FileSystem *fs, Path *path)
 
     if (path->IsRoot()) {
         this->parentCchDir = nullptr;
-        this->entry = nullptr;
+
+        time_t now = time(0);
+
+        // Fake root entry;
+        this->entry = new DirectoryEntry();
+        //this->entry->SetName("/");
+        this->entry->SetStartCluster(fs->GetBootSector()->GetRootDirFirstCluster());
+        this->entry->SetCreatedTime(now);
+        this->entry->SetLastModifiedTime(now);
+        this->entry->SetIsDir(true);
+
         this->cchDir = fs->GetRootDirectory();
     } else {
         std::queue<ClusterChainDirectory*> subDirectories;
@@ -57,6 +67,11 @@ Directory::~Directory()
 {
     if (this->parentCchDir != nullptr) {
         delete this->parentCchDir; // delete this->entry;  will be invoked automatically;
+    }
+
+    if (this->path->IsRoot()) {
+        // Deallocate memory occupied by the fake root entry;
+        delete this->entry;
     }
 
     delete this->cchDir;
@@ -104,7 +119,7 @@ void Directory::GetFiles(std::vector<File*>& container) const
 string Directory::GetName() const
 {
     char nameBuf[256];
-    if (this->entry == nullptr) {
+    if (this->path->IsRoot()) {
         return "/";
     }
 
@@ -123,7 +138,18 @@ Directory* Directory::GetDirectory(std::string path) const
 void Directory::CreateDirectory(std::string name) const
 {
     const char *cname = name.c_str();
-    this->cchDir->AddDirectory(cname, this->fs->GetDevice());
+    DirectoryEntry *subEntry = this->cchDir->AddDirectory(cname, this->fs->GetDevice());
+
+    // Update Created/Modified time for the '..' directory
+    ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), subEntry);
+    DirectoryEntry *parentEntry = subDir->FindEntry("..");
+
+    time_t createdTime = this->entry->GetCreatedTime();
+    time_t modifiedTime = this->entry->GetLastModifiedTime();
+    parentEntry->SetCreatedTime(createdTime);
+    parentEntry->SetLastModifiedTime(modifiedTime);
+
+    subDir->Write(this->fs->GetDevice());
 }
 
 void Directory::CreateFile(std::string name) const
@@ -249,8 +275,6 @@ void Directory::Import(string filePath)
     Path path;
     path.Combine(filePath);
     string fileName = path.GetItem(path.GetItemCount() - 1);
-
-    std::cout << "The file to be imported " << fileName << endl;
 
     this->CreateFile(fileName);
     File *file = this->GetFile(fileName);

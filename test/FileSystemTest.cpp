@@ -32,78 +32,102 @@ protected:
 
 TEST_F(FileSystemTest, MakeDirectory)
 {
-    FileSystem *fs = new FileSystem(this->device);
+    {
+        FileSystem fs(this->device);
+        fs.Read();
 
-    // Create directories
-    fs->Read();
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
 
-    Directory *rootDir = Directory::GetRoot(fs);
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Check directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        ASSERT_EQ("/", rootDir->GetName());
+
+        vector<Directory*> directories;
+        rootDir->GetDirectories(directories);
+        ASSERT_EQ(1, directories.size());
+        Directory *dir0 = directories.at(0);
+        ASSERT_EQ("home", dir0->GetName());
+
+        directories.clear();
+        dir0->GetDirectories(directories);
+        ASSERT_EQ(3, directories.size());
+        Directory *dir00 = directories.at(0);
+        ASSERT_EQ(".", dir00->GetName());
+        Directory *dir01 = directories.at(1);
+        ASSERT_EQ("..", dir01->GetName());
+        Directory *dir02 = directories.at(2);
+        ASSERT_EQ("user", dir02->GetName());
+
+        directories.clear();
+        dir00->GetDirectories(directories);
+        ASSERT_EQ(3, directories.size());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        directories.clear();
+        dir01->GetDirectories(directories);
+        ASSERT_EQ(1, directories.size());
+        ASSERT_EQ("home", directories.at(0)->GetName());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        directories.clear();
+        dir02->GetDirectories(directories);
+        ASSERT_EQ(2, directories.size());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        delete dir02;
+        delete dir01;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+}
+
+TEST_F(FileSystemTest, MakeDirectory2)
+{
+    FileSystem fs(this->device);
+    fs.Read();
+
+    // Create directories;
+    Directory *rootDir = Directory::GetRoot(&fs);
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
-    dir0->CreateDirectory("user");
+    Directory* rootDir2 = dir0->GetDirectory("..");
+
+    // Check Create/Modified time;
+    ASSERT_EQ(Utils::FormatDate(rootDir->GetCreatedTime()),
+              Utils::FormatDate(rootDir2->GetCreatedTime()));
+
+    ASSERT_EQ(Utils::FormatDate(rootDir->GetLastModifiedTime()),
+              Utils::FormatDate(rootDir2->GetLastModifiedTime()));
 
     delete dir0;
     delete rootDir;
-
-    fs->Write();
-    delete fs;
-
-    // Check directories;
-    fs = new FileSystem(this->device);
-    fs->Read();
-
-    rootDir = Directory::GetRoot(fs);
-    ASSERT_EQ("/", rootDir->GetName());
-
-    vector<Directory*> directories;
-    rootDir->GetDirectories(directories);
-    ASSERT_EQ(1, directories.size());
-    dir0 = directories.at(0);
-    ASSERT_EQ("home", dir0->GetName());
-
-    directories.clear();
-    dir0->GetDirectories(directories);
-    ASSERT_EQ(3, directories.size());
-    Directory *dir00 = directories.at(0);
-    ASSERT_EQ(".", dir00->GetName());
-    Directory *dir01 = directories.at(1);
-    ASSERT_EQ("..", dir01->GetName());
-    Directory *dir02 = directories.at(2);
-    ASSERT_EQ("user", dir02->GetName());
-
-    directories.clear();
-    dir00->GetDirectories(directories);
-    ASSERT_EQ(3, directories.size());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    directories.clear();
-    dir01->GetDirectories(directories);
-    ASSERT_EQ(1, directories.size());
-    ASSERT_EQ("home", directories.at(0)->GetName());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    directories.clear();
-    dir02->GetDirectories(directories);
-    ASSERT_EQ(2, directories.size());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    delete dir02;
-    delete dir01;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
-
-    fs->Write();
-    delete fs;
+    delete rootDir2;
 }
 
 TEST_F(FileSystemTest, CreateFile)

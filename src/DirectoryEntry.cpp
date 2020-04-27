@@ -314,42 +314,6 @@ void DirectoryEntry::GetName(/*out*/ char *name) const
     name[this->nameLength] = '\0';
 }
 
-//void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
-//{
-//    struct fnede fnede;
-//    uint8_t len = strlen(name);
-//    uint8_t fnede_cnt = alist_count(e->fnede_list);
-//    uint8_t new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
-//    uint8_t i, char_idx, fnede_idx;
-
-//    // Clear list
-//    for (i = 0; i < fnede_cnt; ++i) {
-//        alist_remove(e->fnede_list, 0);
-//    }
-
-//    fnede.entry_type = FILENAMEEXT_DIR_ENTRY;
-
-//    // Fill list with the new values
-//    char_idx = 0;
-//    for (fnede_idx = 0; fnede_idx < new_fnede_cnt - 1; ++fnede_idx) {
-//        for (i = 0; i < FNEDE_UNAME_LENGTH; ++i) {
-//            fnede.name[i] = name[char_idx + i];
-//        }
-
-//        char_idx += FNEDE_UNAME_LENGTH;
-//        alist_add(e->fnede_list, &fnede);
-//    }
-
-//    // Special case for the last item
-//    for (i = 0; i < len - char_idx; ++i) {
-//        fnede.name[i] = name[char_idx + i];
-//    }
-
-//    alist_add(e->fnede_list, &fnede);
-//    e->sede->name_length = len;
-//    e->fde->secondary_count = new_fnede_cnt + 1;
-//}
-
 void DirectoryEntry::SetName(const char *name)
 {
     //struct fnede fnede;

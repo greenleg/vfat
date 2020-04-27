@@ -15,6 +15,8 @@ namespace org::vfat::cli
         static void Touch(CommandLine *cmdLine, FileSystemHandle *fsh);
         static void Cat(CommandLine *cmdLine, FileSystemHandle *fsh);
         static void Import(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Move(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Copy(CommandLine *cmdLine, FileSystemHandle *fsh);
     };
 }
 

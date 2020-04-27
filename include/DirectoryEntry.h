@@ -82,7 +82,6 @@ namespace org::vfat
     class DirectoryEntry
     {
     private:
-        //uint8_t secondaryCount;
         uint16_t attributes;
         uint32_t created;
         uint32_t lastModified;

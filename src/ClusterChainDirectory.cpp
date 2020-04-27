@@ -95,28 +95,6 @@ uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSiz
     return offset;
 }
 
-//void cchdir_formatdev(/*in*/ org::vfat::FileDisk *device,
-//                      /*in*/ uint64_t vol_size,
-//                      /*in*/ uint16_t bytes_per_sect,
-//                      /*in*/ uint16_t sect_per_clus)
-//{
-//    BootSector bootSector;
-//    bootSector.Create(vol_size, bytes_per_sect, sect_per_clus);
-//    bootSector.Write(device);
-
-//    Fat fat(&bootSector);
-//    fat.Create();
-
-//    struct cchdir root;
-//    cchdir_createroot(&fat, &root);
-
-//    this->Write(&root, device);
-//    fat.Write(device);
-
-//    cchdir_destruct(&root);
-//    //fat_destruct(&fat); will be invoked automatically
-//}
-
 void ClusterChainDirectory::FormatDevice(FileDisk * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
 {
     BootSector bootSector;
@@ -133,27 +111,6 @@ void ClusterChainDirectory::FormatDevice(FileDisk * device, uint64_t volumeSize,
     fat.Write(device);
 }
 
-//void cchdir_readdir(/*in*/ org::vfat::FileDisk *device,
-//                    /*in*/ Fat *fat,
-//                    /*in*/ uint32_t first_cluster,
-//                    /*in*/ bool root,
-//                    /*out*/ struct cchdir* dir)
-//{
-//    ClusterChain *cc = new ClusterChain(fat, first_cluster);
-
-//    uint64_t size = cc->GetSizeInBytes();
-//    uint8_t buffer[size];
-//    cc->ReadData(device, 0, size, buffer);
-
-//    dir->chain = cc;
-//    dir->root = root;
-//    dir->capacity = size / FAT_DIR_ENTRY_SIZE;
-//    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(dir->entries, sizeof(DirectoryEntry));
-
-//    cchdir_read_entries(dir, buffer);
-//}
-
 void ClusterChainDirectory::Read(FileDisk *device, Fat *fat, uint32_t firstCluster, bool isRoot)
 {
     ClusterChain *cc = new ClusterChain(fat, firstCluster);
@@ -169,14 +126,6 @@ void ClusterChainDirectory::Read(FileDisk *device, Fat *fat, uint32_t firstClust
     this->ReadEntries(buffer);
 }
 
-//void cchdir_write(struct cchdir* dir, org::vfat::FileDisk *device)
-//{
-//    uint32_t nbytes = dir->capacity * FAT_DIR_ENTRY_SIZE;
-//    uint8_t buf[nbytes];
-//    uint32_t realbytes = cchdir_write_entries(dir, buf, nbytes);
-//    dir->chain->WriteData(device, 0, realbytes, buf);
-//}
-
 void ClusterChainDirectory::Write(FileDisk *device) const
 {
     uint32_t nbytes = this->capacity * FAT_DIR_ENTRY_SIZE;
@@ -184,15 +133,6 @@ void ClusterChainDirectory::Write(FileDisk *device) const
     uint32_t realBytes = this->WriteEntries(buffer, nbytes);
     this->chain->WriteData(device, 0, realBytes, buffer);
 }
-
-//void cchdir_create(ClusterChain *cc, struct cchdir *dir)
-//{
-//    dir->chain = cc;
-//    dir->root = false;
-//    dir->capacity = cc->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE;
-//    dir->entries = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(dir->entries, sizeof(DirectoryEntry));
-//}
 
 void ClusterChainDirectory::Create(ClusterChain *cc)
 {
@@ -219,13 +159,6 @@ void ClusterChainDirectory::ReadRoot(FileDisk *device, Fat *fat)
 {
     this->Read(device, fat, fat->GetBootSector()->GetRootDirFirstCluster(), true);
 }
-
-//void cchdir_changesize(struct cchdir *dir, uint32_t fat32_entry_cnt)
-//{
-//    uint32_t size = fat32_entry_cnt * FAT_DIR_ENTRY_SIZE;
-//    uint32_t new_size = dir->chain->SetSizeInBytes(size);
-//    dir->capacity = new_size / FAT_DIR_ENTRY_SIZE;
-//}
 
 void ClusterChainDirectory::ChangeSize(uint32_t fat32EntryCount)
 {

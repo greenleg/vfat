@@ -116,3 +116,14 @@ void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
     string fileName = cmdLine->GetArg(1);
     fsh->GetCurrentDirectory()->Import(fileName);
 }
+
+void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 3) {
+        throw std::logic_error("At least one of the files is not specified.");
+    }
+
+    string srcFileName = cmdLine->GetArg(1);
+    string destFileName = cmdLine->GetArg(2);
+    fsh->GetCurrentDirectory()->Move(srcFileName, destFileName);
+}

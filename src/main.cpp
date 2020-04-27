@@ -25,9 +25,11 @@ int main(int argc, char *argv[])
         fsh.Read();
     }
 
-//    ProcessCommand("import ../CMakeLists.txt.user", &fsh);
+//    ProcessCommand("mkdir home", &fsh);
 //    fsh.GetFileSystem()->Write();
-//    ProcessCommand("ls", &fsh);
+//    ProcessCommand("cd home", &fsh);
+//    fsh.GetFileSystem()->Write();
+//    ProcessCommand("ls -all", &fsh);
 //    fsh.GetFileSystem()->Write();
 
     // Print a command line prompt;
@@ -97,6 +99,11 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
 
         if (cmdName == "import") {
             Commands::Import(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "mv") {
+            Commands::Move(&cmdLine, fsh);
             return 0;
         }
 

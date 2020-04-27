@@ -3,24 +3,9 @@
 
 using namespace org::vfat::api;
 
-Path::Path(/*std::string path*/)
+Path::Path()
 {
     this->items = new vector<string>();
-
-//    vector<string> items;
-//    Utils::StringSplit(path, items, '/');
-
-//    vector<string>::iterator iter;
-//    for (iter = items.begin(); iter < items.end(); ++iter) {
-//        string name = *iter;
-//        if (name == ".") {
-//            continue;
-//        } else if (name == "..") {
-//            this->items->pop_back();
-//        } else {
-//            this->items->push_back(name);
-//        }
-//    }
 }
 
 Path::~Path()
@@ -83,7 +68,22 @@ std::string Path::ToString(bool normalize) const
 
 bool Path::IsRoot() const
 {
-    return (GetItemCount() == 0);
+    return (this->GetItemCount() == 0);
+
+//    int numberOfItems = 0;
+//    vector<string>::iterator iter;
+//    for (iter = this->items->begin(); iter < this->items->end(); ++iter) {
+//        string name = *iter;
+//        if (name == ".") {
+//            continue;
+//        } else if (name == "..") {
+//            --numberOfItems;
+//        } else {
+//            ++numberOfItems;
+//        }
+//    }
+
+//    return numberOfItems == 0;
 }
 
 string Path::GetItem(size_t index) const
