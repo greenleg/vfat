@@ -1,5 +1,9 @@
 #include <iostream>
 #include <stdio.h>
+#include <dirent.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <queue>
 #include "../../include/api/Directory.h"
 #include "../../include/Common.h"
@@ -23,14 +27,36 @@ Directory::Directory(FileSystem *fs, Path *path)
         this->entry->SetCreatedTime(now);
         this->entry->SetLastModifiedTime(now);
         this->entry->SetIsDir(true);
-
-        this->cchDir = fs->GetRootDirectory();
     } else {
-        std::queue<ClusterChainDirectory*> subDirectories;
+//        std::queue<ClusterChainDirectory*> subDirectories;
+//        ClusterChainDirectory *dir = fs->GetRootDirectory();
+//        DirectoryEntry *e;
+//        ClusterChainDirectory *parentDir;
+//        for (size_t i = 0; i < path->GetItemCount(); i++) {
+//            string name = path->GetItem(i);
+//            e = dir->FindEntry(name.c_str());
+//            if (e == nullptr) {
+//                std::ostringstream msgStream;
+//                msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory.";
+//                throw std::runtime_error(msgStream.str());
+//            }
+
+//            ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
+//            subDirectories.push(subDir);
+//            parentDir = dir;
+//            dir = subDir;
+//        }
+
+//        while (subDirectories.size() > 2) {
+//            ClusterChainDirectory *subDir = subDirectories.front();
+//            delete subDir;
+//            subDirectories.pop();
+//        }
+
         ClusterChainDirectory *dir = fs->GetRootDirectory();
         DirectoryEntry *e;
-        ClusterChainDirectory *parentDir;
-        for (size_t i = 0; i < path->GetItemCount(); i++) {
+        size_t i = 0;
+        for (; i < path->GetItemCount() - 1; i++) {
             string name = path->GetItem(i);
             e = dir->FindEntry(name.c_str());
             if (e == nullptr) {
@@ -40,26 +66,35 @@ Directory::Directory(FileSystem *fs, Path *path)
             }
 
             ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-            subDirectories.push(subDir);
-            parentDir = dir;
+            delete dir;
             dir = subDir;
         }
 
-        while (subDirectories.size() > 2) {
-            ClusterChainDirectory *subDir = subDirectories.front();
-            delete subDir;
-            subDirectories.pop();
+        string name = path->GetItem(i);
+        e = dir->FindEntry(name.c_str());
+        if (e == nullptr) {
+            std::ostringstream msgStream;
+            msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory.";
+            throw std::runtime_error(msgStream.str());
         }
 
-        this->parentCchDir = parentDir;
+        this->parentCchDir = dir;
         this->entry = e;
-        this->cchDir = dir;
     }
 }
 
 Directory* Directory::GetRoot(FileSystem *fs)
 {
     return new Directory(fs, new Path());
+}
+
+ClusterChainDirectory* Directory::GetCchDirectory() const
+{
+    if (path->IsRoot()) {
+        return this->fs->GetRootDirectory();
+    } else {
+        return ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), this->entry);
+    }
 }
 
 Directory::~Directory()
@@ -73,7 +108,6 @@ Directory::~Directory()
         delete this->entry;
     }
 
-    delete this->cchDir;
     delete this->path;
 }
 
@@ -85,7 +119,8 @@ bool Directory::IsRoot() const
 
 void Directory::GetDirectories(std::vector<Directory*>& container) const
 {
-    std::vector<DirectoryEntry *> *entries = this->cchDir->GetEntries();
+    auto cchDir = this->GetCchDirectory();
+    std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
     for (size_t i = 0; i < entries->size(); i++) {
         DirectoryEntry *e = entries->at(i);
         if (e->IsDir()) {
@@ -97,11 +132,14 @@ void Directory::GetDirectories(std::vector<Directory*>& container) const
             container.push_back(dir);
         }
     }
+
+    delete cchDir;
 }
 
 void Directory::GetFiles(std::vector<File*>& container) const
 {
-    std::vector<DirectoryEntry *> *entries = this->cchDir->GetEntries();
+    auto cchDir = this->GetCchDirectory();
+    std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
     for (size_t i = 0; i < entries->size(); i++) {
         DirectoryEntry *e = entries->at(i);
         if (e->IsFile()) {
@@ -113,6 +151,8 @@ void Directory::GetFiles(std::vector<File*>& container) const
             container.push_back(file);
         }
     }
+
+    delete cchDir;
 }
 
 string Directory::GetName() const
@@ -136,8 +176,9 @@ Directory* Directory::GetDirectory(std::string path) const
 
 void Directory::CreateDirectory(std::string name) const
 {
-    const char *cname = name.c_str();
-    DirectoryEntry *subEntry = this->cchDir->AddDirectory(cname, this->fs->GetDevice());
+    //const char *cname = name.c_str();
+    auto cchDir = this->GetCchDirectory();
+    DirectoryEntry *subEntry = cchDir->AddDirectory(name.c_str(), this->fs->GetDevice());
 
     // Update Created/Modified time for the '..' directory
     ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), subEntry);
@@ -149,12 +190,17 @@ void Directory::CreateDirectory(std::string name) const
     parentEntry->SetLastModifiedTime(modifiedTime);
 
     subDir->Write(this->fs->GetDevice());
+
+    delete subDir;
+    delete cchDir;
 }
 
 void Directory::CreateFile(std::string name) const
 {
-    const char *cname = name.c_str();
-    this->cchDir->AddFile(cname, this->fs->GetDevice());
+    //const char *cname = name.c_str();
+    auto cchDir = this->GetCchDirectory();
+    cchDir->AddFile(name.c_str(), this->fs->GetDevice());
+    delete cchDir;
 }
 
 File* Directory::GetFile(string path) const
@@ -166,19 +212,21 @@ File* Directory::GetFile(string path) const
 
 void Directory::DeleteDirectory(string name) const
 {
-    const char *cname = name.c_str();
-    this->cchDir->RemoveDirectory(cname, this->fs->GetDevice());
+    auto cchDir = this->GetCchDirectory();
+    cchDir->RemoveDirectory(name.c_str(), this->fs->GetDevice());
+    delete cchDir;
 }
 
 void Directory::DeleteFile(string name) const
 {
-    const char *cname = name.c_str();
-    this->cchDir->RemoveFile(cname, this->fs->GetDevice());
+    auto cchDir = this->GetCchDirectory();
+    cchDir->RemoveFile(name.c_str(), this->fs->GetDevice());
+    delete cchDir;
 }
 
 void Directory::Write() const
 {
-    this->cchDir->Write(this->fs->GetDevice());
+    throw std::runtime_error("The operation is not supported.");
 }
 
 void Directory::Move(string srcPath, string destPath)
@@ -314,19 +362,19 @@ tm* Directory::GetLastModifiedTime() const
     return localtime(&time);
 }
 
-void Directory::Import(string filePath)
+void Directory::ImportFile(string path)
 {
-    FILE *fp = fopen(filePath.c_str(), "r+b");
+    FILE *fp = fopen(path.c_str(), "r+b");
     if (fp == nullptr) {
         std::ostringstream msgStream;
-        msgStream << "Couldn't open the file '" << filePath << "'";
+        msgStream << "Couldn't open the file '" << path << "'";
         std::error_code errorCode(errno, std::generic_category());
         throw std::ios_base::failure(msgStream.str(), errorCode);
     }
 
-    Path path;
-    path.Combine(filePath);
-    string fileName = path.GetItem(path.GetItemCount() - 1);
+    Path pathObj;
+    pathObj.Combine(path);
+    string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
 
     this->CreateFile(fileName);
     File *file = this->GetFile(fileName);
@@ -345,4 +393,53 @@ void Directory::Import(string filePath)
 
     fclose(fp);
     delete file;
+}
+
+void Directory::ImportDirectory(string path)
+{
+    DIR *dir = opendir(path.c_str());
+    if (dir == NULL) {
+        std::ostringstream msgStream;
+        msgStream << "Couldn't open the directory '" << path << "'.";
+        throw std::ios_base::failure(msgStream.str());
+    }
+
+    struct dirent *ent;
+    while ((ent = readdir (dir)) != NULL) {
+        try {
+            if (ent->d_type == DT_REG) {
+                // Import a regular file;
+                string filePath = path + "/" + ent->d_name;
+                this->ImportFile(filePath);
+            } else if (ent->d_type == DT_DIR) {
+                if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
+                    // Import a sub-directory;
+                    this->CreateDirectory(ent->d_name);
+                    Directory *subDir = this->GetDirectory(ent->d_name);
+                    string subDirPath = path + "/" + ent->d_name;
+                    subDir->ImportDirectory(subDirPath);
+                    delete subDir;
+                }
+            }
+        } catch (const std::ios_base::failure& error) {
+            cout << error.what() << endl;
+        }
+    }
+
+    closedir(dir);
+}
+
+void Directory::Import(string path)
+{
+    struct stat info;
+    stat(path.c_str(), &info);
+    if (S_ISREG(info.st_mode)) {
+        this->ImportFile(path);
+    } else if (S_ISDIR(info.st_mode)) {
+        this->ImportDirectory(path);
+    } else {
+        std::ostringstream msgStream;
+        msgStream << "Couldn't open '" << path << "'. No such file or directory.";
+        throw std::ios_base::failure(msgStream.str());
+    }
 }

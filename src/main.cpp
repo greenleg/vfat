@@ -17,17 +17,19 @@ int main(int argc, char *argv[])
 {
     CommandLine cmdLine(argc, argv);
     string devName = cmdLine.FetchByPrefix("-dev:");
+    string volumeSizeStr = cmdLine.FetchByPrefix("-size:");
+    uint64_t volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
 
     FileSystemHandle fsh(devName);
     if (cmdLine.HasOption("-f")) {
-        fsh.Format(1024 * 1024, 512, 1);
+        fsh.Format(volumeSize, 512, 1);
     } else {
         fsh.Read();
     }
 
-//    ProcessCommand("mkdir h", &fsh);
+//    ProcessCommand("import qq", &fsh);
 //    fsh.GetFileSystem()->Write();
-//    ProcessCommand("cd h/..", &fsh);
+//    ProcessCommand("ls -all", &fsh);
 //    fsh.GetFileSystem()->Write();
 
     // Print a command line prompt;
@@ -112,5 +114,3 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
         return 0;
     }
 }
-
-

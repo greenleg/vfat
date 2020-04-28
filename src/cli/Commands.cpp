@@ -131,7 +131,7 @@ void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
 void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
-        throw std::logic_error("File is not specified.");
+        throw std::logic_error("File or directory to import is not specified.");
     }
 
     string fileName = cmdLine->GetArg(1);

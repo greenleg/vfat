@@ -18,11 +18,14 @@ namespace org::vfat::api
         FileSystem *fs;
         ClusterChainDirectory *parentCchDir;
         DirectoryEntry *entry;
-        ClusterChainDirectory *cchDir;
+        //ClusterChainDirectory *cchDir;
         Path *path;
 
         bool IsRoot() const;
         void Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
+        void ImportFile(string path);
+        void ImportDirectory(string path);
+        ClusterChainDirectory* GetCchDirectory() const;
 
     public:
         Directory(FileSystem *fs, Path *path);
