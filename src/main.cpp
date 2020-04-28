@@ -25,15 +25,13 @@ int main(int argc, char *argv[])
         fsh.Read();
     }
 
-//    ProcessCommand("mkdir home", &fsh);
+//    ProcessCommand("mkdir h", &fsh);
 //    fsh.GetFileSystem()->Write();
-//    ProcessCommand("cd home", &fsh);
-//    fsh.GetFileSystem()->Write();
-//    ProcessCommand("ls -all", &fsh);
+//    ProcessCommand("cd h/..", &fsh);
 //    fsh.GetFileSystem()->Write();
 
     // Print a command line prompt;
-    string fullPath = fsh.GetCurrentDirectory()->GetPath()->ToString(true);
+    string fullPath = fsh.GetCurrentPath()->ToString(true);
     cout << fullPath << "$ ";
 
     string input;
@@ -47,7 +45,7 @@ int main(int argc, char *argv[])
         }
 
         // Print a command line prompt;
-        string fullPath = fsh.GetCurrentDirectory()->GetPath()->ToString(true);
+        string fullPath = fsh.GetCurrentPath()->ToString(true);
         cout << fullPath << "$ ";
 
         std::getline(std::cin, input);

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "../../include/FileDisk.h"
 #include "../../include/cli/FileSystemHandle.h"
 
@@ -27,7 +28,7 @@ void FileSystemHandle::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint
     this->dev->Create();
     this->fs = new FileSystem(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
-    this->dir = Directory::GetRoot(this->fs);
+    //this->dir = Directory::GetRoot(this->fs);
     this->path = new Path();
 }
 
@@ -36,18 +37,27 @@ void FileSystemHandle::Read()
     this->dev->Open();
     this->fs = new FileSystem(this->dev);
     this->fs->Read();
-    this->dir = Directory::GetRoot(this->fs);
+    //this->dir = Directory::GetRoot(this->fs);
     this->path = new Path();
 }
 
 void FileSystemHandle::ChangeDirectory(string path)
 {
-//    Path currentPath;
-//    currentPath.Combine(this->path->ToString());
-//    currentPath.Combine(path);
+    Path *newPath = this->path->Clone();
+    newPath->Combine(path, false);
 
-    //Directory *rootDir = Directory::GetRoot(this->fs);
-    Directory *newDir = this->dir->GetDirectory(path);
-    delete this->dir;
-    this->dir = newDir;
+    // Check availability of the new path;
+    Directory *newDir = new Directory(this->fs, newPath);
+    delete newDir;
+
+    Path *newNormalizedPath = this->path->Clone();
+    newNormalizedPath->Combine(path, true);
+
+    delete this->path;
+    this->path = newNormalizedPath;
+}
+
+Directory* FileSystemHandle::GetCurrentDirectory() const
+{
+    return new Directory(this->fs, this->path->Clone());
 }

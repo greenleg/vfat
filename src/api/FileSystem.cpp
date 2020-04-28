@@ -64,21 +64,16 @@ void FileSystem::Read()
 
     this->fat = new Fat(this->bootSector);
     this->fat->Read(this->device);
-
-//    this->root = new ClusterChainDirectory();
-//    this->root->ReadRoot(device, this->fat);
 }
 
 void FileSystem::Write()
 {
-    //this->root->Write(this->device);
     this->fat->Write(this->device);
     this->bootSector->Write(this->device);
 }
 
 FileSystem::~FileSystem()
 {
-    //delete this->root;
     delete this->fat;
     delete this->bootSector;
 }

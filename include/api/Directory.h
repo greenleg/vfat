@@ -22,6 +22,7 @@ namespace org::vfat::api
         Path *path;
 
         bool IsRoot() const;
+        void Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
 
     public:
         Directory(FileSystem *fs, Path *path);

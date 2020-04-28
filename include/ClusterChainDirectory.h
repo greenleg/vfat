@@ -126,6 +126,7 @@ namespace org::vfat
         void CopyDirectory(FileDisk *device, DirectoryEntry *e, ClusterChainDirectory *dest) const;
 
         std::vector<DirectoryEntry *> * GetEntries() const { return this->entries; }
+        uint32_t GetStartCluster() const { return this->chain->GetStartCluster(); }
     };
 }
 

@@ -600,7 +600,7 @@ void ClusterChainDirectory::Move(FileDisk *device, DirectoryEntry *e, ClusterCha
         assert(dotdot->GetStartCluster() == this->chain->GetStartCluster());
         dotdot->SetStartCluster(dest->chain->GetStartCluster());
 
-        // Write changes to the disk
+        // Write changes to the disk;
         dir->Write(device);
         delete dir;
     }

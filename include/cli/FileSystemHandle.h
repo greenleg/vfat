@@ -13,7 +13,7 @@ namespace org::vfat::cli
     private:
         FileDisk *dev = nullptr;
         FileSystem *fs = nullptr;
-        Directory *dir = nullptr;
+        //Directory *dir = nullptr;
         Path *path = nullptr;
 
     public:
@@ -26,7 +26,8 @@ namespace org::vfat::cli
         void ChangeDirectory(string path);
 
         FileSystem* GetFileSystem() const { return this->fs; }
-        Directory* GetCurrentDirectory() const { return this->dir; }
+        Path* GetCurrentPath() const { return this->path; }
+        Directory* GetCurrentDirectory() const;
     };
 }
 

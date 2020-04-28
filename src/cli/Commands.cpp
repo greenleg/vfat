@@ -6,47 +6,62 @@ using namespace org::vfat::cli;
 
 void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
+    Directory *currentDir = fsh->GetCurrentDirectory();
+
     vector<Directory *> directories;
-    fsh->GetCurrentDirectory()->GetDirectories(directories);
+    currentDir->GetDirectories(directories);
     vector<Directory *>::iterator dirIter;
 
     vector<File *> files;
-    fsh->GetCurrentDirectory()->GetFiles(files);
+    currentDir->GetFiles(files);
     vector<File *>::iterator fileIter;
 
+    delete currentDir;
+
     if (cmdLine->HasOption("-all")) {
-        //string delim(30 + 20 + 12, '-');
-
-        cout << Utils::StringPadding("NAME", 30)
-             << Utils::StringPadding("CREATED", 20)
-             << Utils::StringPadding("SIZE", 12)
-             << endl;
-
-        //cout << delim << endl;
-
         for (dirIter = directories.begin(); dirIter < directories.end(); dirIter++) {
             Directory *subDir = *dirIter;
             string created = Utils::FormatDate(subDir->GetCreatedTime());
 
-            cout << Utils::StringPadding(subDir->GetName(), 30)
-                 << Utils::StringPadding(created, 20)
-                 << Utils::StringPadding("N/A", 12)
+            cout << Utils::StringPadding(created, 20)
+                 << Utils::StringPadding("<DIR>", 10)
+                 << Utils::StringPadding("", 20)
+                 << Utils::StringPadding(subDir->GetName(), 30)
                  << endl;
 
             delete subDir;
         }
 
+        uint32_t totalFilesSize = 0;
         for (fileIter = files.begin(); fileIter < files.end(); fileIter++) {
             File *file = *fileIter;
             string created = Utils::FormatDate(file->GetCreatedTime());
 
-            cout << Utils::StringPadding(file->GetName(), 30)
-                 << Utils::StringPadding(created, 20)
-                 << Utils::StringPadding(to_string(file->GetSize()), 12)
+
+            cout << Utils::StringPadding(created, 20)
+                 << Utils::StringPadding("", 10)
+                 << Utils::StringPadding(to_string(file->GetSize()) + " bytes", 20)
+                 << Utils::StringPadding(file->GetName(), 30)
                  << endl;
+
+            totalFilesSize += file->GetSize();
 
             delete file;
         }
+
+        cout << Utils::StringPadding("", 10)
+             << Utils::StringPadding(to_string(files.size()) + " File(s)", 20)
+             << Utils::StringPadding(to_string(totalFilesSize) + " bytes", 20)
+             << endl;
+
+        uint32_t freeClusterCount = fsh->GetFileSystem()->GetFat()->GetFreeClusterCount();
+        uint32_t bytesPerCluster = fsh->GetFileSystem()->GetBootSector()->GetBytesPerCluster();
+        uint32_t freeSpaceInBytes = freeClusterCount * bytesPerCluster;
+
+        cout << Utils::StringPadding("", 10)
+             << Utils::StringPadding(to_string(directories.size()) + " Dir(s)", 20)
+             << Utils::StringPadding(to_string(freeSpaceInBytes) + " bytes free", 20)
+             << endl;
     } else {
         // Simple short output
         for (dirIter = directories.begin(); dirIter < directories.end(); dirIter++) {
@@ -74,7 +89,9 @@ void Commands::Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
     }
 
     string dirName = cmdLine->GetArg(1);
-    fsh->GetCurrentDirectory()->CreateDirectory(dirName);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    currentDir->CreateDirectory(dirName);
+    delete currentDir;
 }
 
 void Commands::Cd(CommandLine *cmdLine, FileSystemHandle *fsh)
@@ -90,7 +107,9 @@ void Commands::Touch(CommandLine *cmdLine, FileSystemHandle *fsh)
     }
 
     string fileName = cmdLine->GetArg(1);
-    fsh->GetCurrentDirectory()->CreateFile(fileName);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    currentDir->CreateFile(fileName);
+    delete currentDir;
 }
 
 void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
@@ -100,11 +119,13 @@ void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
     }
 
     string fileName = cmdLine->GetArg(1);
-    File *file = fsh->GetCurrentDirectory()->GetFile(fileName);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    File *file = currentDir->GetFile(fileName);
     string text = file->ReadText(0, file->GetSize());
     delete file;
+    delete currentDir;
 
-    cout << text << endl;
+    cout << text <<  endl;
 }
 
 void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
@@ -114,7 +135,9 @@ void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
     }
 
     string fileName = cmdLine->GetArg(1);
-    fsh->GetCurrentDirectory()->Import(fileName);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    currentDir->Import(fileName);
+    delete currentDir;
 }
 
 void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
@@ -125,5 +148,7 @@ void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
 
     string srcFileName = cmdLine->GetArg(1);
     string destFileName = cmdLine->GetArg(2);
-    fsh->GetCurrentDirectory()->Move(srcFileName, destFileName);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    currentDir->Move(srcFileName, destFileName);
+    delete currentDir;
 }
