@@ -27,12 +27,14 @@ int main(int argc, char *argv[])
         fsh.Read();
     }
 
-//    ProcessCommand("import qq", &fsh);
+//    ProcessCommand("touch 1.o", &fsh);
+//    fsh.GetFileSystem()->Write();
+//    ProcessCommand("cp 1.o 2.o", &fsh);
 //    fsh.GetFileSystem()->Write();
 //    ProcessCommand("ls -all", &fsh);
 //    fsh.GetFileSystem()->Write();
 
-    // Print a command line prompt;
+    // Print the command line prompt;
     string fullPath = fsh.GetCurrentPath()->ToString(true);
     cout << fullPath << "$ ";
 
@@ -46,7 +48,7 @@ int main(int argc, char *argv[])
             break;
         }
 
-        // Print a command line prompt;
+        // Print the command line prompt;
         string fullPath = fsh.GetCurrentPath()->ToString(true);
         cout << fullPath << "$ ";
 
@@ -104,6 +106,16 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
 
         if (cmdName == "mv") {
             Commands::Move(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "cp") {
+            Commands::Copy(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "rm") {
+            Commands::Remove(&cmdLine, fsh);
             return 0;
         }
 

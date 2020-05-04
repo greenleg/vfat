@@ -152,3 +152,30 @@ void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
     currentDir->Move(srcFileName, destFileName);
     delete currentDir;
 }
+
+void Commands::Copy(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 3) {
+        throw std::logic_error("At least one of the files is not specified.");
+    }
+
+    string srcFileName = cmdLine->GetArg(1);
+    string destFileName = cmdLine->GetArg(2);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    currentDir->Copy(srcFileName, destFileName);
+    delete currentDir;
+}
+
+void Commands::Remove(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() < 2) {
+        throw std::logic_error("File or directory is not specified.");
+    }
+
+    string fileName = cmdLine->GetArg(1);
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    //currentDir->Remove(fileName);
+
+    // TODO: Implement removing by path;
+    delete currentDir;
+}

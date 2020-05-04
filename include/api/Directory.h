@@ -23,6 +23,8 @@ namespace org::vfat::api
 
         bool IsRoot() const;
         void Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
+        void CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
+        void CopyDirectory(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
         void ImportFile(string path);
         void ImportDirectory(string path);
         ClusterChainDirectory* GetCchDirectory() const;
@@ -45,6 +47,7 @@ namespace org::vfat::api
         Path* GetPath() const { return this->path; }
 
         void Move(string srcPath, string destPath);
+        void Copy(string srcPath, string destPath);
         void Write() const;
 
         void Import(string path);
