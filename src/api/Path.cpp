@@ -106,3 +106,14 @@ Path* Path::Clone() const
 
     return other;
 }
+
+Path* Path::GetParent() const
+{
+    Path *other = new Path();
+    vector<string>::iterator iter;
+    for (iter = this->items->begin(); iter < this->items->end() - 1; ++iter) {
+        other->items->push_back(*iter);
+    }
+
+    return other;
+}

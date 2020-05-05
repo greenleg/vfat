@@ -18,25 +18,6 @@ void ClusterChainDirectory::CheckUniqueName(const char *name)
     }
 }
 
-//static void cchdir_read_entries(struct cchdir *dir, uint8_t *buffer)
-//{
-//    uint32_t offset = 0;
-//    uint8_t entry_type;
-//    DirectoryEntry e;
-//    uint32_t i;
-
-//    for (i = 0; i < dir->capacity; ++i) {
-//        entry_type = buffer[offset];
-//        if (entry_type == NO_DIR_ENTRY) {
-//            break;
-//        }
-
-//        e.Read(buffer + offset);
-//        alist_add(dir->entries, &e);
-//        offset += e.GetEntryCount() * FAT_DIR_ENTRY_SIZE;
-//    }
-//}
-
 void ClusterChainDirectory::ReadEntries(uint8_t *buffer)
 {
     uint32_t offset = 0;
@@ -53,28 +34,6 @@ void ClusterChainDirectory::ReadEntries(uint8_t *buffer)
         offset += e->GetFat32EntryCount() * FAT_DIR_ENTRY_SIZE;
     }
 }
-
-//static uint32_t cchdir_write_entries(struct cchdir* dir, uint8_t *buffer, uint32_t bufsize)
-//{
-//    uint32_t offset = 0;
-//    uint32_t i;
-
-//    DirectoryEntry e;
-//    for (i = 0; i < alist_count(dir->entries); ++i) {
-//        alist_get(dir->entries, i, &e);
-//        e.Write(buffer + offset);
-//        offset += e.GetEntryCount() * FAT_DIR_ENTRY_SIZE;
-//    }
-
-//    if (offset < bufsize) {
-//        // Write the end-of-list marker.
-//        buffer[offset] = NO_DIR_ENTRY;
-//        offset += 1;
-//    }
-
-//    // offset is equal to number of the actually written bytes.
-//    return offset;
-//}
 
 uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSize) const
 {
@@ -178,18 +137,6 @@ uint32_t ClusterChainDirectory::GetFat32EntryCount() const
     return n;
 }
 
-//void cchdir_addentry(struct cchdir *dir, DirectoryEntry *e)
-//{
-//    uint32_t new_cnt = get_fat32_entry_cnt(dir);
-//    new_cnt += e->GetEntryCount();
-
-//    if (new_cnt > dir->capacity) {
-//        cchdir_changesize(dir, new_cnt);
-//    }
-
-//    alist_add(dir->entries, e);
-//}
-
 void ClusterChainDirectory::AddEntry(DirectoryEntry *e)
 {
     uint32_t newCount = this->GetFat32EntryCount() + e->GetFat32EntryCount();
@@ -205,23 +152,6 @@ DirectoryEntry * ClusterChainDirectory::GetEntry(uint32_t index) const
     return this->entries->at(index);
 }
 
-//bool cchdir_findentry(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ DirectoryEntry *e)
-//{
-//    uint32_t i;
-//    char namebuf[256];
-
-//    for (i = 0; i < alist_count(dir->entries); ++i) {
-//        alist_get(dir->entries, i, e);
-//        e->GetName(namebuf);
-//        if (strcmp(name, namebuf) == 0) {
-//            return true;
-//        }
-//    }
-
-//    /* not found */
-//    return false;
-//}
-
 DirectoryEntry * ClusterChainDirectory::FindEntry(const char *name) const
 {
     char nameBuf[256];
@@ -236,25 +166,6 @@ DirectoryEntry * ClusterChainDirectory::FindEntry(const char *name) const
     /* not found */
     return nullptr;
 }
-
-//bool cchdir_findentryidx(/*in*/ struct cchdir *dir, /*in*/ const char *name, /*out*/ uint32_t *idx)
-//{
-//    uint32_t i;
-//    char namebuf[256];
-//    DirectoryEntry e;
-
-//    for (i = 0; i < alist_count(dir->entries); ++i) {
-//        alist_get(dir->entries, i, &e);
-//        e.GetName(namebuf);
-//        if (strcmp(name, namebuf) == 0) {
-//            *idx = i;
-//            return true;
-//        }
-//    }
-
-//    /* not found */
-//    return false;
-//}
 
 int32_t ClusterChainDirectory::FindEntryIndex(const char *name)
 {
@@ -422,36 +333,13 @@ DirectoryEntry * ClusterChainDirectory::AddDirectory(const char *name, FileDisk 
     return subde;
 }
 
-//bool cchdir_removedir(/*in*/ struct cchdir *dir, /*in*/ const char *name)
-//{
-//    DirectoryEntry e;
-//    uint32_t idx;
-
-//    if (!cchdir_findentryidx(dir, name, &idx)) {
-//        return false;
-//    }
-
-//    cchdir_getentry(dir, idx, &e);
-
-////    cc.fat = dir->chain->fat;
-////    cc.start_cluster = e.sede->first_cluster;
-////    if (!cch_setlen(&cc, 0)) {
-////        return false;
-////    }
-//    ClusterChain cc(dir->chain->GetFat(), e.GetStartCluster());
-//    cc.SetLength(0);
-
-//    cchdir_removeentry(dir, idx);
-//    return true;
-//}
-
 void ClusterChainDirectory::RemoveDirectory(const char *name, FileDisk *device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
         std::ostringstream msgStream;
         msgStream << "Couldn't find '" << name << "': No such file or directory.";
-        throw std::runtime_error(msgStream.str());
+        throw std::ios_base::failure(msgStream.str());
     }
 
     return this->RemoveDirectory(index, device);
@@ -470,7 +358,7 @@ void ClusterChainDirectory::RemoveDirectory(uint32_t index, FileDisk *device)
 
     ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(device, fat, e);
     for (size_t i = 0; i < subDir->GetEntries()->size(); i++) {
-        DirectoryEntry * subde = subDir->GetEntry(i);
+        DirectoryEntry *subde = subDir->GetEntry(i);
         if (subde->IsDir()) {
             subDir->RemoveDirectory(i, device);
         } else {

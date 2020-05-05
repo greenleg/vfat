@@ -262,8 +262,8 @@ TEST_F(FileSystemTest, DeleteDirectory)
     bool errorWasThrown = false;
     try {
         rootDir->GetDirectory("/home/user/Projects");
-    } catch (std::runtime_error error) {
-        ASSERT_STREQ("Couldn't find '/home/user/Projects': No such file or directory.", error.what());
+    } catch (const std::ios_base::failure& error) {
+        ASSERT_STREQ("Couldn't find '/home/user/Projects': No such file or directory: iostream error", error.what());
         errorWasThrown = true;
     }
 
@@ -319,7 +319,7 @@ TEST_F(FileSystemTest, MoveDirectory)
         try {
             rootDir->GetDirectory("/home/user");
         } catch (std::runtime_error error) {
-            ASSERT_STREQ("Couldn't find '/home/user': No such file or directory.", error.what());
+            ASSERT_STREQ("Couldn't find '/home/user': No such file or directory: iostream error", error.what());
             errorWasThrown = true;
         }
 
@@ -496,6 +496,133 @@ TEST_F(FileSystemTest, CopyDirectory)
     }
 }
 
+TEST_F(FileSystemTest, DeleteDirectory2)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+
+        // Create a file and write data to it;
+        dir0->CreateFile("file0.txt");
+        File *file0 = dir0->GetFile("file0.txt");
+        file0->WriteText("Actions speak louder than words.", 0);
+
+        // Create a file and write data to it;
+        dir00->CreateFile("file1.txt");
+        File *file1 = dir00->GetFile("file1.txt");
+        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+
+        // Remove a directory;
+        rootDir->DeleteDirectory("home/user");
+
+        delete file1;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        Directory *rootDir = Directory::GetRoot(&fs);
+
+        bool errorWasThrown = false;
+        try {
+            rootDir->GetDirectory("home/user");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        File *file0 = rootDir->GetFile("/home/file0.txt");
+        ASSERT_EQ("Actions speak louder than words.", file0->ReadText(0, file0->GetSize()));
+
+        delete file0;
+        delete rootDir;
+    }
+}
+
+TEST_F(FileSystemTest, DeleteFile)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+
+        // Create a file and write data to it;
+        dir0->CreateFile("file0.txt");
+        File *file0 = dir0->GetFile("file0.txt");
+        file0->WriteText("Actions speak louder than words.", 0);
+
+        // Create a file and write data to it;
+        dir00->CreateFile("file1.txt");
+        File *file1 = dir00->GetFile("file1.txt");
+        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+
+        // Remove all files;
+        rootDir->DeleteFile("home/file0.txt");
+        rootDir->DeleteFile("home/user/file1.txt");
+
+        delete file1;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        Directory *rootDir = Directory::GetRoot(&fs);
+        Directory *dir0 = rootDir->GetDirectory("home");
+        Directory *dir00 = rootDir->GetDirectory("home/user");
+
+        bool errorWasThrown = false;
+        try {
+            rootDir->GetFile("/home/file0.txt");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+            ASSERT_STREQ("Couldn't find '/home/file0.txt': No such file or directory: iostream error", err.what());
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        errorWasThrown = false;
+        try {
+            rootDir->GetFile("/home/user/file1.txt");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+            ASSERT_STREQ("Couldn't find '/home/user/file1.txt': No such file or directory: iostream error", err.what());
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+    }
+}
 
 //TEST_F(FileSystemTest, ReadDirectory)
 //{

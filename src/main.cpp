@@ -17,11 +17,11 @@ int main(int argc, char *argv[])
 {
     CommandLine cmdLine(argc, argv);
     string devName = cmdLine.FetchByPrefix("-dev:");
-    string volumeSizeStr = cmdLine.FetchByPrefix("-size:");
-    uint64_t volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
 
     FileSystemHandle fsh(devName);
     if (cmdLine.HasOption("-f")) {
+        string volumeSizeStr = cmdLine.FetchByPrefix("-size:");
+        uint64_t volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
         fsh.Format(volumeSize, 512, 1);
     } else {
         fsh.Read();
@@ -105,17 +105,17 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
         }
 
         if (cmdName == "mv") {
-            Commands::Move(&cmdLine, fsh);
+            Commands::Mv(&cmdLine, fsh);
             return 0;
         }
 
         if (cmdName == "cp") {
-            Commands::Copy(&cmdLine, fsh);
+            Commands::Cp(&cmdLine, fsh);
             return 0;
         }
 
         if (cmdName == "rm") {
-            Commands::Remove(&cmdLine, fsh);
+            Commands::Rm(&cmdLine, fsh);
             return 0;
         }
 

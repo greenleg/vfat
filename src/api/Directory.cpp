@@ -28,31 +28,6 @@ Directory::Directory(FileSystem *fs, Path *path)
         this->entry->SetLastModifiedTime(now);
         this->entry->SetIsDir(true);
     } else {
-//        std::queue<ClusterChainDirectory*> subDirectories;
-//        ClusterChainDirectory *dir = fs->GetRootDirectory();
-//        DirectoryEntry *e;
-//        ClusterChainDirectory *parentDir;
-//        for (size_t i = 0; i < path->GetItemCount(); i++) {
-//            string name = path->GetItem(i);
-//            e = dir->FindEntry(name.c_str());
-//            if (e == nullptr) {
-//                std::ostringstream msgStream;
-//                msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory.";
-//                throw std::runtime_error(msgStream.str());
-//            }
-
-//            ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-//            subDirectories.push(subDir);
-//            parentDir = dir;
-//            dir = subDir;
-//        }
-
-//        while (subDirectories.size() > 2) {
-//            ClusterChainDirectory *subDir = subDirectories.front();
-//            delete subDir;
-//            subDirectories.pop();
-//        }
-
         ClusterChainDirectory *dir = fs->GetRootDirectory();
         DirectoryEntry *e;
         size_t i = 0;
@@ -61,8 +36,8 @@ Directory::Directory(FileSystem *fs, Path *path)
             e = dir->FindEntry(name.c_str());
             if (e == nullptr) {
                 std::ostringstream msgStream;
-                msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory.";
-                throw std::runtime_error(msgStream.str());
+                msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory";
+                throw std::ios_base::failure(msgStream.str());
             }
 
             ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
@@ -74,8 +49,8 @@ Directory::Directory(FileSystem *fs, Path *path)
         e = dir->FindEntry(name.c_str());
         if (e == nullptr) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory.";
-            throw std::runtime_error(msgStream.str());
+            msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory";
+            throw std::ios_base::failure(msgStream.str());
         }
 
         this->parentCchDir = dir;
@@ -209,18 +184,48 @@ File* Directory::GetFile(string path) const
     return new File(this->fs, filePath);
 }
 
-void Directory::DeleteDirectory(string name) const
+//void Directory::DeleteDirectory(string name) const
+//{
+//    auto cchDir = this->GetCchDirectory();
+//    cchDir->RemoveDirectory(name.c_str(), this->fs->GetDevice());
+//    delete cchDir;
+//}
+
+void Directory::DeleteDirectory(string path) const
 {
-    auto cchDir = this->GetCchDirectory();
-    cchDir->RemoveDirectory(name.c_str(), this->fs->GetDevice());
-    delete cchDir;
+    Path *pathObj = this->path->Clone();
+    pathObj->Combine(path);
+    Directory *parentDir = new Directory(this->fs, pathObj->GetParent());
+    string dirName = pathObj->GetItem(pathObj->GetItemCount() - 1);
+
+    // Remove a sub directory;
+    auto parentCchDir = parentDir->GetCchDirectory();
+    parentCchDir->RemoveDirectory(dirName.c_str(), this->fs->GetDevice());
+
+    delete parentCchDir;
+    delete parentDir;
 }
 
-void Directory::DeleteFile(string name) const
+//void Directory::DeleteFile(string name) const
+//{
+//    auto cchDir = this->GetCchDirectory();
+//    cchDir->RemoveFile(name.c_str(), this->fs->GetDevice());
+//    delete cchDir;
+//}
+
+void Directory::DeleteFile(string path) const
 {
-    auto cchDir = this->GetCchDirectory();
-    cchDir->RemoveFile(name.c_str(), this->fs->GetDevice());
-    delete cchDir;
+    Path *pathObj = this->path->Clone();
+    pathObj->Combine(path);
+    Directory *parentDir = new Directory(this->fs, pathObj->GetParent());
+    string fileName = pathObj->GetItem(pathObj->GetItemCount() - 1);
+
+    // Remove;
+    auto parentCchDir = parentDir->GetCchDirectory();
+    parentCchDir->RemoveFile(fileName.c_str(), this->fs->GetDevice());
+
+    delete parentCchDir;
+    delete parentDir;
 }
 
 void Directory::Write() const

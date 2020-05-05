@@ -140,7 +140,7 @@ void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mv(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     if (cmdLine->GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -153,7 +153,7 @@ void Commands::Move(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Copy(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cp(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     if (cmdLine->GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -166,7 +166,7 @@ void Commands::Copy(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Remove(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Rm(CommandLine *cmdLine, FileSystemHandle *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("File or directory is not specified.");
@@ -174,8 +174,11 @@ void Commands::Remove(CommandLine *cmdLine, FileSystemHandle *fsh)
 
     string fileName = cmdLine->GetArg(1);
     Directory *currentDir = fsh->GetCurrentDirectory();
-    //currentDir->Remove(fileName);
+    try {
+        currentDir->DeleteFile(fileName);
+    } catch (const std::ios_base::failure& error) {
+        currentDir->DeleteDirectory(fileName);
+    }
 
-    // TODO: Implement removing by path;
     delete currentDir;
 }

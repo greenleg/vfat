@@ -25,6 +25,7 @@ namespace org::vfat::api
 
         string GetItem(size_t index) const;
         size_t GetItemCount() const;
+        Path* GetParent() const;
     };
 }
 

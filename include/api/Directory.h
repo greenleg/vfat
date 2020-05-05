@@ -18,7 +18,6 @@ namespace org::vfat::api
         FileSystem *fs;
         ClusterChainDirectory *parentCchDir;
         DirectoryEntry *entry;
-        //ClusterChainDirectory *cchDir;
         Path *path;
 
         bool IsRoot() const;
@@ -36,9 +35,9 @@ namespace org::vfat::api
         void GetDirectories(std::vector<Directory*>& container) const;
         void GetFiles(std::vector<File*>& container) const;
         void CreateFile(string name) const;
-        void DeleteFile(string name) const;
+        void DeleteFile(string path) const;
         void CreateDirectory(string name) const;
-        void DeleteDirectory(string name) const;
+        void DeleteDirectory(string path) const;
         File* GetFile(string path) const;
         Directory* GetDirectory(string path) const;
         string GetName() const;

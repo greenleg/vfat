@@ -20,8 +20,8 @@ File::File(FileSystem *fs, Path *path)
         e = dir->FindEntry(name.c_str());
         if (e == nullptr) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory.";
-            throw std::runtime_error(msgStream.str());
+            msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory";
+            throw std::ios_base::failure(msgStream.str());
         }
 
         ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
@@ -33,8 +33,8 @@ File::File(FileSystem *fs, Path *path)
     e = dir->FindEntry(name.c_str());
     if (e == nullptr) {
         std::ostringstream msgStream;
-        msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory.";
-        throw std::runtime_error(msgStream.str());
+        msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory";
+        throw std::ios::failure(msgStream.str());
     }
 
     this->parentCchDir = dir;
