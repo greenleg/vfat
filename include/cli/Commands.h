@@ -8,6 +8,9 @@ namespace org::vfat::cli
 {
     class Commands
     {
+    private:
+        static void PrintSubTree(Directory *dir, struct TreeStat *stat, int level);
+
     public:
         static void Ls(CommandLine *cmdLine, FileSystemHandle *fsh);
         static void Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh);
@@ -18,6 +21,13 @@ namespace org::vfat::cli
         static void Mv(CommandLine *cmdLine, FileSystemHandle *fsh);
         static void Cp(CommandLine *cmdLine, FileSystemHandle *fsh);
         static void Rm(CommandLine *cmdLine, FileSystemHandle *fsh);
+        static void Tree(CommandLine *cmdLine, FileSystemHandle *fsh);
+    };
+
+    struct TreeStat
+    {
+        uint32_t totalDir;
+        uint32_t totalFiles;
     };
 }
 

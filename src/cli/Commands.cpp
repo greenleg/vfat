@@ -182,3 +182,68 @@ void Commands::Rm(CommandLine *cmdLine, FileSystemHandle *fsh)
 
     delete currentDir;
 }
+
+void Commands::Tree(CommandLine *cmdLine, FileSystemHandle *fsh)
+{
+    if (cmdLine->GetArgCount() > 1) {
+        throw std::logic_error("Too many arguments.");
+    }
+
+    Directory *currentDir = fsh->GetCurrentDirectory();
+    TreeStat stat;
+    stat.totalDir = 0;
+    stat.totalFiles = 0;
+
+    PrintSubTree(currentDir, &stat, 0);
+    delete currentDir;
+
+    cout << endl << stat.totalDir << " directories, " << stat.totalFiles << " files." << endl;
+}
+
+void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
+{
+    vector<Directory*> directories;
+    dir->GetDirectories(directories);
+
+    string gap = "";
+    for (int i = 0; i < level; i++) {
+        //gap += "|   ";
+        gap += "│   ";
+    }
+
+    //char indent[] = { '|', '-', '-', ' ' };
+    string itemIndent = "├── ";
+    string lastItemIndent = "└── ";
+    for (auto iter = directories.begin(); iter < directories.end(); iter++) {
+        Directory *subDir = *iter;
+        string subDirName = subDir->GetName();
+        if (subDirName != "." && subDirName != "..") {
+            if (iter + 1 == directories.end()) {
+                cout << gap << lastItemIndent << subDirName << endl;
+            } else {
+                cout << gap << itemIndent << subDirName << endl;
+            }
+
+            PrintSubTree(subDir, stat, level + 1);
+        }
+
+        delete subDir;
+    }
+
+    vector<File*> files;
+    dir->GetFiles(files);
+    for (auto iter = files.begin(); iter < files.end(); iter++) {
+        File *file = *iter;
+        //cout << gap << indent << file->GetName() << endl;
+        if (iter + 1 == files.end()) {
+            cout << gap << lastItemIndent << file->GetName() << endl;
+        } else {
+            cout << gap << itemIndent << file->GetName() << endl;
+        }
+
+        delete file;
+    }
+
+    stat->totalDir += directories.size();
+    stat->totalFiles += files.size();
+}

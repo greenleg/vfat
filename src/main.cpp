@@ -27,12 +27,9 @@ int main(int argc, char *argv[])
         fsh.Read();
     }
 
-//    ProcessCommand("touch 1.o", &fsh);
+//    ProcessCommand("tree", &fsh);
 //    fsh.GetFileSystem()->Write();
-//    ProcessCommand("cp 1.o 2.o", &fsh);
-//    fsh.GetFileSystem()->Write();
-//    ProcessCommand("ls -all", &fsh);
-//    fsh.GetFileSystem()->Write();
+
 
     // Print the command line prompt;
     string fullPath = fsh.GetCurrentPath()->ToString(true);
@@ -116,6 +113,11 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
 
         if (cmdName == "rm") {
             Commands::Rm(&cmdLine, fsh);
+            return 0;
+        }
+
+        if (cmdName == "tree") {
+            Commands::Tree(&cmdLine, fsh);
             return 0;
         }
 
