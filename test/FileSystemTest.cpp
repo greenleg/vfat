@@ -19,7 +19,7 @@ protected:
 
         FileSystem fs(this->device);
         fs.Format(1024 * 1024, 512, 1);
-        fs.Close();
+        fs.Write();
     }
 
     void TearDown() override
@@ -32,136 +32,166 @@ protected:
 
 TEST_F(FileSystemTest, MakeDirectory)
 {
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Check directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        ASSERT_EQ("/", rootDir->GetName());
+
+        vector<Directory*> directories;
+        rootDir->GetDirectories(directories);
+        ASSERT_EQ(1, directories.size());
+        Directory *dir0 = directories.at(0);
+        ASSERT_EQ("home", dir0->GetName());
+
+        directories.clear();
+        dir0->GetDirectories(directories);
+        ASSERT_EQ(3, directories.size());
+        Directory *dir00 = directories.at(0);
+        ASSERT_EQ(".", dir00->GetName());
+        Directory *dir01 = directories.at(1);
+        ASSERT_EQ("..", dir01->GetName());
+        Directory *dir02 = directories.at(2);
+        ASSERT_EQ("user", dir02->GetName());
+
+        directories.clear();
+        dir00->GetDirectories(directories);
+        ASSERT_EQ(3, directories.size());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        directories.clear();
+        dir01->GetDirectories(directories);
+        ASSERT_EQ(1, directories.size());
+        ASSERT_EQ("home", directories.at(0)->GetName());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        directories.clear();
+        dir02->GetDirectories(directories);
+        ASSERT_EQ(2, directories.size());
+
+        for (size_t i = 0; i < directories.size(); i++) {
+            delete directories.at(i);
+        }
+
+        delete dir02;
+        delete dir01;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+}
+
+TEST_F(FileSystemTest, MakeDirectory2)
+{
     FileSystem fs(this->device);
+    fs.Read();
 
-    // Create directories
-    fs.Open();
-
+    // Create directories;
     Directory *rootDir = Directory::GetRoot(&fs);
     rootDir->CreateDirectory("home");
     Directory *dir0 = rootDir->GetDirectory("home");
-    dir0->CreateDirectory("user");
+    Directory* rootDir2 = dir0->GetDirectory("..");
+
+    // Check Create/Modified time;
+    ASSERT_EQ(Utils::FormatDate(rootDir->GetCreatedTime()),
+              Utils::FormatDate(rootDir2->GetCreatedTime()));
+
+    ASSERT_EQ(Utils::FormatDate(rootDir->GetModifiedTime()),
+              Utils::FormatDate(rootDir2->GetModifiedTime()));
 
     delete dir0;
     delete rootDir;
-
-    fs.Close();
-
-    // Check directories;
-    fs.Open();
-
-    rootDir = Directory::GetRoot(&fs);
-    ASSERT_EQ("/", rootDir->GetName());
-
-    vector<Directory*> directories;
-    rootDir->GetDirectories(directories);
-    ASSERT_EQ(1, directories.size());
-    dir0 = directories.at(0);
-    ASSERT_EQ("home", dir0->GetName());
-
-    directories.clear();
-    dir0->GetDirectories(directories);
-    ASSERT_EQ(3, directories.size());
-    Directory *dir00 = directories.at(0);
-    ASSERT_EQ(".", dir00->GetName());
-    Directory *dir01 = directories.at(1);
-    ASSERT_EQ("..", dir01->GetName());
-    Directory *dir02 = directories.at(2);
-    ASSERT_EQ("user", dir02->GetName());
-
-    directories.clear();
-    dir00->GetDirectories(directories);
-    ASSERT_EQ(3, directories.size());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    directories.clear();
-    dir01->GetDirectories(directories);
-    ASSERT_EQ(1, directories.size());
-    ASSERT_EQ("home", directories.at(0)->GetName());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    directories.clear();
-    dir02->GetDirectories(directories);
-    ASSERT_EQ(2, directories.size());
-
-    for (size_t i = 0; i < directories.size(); i++) {
-        delete directories.at(i);
-    }
-
-    delete dir02;
-    delete dir01;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
-
-    fs.Close();
+    delete rootDir2;
 }
 
 TEST_F(FileSystemTest, CreateFile)
 {
-    FileSystem fs(this->device);
+    {
+        FileSystem fs(this->device);
+        fs.Read();
 
-    // Create directories;
-    fs.Open();
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
 
-    Directory *rootDir = Directory::GetRoot(&fs);
-    rootDir->CreateDirectory("home");
-    Directory *dir0 = rootDir->GetDirectory("home");
-    dir0->CreateDirectory("user");
-    Directory *dir00 = dir0->GetDirectory("user");
+        // Create a file and write data to it;
+        dir00->CreateFile("dump0.bin");
+        File *file0 = dir00->GetFile("dump0.bin");
+        file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
 
-    // Create a file and write data to it;
-    dir00->CreateFile("dump0.bin");
-    File *file0 = dir00->GetFile("dump0.bin");
-    file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
 
-    delete file0;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
+        fs.Write();
+    }
 
-    fs.Close();
+    {
+        // Check for the file content;
+        FileSystem fs(this->device);
+        fs.Read();
 
-    // Check for the file content;
-    fs.Open();
+        Directory *rootDir = Directory::GetRoot(&fs);
+        Directory *dir0 = rootDir->GetDirectory("home");
+        Directory *dir00 = dir0->GetDirectory("user");
 
-    rootDir = Directory::GetRoot(&fs);
-    dir0 = rootDir->GetDirectory("home");
-    dir00 = dir0->GetDirectory("user");
+        vector<File*> files;
+        dir00->GetFiles(files);
+        ASSERT_EQ(1, files.size());
+        File *file0 = files.at(0);
+        ASSERT_EQ("dump0.bin", file0->GetName());
 
-    vector<File*> files;
-    dir00->GetFiles(files);
-    ASSERT_EQ(1, files.size());
-    file0 = files.at(0);
-    ASSERT_EQ("dump0.bin", file0->GetName());
+        string s = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
 
-    string s = file0->ReadText(0, file0->GetSize());
-    ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
+        File *file0_copy = dir00->GetFile("dump0.bin");
+        string s_copy = file0->ReadText(0, file0_copy->GetSize());
+        ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s_copy);
 
-    File *file0_copy = dir00->GetFile("dump0.bin");
-    string s_copy = file0->ReadText(0, file0_copy->GetSize());
-    ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s_copy);
+        delete file0_copy;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
 
-    delete file0_copy;
-    delete file0;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
-
-    fs.Close();
+        fs.Write();
+    }
 }
 
 TEST_F(FileSystemTest, GetDirectory)
 {
     FileSystem fs(this->device);
-
-    fs.Open();
+    fs.Read();
 
     // Create directories;
     Directory *rootDir = Directory::GetRoot(&fs);
@@ -207,14 +237,13 @@ TEST_F(FileSystemTest, GetDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs.Write();
 }
 
 TEST_F(FileSystemTest, DeleteDirectory)
 {
     FileSystem fs(this->device);
-
-    fs.Open();
+    fs.Read();
 
     // Create directories;
     Directory *rootDir = Directory::GetRoot(&fs);
@@ -233,8 +262,8 @@ TEST_F(FileSystemTest, DeleteDirectory)
     bool errorWasThrown = false;
     try {
         rootDir->GetDirectory("/home/user/Projects");
-    } catch (std::runtime_error error) {
-        ASSERT_STREQ("Directory doesn't exist.", error.what());
+    } catch (const std::ios_base::failure& error) {
+        ASSERT_STREQ("Couldn't find '/home/user/Projects': No such file or directory: iostream error", error.what());
         errorWasThrown = true;
     }
 
@@ -245,157 +274,352 @@ TEST_F(FileSystemTest, DeleteDirectory)
     delete dir0;
     delete rootDir;
 
-    fs.Close();
+    fs.Write();
 }
 
 TEST_F(FileSystemTest, MoveDirectory)
 {
-    FileSystem fs(this->device);
+    {
+        FileSystem fs(this->device);
+        fs.Read();
 
-    fs.Open();
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        rootDir->CreateDirectory("lib");
+        rootDir->CreateDirectory("var");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+        dir00->CreateDirectory("Documents");
+        dir00->CreateDirectory("Projects");
+        Directory *dir011 = dir00->GetDirectory("Projects");
+        dir011->CreateDirectory("vfat");
 
-    // Create directories;
-    Directory *rootDir = Directory::GetRoot(&fs);
-    rootDir->CreateDirectory("home");
-    rootDir->CreateDirectory("lib");
-    rootDir->CreateDirectory("var");
-    Directory *dir0 = rootDir->GetDirectory("home");
-    dir0->CreateDirectory("user");
-    Directory *dir00 = dir0->GetDirectory("user");
-    dir00->CreateDirectory("Documents");
-    dir00->CreateDirectory("Projects");
-    Directory *dir011 = dir00->GetDirectory("Projects");
-    dir011->CreateDirectory("vfat");
+        // Perform moving folder '/home/user' to '/'
+        dir0->Move("user", "..");
 
-    // Perform moving folder '/home/user' to '/'
-    dir0->MoveFile("user", "..");
+        delete dir011;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
 
-    delete dir011;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
-
-    fs.Close();
-
-    // Check directories;
-    fs.Open();
-    rootDir = Directory::GetRoot(&fs);
-    dir0 = rootDir->GetDirectory("home");
-
-    bool errorWasThrown = false;
-    try {
-        rootDir->GetDirectory("/home/user");
-    } catch (std::runtime_error error) {
-        ASSERT_STREQ("Directory doesn't exist.", error.what());
-        errorWasThrown = true;
+        fs.Write();
     }
 
-    ASSERT_TRUE(errorWasThrown);
+    {
+        // Check directories;
+        FileSystem fs(this->device);
+        fs.Read();
 
-    Directory *dir110 = rootDir->GetDirectory("/user/Projects/vfat");
+        Directory *rootDir = Directory::GetRoot(&fs);
+        Directory *dir0 = rootDir->GetDirectory("home");
 
-    delete dir0;
-    delete dir110;
+        bool errorWasThrown = false;
+        try {
+            rootDir->GetDirectory("/home/user");
+        } catch (std::runtime_error error) {
+            ASSERT_STREQ("Couldn't find '/home/user': No such file or directory: iostream error", error.what());
+            errorWasThrown = true;
+        }
 
-    fs.Close();
+        ASSERT_TRUE(errorWasThrown);
+
+        Directory *dir110 = rootDir->GetDirectory("/user/Projects/vfat");
+
+        delete dir0;
+        delete dir110;
+
+        fs.Write();
+    }
 }
 
 TEST_F(FileSystemTest, MoveFile)
 {
-    FileSystem fs(this->device);
+    {
+        FileSystem fs(this->device);
+        fs.Read();
 
-    // Create directories;
-    fs.Open();
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
 
-    Directory *rootDir = Directory::GetRoot(&fs);
-    rootDir->CreateDirectory("home");
-    Directory *dir0 = rootDir->GetDirectory("home");
-    dir0->CreateDirectory("user");
-    Directory *dir00 = dir0->GetDirectory("user");
+        // Create a file and write data to it;
+        dir00->CreateFile("dump0.bin");
+        File *file0 = dir00->GetFile("dump0.bin");
+        file0->WriteText("A journey of thousand miles begins with a single step.", 0);
 
-    // Create a file and write data to it;
-    dir00->CreateFile("dump0.bin");
-    File *file0 = dir00->GetFile("dump0.bin");
-    file0->WriteText("A journey of thousand miles begins with a single step.", 0);
+        // Re-read 'home' directory.
+        Directory *dir0_copy = rootDir->GetDirectory("home");
+        dir0_copy->Move("./user/dump0.bin", "..");
 
-    // Re-read 'home' directory.
-    Directory *dir0_copy = rootDir->GetDirectory("home");
-    dir0_copy->MoveFile("./user/dump0.bin", "..");
+        delete dir0_copy;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
 
-    delete dir0_copy;
-    delete file0;
-    delete dir00;
-    delete dir0;
-    delete rootDir;
+        fs.Write();
+    }
 
-    fs.Close();
+    {
+        // Check that the file was properly moved;
+        FileSystem fs(this->device);
+        fs.Read();
 
-    // Check that the file was properly moved;
-    fs.Open();
+        Directory *rootDir = Directory::GetRoot(&fs);
+        File *file0 = rootDir->GetFile("/dump0.bin");
+        string text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("A journey of thousand miles begins with a single step.", text);
 
-    rootDir = Directory::GetRoot(&fs);
-    file0 = rootDir->GetFile("/dump0.bin");
-    string text = file0->ReadText(0, file0->GetSize());
-    ASSERT_EQ("A journey of thousand miles begins with a single step.", text);
+        delete file0;
+        delete rootDir;
 
-    delete file0;
-    delete rootDir;
-
-    fs.Close();
+        fs.Write();
+    }
 }
 
+TEST_F(FileSystemTest, CopyFile)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
 
-//TEST_F(FileSystemTest, ReadDirectory)
-//{
-//    struct filesys fs;
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
 
-//    filesys_open(this->device, &fs);
+        // Create a file and write data to it;
+        dir00->CreateFile("dump0.bin");
+        File *file0 = dir00->GetFile("dump0.bin");
+        file0->WriteText("If you want something done right, you have to do it yourself.", 0);
 
-//    filesys_mkdir(&fs, "/home/pavel/projects/vfat");
-//    filesys_mkdir(&fs, "/home/pavel/projects/old");
-//    filesys_mkdir(&fs, "/home/pavel/Desktop");
-//    filesys_mkdir(&fs, "/home/pavel/Documents");
-//    filesys_mkdir(&fs, "/home/pavel/Downloads");
-//    filesys_mkdir(&fs, "/home/pavel/Downloads/astyle");
-//    filesys_mkdir(&fs, "/home/pavel/Qt");
-//    filesys_mkdir(&fs, "/home/pavel/Qt/Docs");
-//    filesys_mkdir(&fs, "/home/pavel/Qt/Examples");
-//    filesys_mkdir(&fs, "/home/pavel/Qt/Tools");
+        // Re-read 'home' directory.
+        Directory *dir0_copy = rootDir->GetDirectory("home");
+        dir0_copy->Copy("./user/dump0.bin", "..");
+        dir0_copy->Copy("./user/dump0.bin", "../dump0_copy.bin");
 
-//    filesys_close(&fs);
-//    filesys_destruct(&fs);
+        delete dir0_copy;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
 
-//    filesys_open(this->device, &fs);
+        fs.Write();
+    }
 
-//    struct vdir *dir = filesys_opendir(&fs, "/");
-//    this->PrintDirectory(&fs, dir, 0);
+    {
+        // Check that the file was properly copied;
+        FileSystem fs(this->device);
+        fs.Read();
 
-//    filesys_closedir(&fs, dir);
-//    filesys_close(&fs);
-//    filesys_destruct(&fs);
-//}
+        Directory *rootDir = Directory::GetRoot(&fs);
 
-//    static void PrintDirectory(struct filesys *fs, struct vdir *dir, int level)
-//    {
-//        struct vdir *subdir;
-//        struct vdirent e;
-//        while(filesys_readdir(dir, &e)) {
-//            if (strcmp(".", e.name) == 0 || strcmp("..", e.name) == 0) {
-//                continue;
-//            }
+        File *file0 = rootDir->GetFile("/home/user/dump0.bin");
+        string text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
+        delete file0;
 
-//            for (int i = 0; i < level; ++i) {
-//                printf("*\t");
-//            }
+        file0 = rootDir->GetFile("/dump0.bin");
+        text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
+        delete file0;
 
-//            printf("%s\n", e.name);
+        file0 = rootDir->GetFile("/dump0_copy.bin");
+        text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
+        delete file0;
 
-//            subdir = filesys_getdir(fs, dir, e.name);
-//            PrintDirectory(fs, subdir, level + 1);
-//            filesys_closedir(fs, subdir);
-//        }
-//    }
-//    static void PrintDirectory()
-//    {
+        delete rootDir;
 
-//    }
+        fs.Write();
+    }
+}
+
+TEST_F(FileSystemTest, CopyDirectory)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+
+        // Create a file and write data to it;
+        dir00->CreateFile("dump0.bin");
+        File *file0 = dir00->GetFile("dump0.bin");
+        file0->WriteText("Fortune favors the bold.", 0);
+
+        // Re-read 'home' directory.
+        Directory *dir0_copy = rootDir->GetDirectory("home");
+        dir0_copy->Copy("./user/", "..");
+
+        delete dir0_copy;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        // Check that the file was properly copied;
+        FileSystem fs(this->device);
+        fs.Read();
+
+        Directory *rootDir = Directory::GetRoot(&fs);
+
+        File *file0 = rootDir->GetFile("/home/user/dump0.bin");
+        string text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("Fortune favors the bold.", text);
+        delete file0;
+
+        file0 = rootDir->GetFile("/user/dump0.bin");
+        text = file0->ReadText(0, file0->GetSize());
+        ASSERT_EQ("Fortune favors the bold.", text);
+        delete file0;
+
+        delete rootDir;
+
+        fs.Write();
+    }
+}
+
+TEST_F(FileSystemTest, DeleteDirectory2)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+
+        // Create a file and write data to it;
+        dir0->CreateFile("file0.txt");
+        File *file0 = dir0->GetFile("file0.txt");
+        file0->WriteText("Actions speak louder than words.", 0);
+
+        // Create a file and write data to it;
+        dir00->CreateFile("file1.txt");
+        File *file1 = dir00->GetFile("file1.txt");
+        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+
+        // Remove a directory;
+        rootDir->DeleteDirectory("home/user");
+
+        delete file1;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        Directory *rootDir = Directory::GetRoot(&fs);
+
+        bool errorWasThrown = false;
+        try {
+            rootDir->GetDirectory("home/user");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        File *file0 = rootDir->GetFile("/home/file0.txt");
+        ASSERT_EQ("Actions speak louder than words.", file0->ReadText(0, file0->GetSize()));
+
+        delete file0;
+        delete rootDir;
+    }
+}
+
+TEST_F(FileSystemTest, DeleteFile)
+{
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        // Create directories;
+        Directory *rootDir = Directory::GetRoot(&fs);
+        rootDir->CreateDirectory("home");
+        Directory *dir0 = rootDir->GetDirectory("home");
+        dir0->CreateDirectory("user");
+        Directory *dir00 = dir0->GetDirectory("user");
+
+        // Create a file and write data to it;
+        dir0->CreateFile("file0.txt");
+        File *file0 = dir0->GetFile("file0.txt");
+        file0->WriteText("Actions speak louder than words.", 0);
+
+        // Create a file and write data to it;
+        dir00->CreateFile("file1.txt");
+        File *file1 = dir00->GetFile("file1.txt");
+        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+
+        // Remove all files;
+        rootDir->DeleteFile("home/file0.txt");
+        rootDir->DeleteFile("home/user/file1.txt");
+
+        delete file1;
+        delete file0;
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+
+        fs.Write();
+    }
+
+    {
+        FileSystem fs(this->device);
+        fs.Read();
+
+        Directory *rootDir = Directory::GetRoot(&fs);
+        Directory *dir0 = rootDir->GetDirectory("home");
+        Directory *dir00 = rootDir->GetDirectory("home/user");
+
+        bool errorWasThrown = false;
+        try {
+            rootDir->GetFile("/home/file0.txt");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+            ASSERT_STREQ("Couldn't find '/home/file0.txt': No such file or directory: iostream error", err.what());
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        errorWasThrown = false;
+        try {
+            rootDir->GetFile("/home/user/file1.txt");
+        } catch (const std::ios_base::failure& err) {
+            errorWasThrown = true;
+            ASSERT_STREQ("Couldn't find '/home/user/file1.txt': No such file or directory: iostream error", err.what());
+        }
+
+        ASSERT_TRUE(errorWasThrown);
+
+        delete dir00;
+        delete dir0;
+        delete rootDir;
+    }
+}

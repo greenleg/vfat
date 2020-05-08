@@ -25,7 +25,6 @@ protected:
         this->device->Close();
         this->device->Delete();
         delete this->device;
-        //::__vfat_errno = 0;
     }
 };
 
@@ -46,7 +45,6 @@ TEST_F(ClusterChainFileTest, SetLength)
     ASSERT_EQ(0, file->GetLength());
     file->SetLength(100);
     ASSERT_EQ(100, file->GetLength());
-    //ASSERT_GE(file->chain->GetSizeInBytes(), 100);
 
     delete file;
     delete root;

@@ -2,6 +2,7 @@
 #define VFAT_COMMON_H
 
 #include <stdint.h>
+#include <time.h>
 #include <string>
 #include <cstring>
 #include <sstream>
@@ -25,14 +26,24 @@ namespace org::vfat
             }
         }
 
-//        static uint8_t* StringToBytes(std::string s)
-//        {
-//            const char *ascii = s.c_str();
-//            uint8_t *buffer = new uint8_t[s.size()];
-//            memcpy(buffer, ascii, s.size());
+        static struct tm* GetTimeAndDate(uint32_t seconds)
+        {
+            time_t sec = (time_t)seconds;
+            return localtime(&sec);
+        }
 
-//            return buffer;
-//        }
+        static std::string FormatDate(tm *time)
+        {
+            char text[100];
+            strftime(text, sizeof(text) - 1, "%d/%m/%Y %H:%M", time);
+            return std::string(text);
+        }
+
+        static std::string StringPadding(std::string original, size_t charCount)
+        {
+            original.resize(charCount, ' ');
+            return original;
+        }
     };
 }
 

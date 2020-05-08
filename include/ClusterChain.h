@@ -24,8 +24,6 @@ namespace org::vfat
         uint64_t GetSizeInBytes() const;
         void SetLength(uint32_t clusterCount);
         uint32_t SetSizeInBytes(uint32_t size);
-//        void Create(uint32_t length);
-
         uint32_t GetStartCluster() { return this->startCluster; }
         Fat * GetFat() { return this->fat; }
     };

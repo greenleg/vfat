@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
+#include "../include/Common.h"
 #include "../include/BinaryReader.h"
 #include "../include/DirectoryEntry.h"
 
@@ -134,45 +136,6 @@ uint16_t DirectoryEntry::GetFat32EntryCount() const
     return 1 + this->fndeList->size();
 }
 
-//void DirectoryEntry::Create()
-//{
-//    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
-//    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
-//    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(e->fnede_list, sizeof(struct fnede));
-
-
-//    // Set valid default values.
-//    this->nameLength = 0;
-//    this->firstCluster = 0;
-//}
-
-//void lfnde_readbuf(uint8_t *buf, struct lfnde *e)
-//{
-//    assert(buf[0] == FILE_DIR_ENTRY);
-//    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
-//    fde_readbuf(buf, e->fde);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    assert(buf[0] == STREAMEXT_DIR_ENTRY);
-//    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
-//    sede_readbuf(buf, e->sede);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    struct fnede fnede;
-//    uint8_t i;
-
-//    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(e->fnede_list, sizeof(struct fnede));
-
-//    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
-//        assert(buf[0] == FILENAMEEXT_DIR_ENTRY);
-//        fnede_readbuf(buf, &fnede);
-//        alist_add(e->fnede_list, &fnede);
-//        buf += FAT_DIR_ENTRY_SIZE;
-//    }
-//}
-
 void DirectoryEntry::Read(uint8_t *buffer)
 {
     uint8_t entryType = BinaryReader::ReadUInt8(buffer, FDE_ENTRYTYPE_OFFSET);
@@ -200,23 +163,6 @@ void DirectoryEntry::Read(uint8_t *buffer)
         buffer += FAT_DIR_ENTRY_SIZE;
     }
 }
-
-//void lfnde_writebuf(struct lfnde *e, uint8_t *buf)
-//{
-//    fde_writebuf(e->fde, buf);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    sede_writebuf(e->sede, buf);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    struct fnede fnede;
-//    uint8_t i;
-//    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
-//        alist_get(e->fnede_list, i, &fnede);
-//        fnede_writebuf(&fnede, buf);
-//        buf += FAT_DIR_ENTRY_SIZE;
-//    }
-//}
 
 void DirectoryEntry::Write(uint8_t *buffer) const
 {
@@ -312,42 +258,6 @@ void DirectoryEntry::GetName(/*out*/ char *name) const
     name[this->nameLength] = '\0';
 }
 
-//void lfnde_setname(/*in*/ struct lfnde *e, /*in*/ const char *name)
-//{
-//    struct fnede fnede;
-//    uint8_t len = strlen(name);
-//    uint8_t fnede_cnt = alist_count(e->fnede_list);
-//    uint8_t new_fnede_cnt = (len + (FNEDE_UNAME_LENGTH - 1)) / FNEDE_UNAME_LENGTH;
-//    uint8_t i, char_idx, fnede_idx;
-
-//    // Clear list
-//    for (i = 0; i < fnede_cnt; ++i) {
-//        alist_remove(e->fnede_list, 0);
-//    }
-
-//    fnede.entry_type = FILENAMEEXT_DIR_ENTRY;
-
-//    // Fill list with the new values
-//    char_idx = 0;
-//    for (fnede_idx = 0; fnede_idx < new_fnede_cnt - 1; ++fnede_idx) {
-//        for (i = 0; i < FNEDE_UNAME_LENGTH; ++i) {
-//            fnede.name[i] = name[char_idx + i];
-//        }
-
-//        char_idx += FNEDE_UNAME_LENGTH;
-//        alist_add(e->fnede_list, &fnede);
-//    }
-
-//    // Special case for the last item
-//    for (i = 0; i < len - char_idx; ++i) {
-//        fnede.name[i] = name[char_idx + i];
-//    }
-
-//    alist_add(e->fnede_list, &fnede);
-//    e->sede->name_length = len;
-//    e->fde->secondary_count = new_fnede_cnt + 1;
-//}
-
 void DirectoryEntry::SetName(const char *name)
 {
     //struct fnede fnede;
@@ -404,4 +314,24 @@ DirectoryEntry* DirectoryEntry::Clone() const
     }
 
     return copy;
+}
+
+time_t DirectoryEntry::GetCreatedTime() const
+{
+    return (time_t) this->created;
+}
+
+void DirectoryEntry::SetCreatedTime(time_t time)
+{
+    this->created = (uint32_t) time;
+}
+
+time_t DirectoryEntry::GetLastModifiedTime() const
+{
+    return (time_t) this->lastModified;
+}
+
+void DirectoryEntry::SetLastModifiedTime(time_t time)
+{
+    this->lastModified = (uint32_t) time;
 }

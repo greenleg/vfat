@@ -41,7 +41,6 @@ endif()
 
 set(vfat_lib_src
     include/Common.h
-    include/alist.h
     include/BinaryReader.h
     include/ClusterChain.h
     include/ClusterChainDirectory.h
@@ -50,11 +49,14 @@ set(vfat_lib_src
     include/FileDisk.h
     include/api/FileSystem.h
     include/api/Directory.h
+    include/api/DirectoryItem.h
     include/api/File.h
     include/api/Path.h
+    include/cli/FileSystemHandle.h
+    include/cli/CommandLine.h
+    include/cli/Commands.h
     include/DirectoryEntry.h
     include/BootSector.h
-    src/alist.cpp
     src/BinaryReader.cpp
     src/ClusterChain.cpp
     src/ClusterChainDirectory.cpp
@@ -65,6 +67,8 @@ set(vfat_lib_src
     src/api/Directory.cpp
     src/api/File.cpp
     src/api/Path.cpp
+    src/cli/FileSystemHandle.cpp
+    src/cli/Commands.cpp
     src/DirectoryEntry.cpp
     src/BootSector.cpp)
 
