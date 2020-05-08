@@ -136,45 +136,6 @@ uint16_t DirectoryEntry::GetFat32EntryCount() const
     return 1 + this->fndeList->size();
 }
 
-//void DirectoryEntry::Create()
-//{
-//    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
-//    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
-//    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(e->fnede_list, sizeof(struct fnede));
-
-
-//    // Set valid default values.
-//    this->nameLength = 0;
-//    this->firstCluster = 0;
-//}
-
-//void lfnde_readbuf(uint8_t *buf, struct lfnde *e)
-//{
-//    assert(buf[0] == FILE_DIR_ENTRY);
-//    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
-//    fde_readbuf(buf, e->fde);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    assert(buf[0] == STREAMEXT_DIR_ENTRY);
-//    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
-//    sede_readbuf(buf, e->sede);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    struct fnede fnede;
-//    uint8_t i;
-
-//    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(e->fnede_list, sizeof(struct fnede));
-
-//    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
-//        assert(buf[0] == FILENAMEEXT_DIR_ENTRY);
-//        fnede_readbuf(buf, &fnede);
-//        alist_add(e->fnede_list, &fnede);
-//        buf += FAT_DIR_ENTRY_SIZE;
-//    }
-//}
-
 void DirectoryEntry::Read(uint8_t *buffer)
 {
     uint8_t entryType = BinaryReader::ReadUInt8(buffer, FDE_ENTRYTYPE_OFFSET);
@@ -202,23 +163,6 @@ void DirectoryEntry::Read(uint8_t *buffer)
         buffer += FAT_DIR_ENTRY_SIZE;
     }
 }
-
-//void lfnde_writebuf(struct lfnde *e, uint8_t *buf)
-//{
-//    fde_writebuf(e->fde, buf);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    sede_writebuf(e->sede, buf);
-//    buf += FAT_DIR_ENTRY_SIZE;
-
-//    struct fnede fnede;
-//    uint8_t i;
-//    for (i = 0; i < e->fde->secondary_count - 1; ++i) {
-//        alist_get(e->fnede_list, i, &fnede);
-//        fnede_writebuf(&fnede, buf);
-//        buf += FAT_DIR_ENTRY_SIZE;
-//    }
-//}
 
 void DirectoryEntry::Write(uint8_t *buffer) const
 {

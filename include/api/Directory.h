@@ -3,6 +3,7 @@
 
 #include <string>
 #include "../ClusterChainDirectory.h"
+#include "DirectoryItem.h"
 #include "FileSystem.h"
 #include "File.h"
 #include "Path.h"
@@ -12,7 +13,7 @@ using namespace org::vfat;
 
 namespace org::vfat::api
 {
-    class Directory
+    class Directory : public DirectoryItem
     {
     private:
         FileSystem *fs;
@@ -34,15 +35,13 @@ namespace org::vfat::api
         ~Directory();
         void GetDirectories(std::vector<Directory*>& container) const;
         void GetFiles(std::vector<File*>& container) const;
+        //void GetItems(std::vector<DirectoryItem*>& container) const;
         void CreateFile(string name) const;
         void DeleteFile(string path) const;
         void CreateDirectory(string name) const;
         void DeleteDirectory(string path) const;
         File* GetFile(string path) const;
-        Directory* GetDirectory(string path) const;
-        string GetName() const;
-        tm* GetCreatedTime() const;
-        tm* GetLastModifiedTime() const;
+        Directory* GetDirectory(string path) const;        
         Path* GetPath() const { return this->path; }
 
         void Move(string srcPath, string destPath);
@@ -50,6 +49,10 @@ namespace org::vfat::api
         void Write() const;
 
         void Import(string path);
+
+        string GetName() const;
+        tm* GetCreatedTime() const;
+        tm* GetModifiedTime() const;
     };
 }
 

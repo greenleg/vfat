@@ -122,7 +122,7 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
         //bool errorWasThrown = false;
         try {
             DirectoryEntry *e = root->AddDirectory(nameBuf, this->device);
-        } catch (std::runtime_error error) {
+        } catch (std::runtime_error err) {
             ASSERT_EQ(freeBeforeAdd, fat.GetFreeClusterCount());
             break;
         }

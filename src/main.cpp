@@ -1,6 +1,7 @@
 #include <iostream>
 #include <cstring>
 #include <exception>
+#include <map>
 #include "../include/api/FileSystem.h"
 #include "../include/Common.h"
 #include "../include/cli/CommandLine.h"
@@ -12,6 +13,23 @@ using namespace org::vfat::api;
 using namespace org::vfat::cli;
 
 int ProcessCommand(string input, FileSystemHandle *fsh);
+
+typedef void (*CmdImplFunc)(CommandLine *cmdLine, FileSystemHandle *fsh);
+
+std::map<string, CmdImplFunc> CmdImplMap
+{
+    { "ls", Commands::Ls },
+    { "mkdir", Commands::Mkdir },
+    { "cd", Commands::Cd },
+    { "touch", Commands::Touch },
+    { "cat", Commands::Cat },
+    { "import", Commands::Import },
+    { "mv", Commands::Mv },
+    { "cp", Commands::Cp },
+    { "rm", Commands::Rm },
+    { "tree", Commands::Tree },
+};
+
 
 int main(int argc, char *argv[])
 {
@@ -26,10 +44,6 @@ int main(int argc, char *argv[])
     } else {
         fsh.Read();
     }
-
-//    ProcessCommand("tree", &fsh);
-//    fsh.GetFileSystem()->Write();
-
 
     // Print the command line prompt;
     string fullPath = fsh.GetCurrentPath()->ToString(true);
@@ -71,57 +85,13 @@ int ProcessCommand(string input, FileSystemHandle *fsh)
             return 1;
         }
 
-        if (cmdName == "ls") {
-            Commands::Ls(&cmdLine, fsh);
-            return 0;
+        auto iter = CmdImplMap.find(cmdName);
+        if (iter == CmdImplMap.end()) {
+            printf("Unknown command: %s\r\n", input.c_str());
+        } else {
+            (*(iter->second))(&cmdLine, fsh);
         }
 
-        if (cmdName == "mkdir") {
-            Commands::Mkdir(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "cd") {
-            Commands::Cd(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "touch") {
-            Commands::Touch(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "cat") {
-            Commands::Cat(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "import") {
-            Commands::Import(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "mv") {
-            Commands::Mv(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "cp") {
-            Commands::Cp(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "rm") {
-            Commands::Rm(&cmdLine, fsh);
-            return 0;
-        }
-
-        if (cmdName == "tree") {
-            Commands::Tree(&cmdLine, fsh);
-            return 0;
-        }
-
-        printf("Unknown command: %s\r\n", input.c_str());
         return 0;
     } catch (const exception& err) {
         cout << err.what() << endl;

@@ -13,7 +13,6 @@ namespace org::vfat::cli
     private:
         FileDisk *dev = nullptr;
         FileSystem *fs = nullptr;
-        //Directory *dir = nullptr;
         Path *path = nullptr;
 
     public:

@@ -23,17 +23,6 @@
 
 using namespace org::vfat;
 
-//struct fat
-//{
-//    BootSector *bootSector;
-//    uint32_t *entries;
-//    uint32_t last_alloc_cluster;
-//};
-
-//void fat_create(BootSector *bootSector, struct fat *fat);
-//void fat_read(org::vfat::FileDisk *device, BootSector *bootSector, struct fat *fat);
-//void fat_write(struct fat *fat, org::vfat::FileDisk *device);
-
 namespace org::vfat
 {
     class Fat

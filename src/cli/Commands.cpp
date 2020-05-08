@@ -205,20 +205,21 @@ void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
     vector<Directory*> directories;
     dir->GetDirectories(directories);
 
+    vector<File*> files;
+    dir->GetFiles(files);
+
     string gap = "";
     for (int i = 0; i < level; i++) {
-        //gap += "|   ";
         gap += "│   ";
     }
 
-    //char indent[] = { '|', '-', '-', ' ' };
     string itemIndent = "├── ";
     string lastItemIndent = "└── ";
     for (auto iter = directories.begin(); iter < directories.end(); iter++) {
         Directory *subDir = *iter;
         string subDirName = subDir->GetName();
         if (subDirName != "." && subDirName != "..") {
-            if (iter + 1 == directories.end()) {
+            if (iter + 1 == directories.end() && files.size() == 0) {
                 cout << gap << lastItemIndent << subDirName << endl;
             } else {
                 cout << gap << itemIndent << subDirName << endl;
@@ -230,11 +231,8 @@ void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
         delete subDir;
     }
 
-    vector<File*> files;
-    dir->GetFiles(files);
     for (auto iter = files.begin(); iter < files.end(); iter++) {
         File *file = *iter;
-        //cout << gap << indent << file->GetName() << endl;
         if (iter + 1 == files.end()) {
             cout << gap << lastItemIndent << file->GetName() << endl;
         } else {

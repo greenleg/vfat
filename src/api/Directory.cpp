@@ -130,6 +130,21 @@ void Directory::GetFiles(std::vector<File*>& container) const
     delete cchDir;
 }
 
+//void Directory::GetItems(std::vector<DirectoryItem*>& container) const
+//{
+//    std::vector<Directory*> directories;
+//    this->GetDirectories(directories);
+//    for (auto iter = directories.begin(); iter != directories.end(); ++iter) {
+//        container.push_back(*iter);
+//    }
+
+//    std::vector<File*> files;
+//    this->GetFiles(files);
+//    for (auto iter = files.begin(); iter != files.end(); ++iter) {
+//        container.push_back(*iter);
+//    }
+//}
+
 string Directory::GetName() const
 {
     char nameBuf[256];
@@ -184,13 +199,6 @@ File* Directory::GetFile(string path) const
     return new File(this->fs, filePath);
 }
 
-//void Directory::DeleteDirectory(string name) const
-//{
-//    auto cchDir = this->GetCchDirectory();
-//    cchDir->RemoveDirectory(name.c_str(), this->fs->GetDevice());
-//    delete cchDir;
-//}
-
 void Directory::DeleteDirectory(string path) const
 {
     Path *pathObj = this->path->Clone();
@@ -205,13 +213,6 @@ void Directory::DeleteDirectory(string path) const
     delete parentCchDir;
     delete parentDir;
 }
-
-//void Directory::DeleteFile(string name) const
-//{
-//    auto cchDir = this->GetCchDirectory();
-//    cchDir->RemoveFile(name.c_str(), this->fs->GetDevice());
-//    delete cchDir;
-//}
 
 void Directory::DeleteFile(string path) const
 {
@@ -355,7 +356,7 @@ tm* Directory::GetCreatedTime() const
     return localtime(&time);
 }
 
-tm* Directory::GetLastModifiedTime() const
+tm* Directory::GetModifiedTime() const
 {
     time_t time = this->entry->GetLastModifiedTime();
     return localtime(&time);

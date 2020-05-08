@@ -14,8 +14,6 @@ namespace org::vfat::api
         vector<string> *items;
 
     public:
-        //static Path* GetRoot() { return new Path(); }
-
         Path();
         ~Path();
         void Combine(std::string path, bool normalize = false);

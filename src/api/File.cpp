@@ -1,3 +1,4 @@
+#include <iostream>
 #include <queue>
 #include "../../include/Common.h"
 #include "../../include/api/File.h"
@@ -116,7 +117,7 @@ tm* File::GetCreatedTime() const
     return localtime(&time);
 }
 
-tm* File::GetLastModifiedTime() const
+tm* File::GetModifiedTime() const
 {
     time_t time = this->entry->GetLastModifiedTime();
     return localtime(&time);

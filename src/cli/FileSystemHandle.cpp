@@ -28,7 +28,6 @@ void FileSystemHandle::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint
     this->dev->Create();
     this->fs = new FileSystem(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
-    //this->dir = Directory::GetRoot(this->fs);
     this->path = new Path();
 }
 
@@ -37,7 +36,6 @@ void FileSystemHandle::Read()
     this->dev->Open();
     this->fs = new FileSystem(this->dev);
     this->fs->Read();
-    //this->dir = Directory::GetRoot(this->fs);
     this->path = new Path();
 }
 
