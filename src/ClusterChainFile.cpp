@@ -4,15 +4,11 @@
 #include "../include/ClusterChainFile.h"
 #include "../include/DirectoryEntry.h"
 
-///*
-// * Returns the length of this file in bytes. This is the length that
-// * is stored in the directory entry that is associated with this file.
-// */
-//uint32_t cchfile_getlen(/*in*/ struct cchfile *file)
-//{
-//    return file->entry->GetDataLength();
-//}
-
+/**
+ * @brief Returns the length of this file in bytes. This is the length that
+ * is stored in the directory entry that is associated with this file.
+ * @return
+ */
 uint32_t ClusterChainFile::GetLength() const
 {
     return this->entry->GetDataLength();
@@ -25,7 +21,14 @@ void ClusterChainFile::SetLength(uint32_t val)
     this->entry->SetDataLength(val);
 }
 
-/* Reads from this file into the specified buffer. */
+/**
+ * @brief Reads from this file into the specified buffer.
+ * @param device
+ * @param offset
+ * @param nbytes
+ * @param buffer
+ * @return
+ */
 uint32_t ClusterChainFile::Read(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     uint32_t dataLength = this->GetLength();
