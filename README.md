@@ -10,14 +10,14 @@ The output executable `vfat` will be placed into `../build-vfat-Release` by defa
 First, it needs to create and format a file system using the following command:
 ```
 ./vfat -f -dev:<file-name> -size:<volume-size>
-e.g. ./vfat -f -dev:db0 -size:50   - creates a new volume 'db0' of maximum 50MB size.
 ```
+E.g. `./vfat -f -dev:db0 -size:50` creates a new volume 'db0' of maximum 50MB size.
 After displaying the command line prompt `$` one can enter and execute various commands.
 The existing file system can be opened by just specifying the path to the virtual disk:
 ```
 ./vfat -dev:<file-name>
-e.g. ./vfat -dev:db0   - opens the virtual volume 'db0'.
 ```
+E.g. `./vfat -dev:db0` opens the virtual volume 'db0'.
 ## Command Line Interface
 The following basic commands are supported:
 ```
