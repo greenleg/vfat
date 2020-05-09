@@ -10,7 +10,6 @@
 using namespace org::vfat;
 
 #define FDE_ENTRYTYPE_OFFSET 0
-//#define FDE_SECONDARYCOUNT_OFFSET 1
 #define FDE_ATTRIBUTES_OFFSET 4
 #define FDE_CREATED_OFFSET 8
 #define FDE_LASTMODIFIED_OFFSET 12
@@ -18,16 +17,6 @@ using namespace org::vfat;
 #define FDE_NAMELENGTH_OFFSET 20
 #define FDE_FIRSTCLUSTER_OFFSET 21
 #define FDE_DATALENGTH_OFFSET 25
-
-//#define SEDE_ENTRYTYPE_OFFSET 0
-//#define SEDE_SECONDARYFLAGS_OFFSET 1
-//#define SEDE_NAMELENGTH_OFFSET 3
-//#define SEDE_FIRSTCLUSTER_OFFSET 20
-//#define SEDE_DATALENGTH_OFFSET 24
-
-//#define FNEDE_ENTRYTYPE_OFFSET 0
-//#define FNEDE_SECODARYFLAGS_OFFSET 1
-//#define FNEDE_FILENAME_OFFSET 2
 
 #define FNDE_ENTRYTYPE_OFFSET 0
 #define FNDE_FILENAME_OFFSET 2
@@ -44,73 +33,6 @@ using namespace org::vfat;
  * Read-Only 0      1    0x01
  */
 #define DIRECTORY_MASK 0x10
-
-//static void fde_readbuf(uint8_t *buf, struct fde *e)
-//{
-//    e->entry_type = read_u8(buf, FDE_ENTRYTYPE_OFFSET);
-//    e->secondary_count = read_u8(buf, FDE_SECONDARYCOUNT_OFFSET);
-//    e->attributes = read_u16(buf, FDE_ATTRIBUTES_OFFSET);
-//    e->create = read_u32(buf, FDE_CREATE_OFFSET);
-//    e->last_modified = read_u32(buf, FDE_LASTMODIFIED_OFFSET);
-//    e->last_accessed = read_u32(buf, FDE_LASTACCESSED_OFFSET);
-//}
-
-//static void fde_writebuf(struct fde *e, uint8_t *buf)
-//{
-//    write_u8(buf, FDE_ENTRYTYPE_OFFSET, e->entry_type);
-//    write_u8(buf, FDE_SECONDARYCOUNT_OFFSET, e->secondary_count);
-//    write_u16(buf, FDE_ATTRIBUTES_OFFSET, e->attributes);
-//    write_u32(buf, FDE_CREATE_OFFSET, e->create);
-//    write_u32(buf, FDE_LASTMODIFIED_OFFSET, e->last_modified);
-//    write_u32(buf, FDE_LASTACCESSED_OFFSET, e->last_accessed);
-//}
-
-//static void sede_readbuf(uint8_t *buf, struct sede *e)
-//{
-//    e->entry_type = read_u8(buf, SEDE_ENTRYTYPE_OFFSET);
-//    e->secondary_flags = read_u8(buf, SEDE_SECONDARYFLAGS_OFFSET);
-//    e->name_length = read_u8(buf, SEDE_NAMELENGTH_OFFSET);
-//    e->first_cluster = read_u32(buf, SEDE_FIRSTCLUSTER_OFFSET);
-//    e->data_length = read_u64(buf, SEDE_DATALENGTH_OFFSET);
-//}
-
-//static void sede_writebuf(struct sede *e, uint8_t *buf)
-//{
-//    write_u8(buf, SEDE_ENTRYTYPE_OFFSET, e->entry_type);
-//    write_u8(buf, SEDE_SECONDARYFLAGS_OFFSET, e->secondary_flags);
-//    write_u8(buf, SEDE_NAMELENGTH_OFFSET, e->name_length);
-//    write_u32(buf, SEDE_FIRSTCLUSTER_OFFSET, e->first_cluster);
-//    write_u64(buf, SEDE_DATALENGTH_OFFSET, e->data_length);
-//}
-
-//static void fnede_readbuf(uint8_t *buf, struct fnede *e)
-//{
-//    e->entry_type = read_u8(buf, FNEDE_ENTRYTYPE_OFFSET);
-//    e->secondary_flags = read_u8(buf, FNEDE_SECODARYFLAGS_OFFSET);
-//    memcpy(e->name, buf + FNEDE_FILENAME_OFFSET, FNEDE_UNAME_LENGTH);
-//}
-
-//static void fnede_writebuf(struct fnede *e, uint8_t *buf)
-//{
-//    write_u8(buf, FNEDE_ENTRYTYPE_OFFSET, e->entry_type);
-//    write_u8(buf, FNEDE_SECODARYFLAGS_OFFSET, e->secondary_flags);
-//    memcpy(buf + FNEDE_FILENAME_OFFSET, e->name, FNEDE_UNAME_LENGTH);
-//}
-
-//void lfnde_create(struct lfnde *e)
-//{
-//    e->fde = static_cast<struct fde *>(malloc(sizeof(struct fde)));
-//    e->sede = static_cast<struct sede *>(malloc(sizeof(struct sede)));
-//    e->fnede_list = static_cast<struct alist *>(malloc(sizeof(struct alist)));
-//    alist_create(e->fnede_list, sizeof(struct fnede));
-
-//    // Set valid default values.
-//    e->fde->entry_type = FILE_DIR_ENTRY;
-//    e->fde->secondary_count = 1;
-//    e->sede->entry_type = STREAMEXT_DIR_ENTRY;
-//    e->sede->name_length = 0;
-//    e->sede->first_cluster = 0;
-//}
 
 DirectoryEntry::DirectoryEntry()
 {
