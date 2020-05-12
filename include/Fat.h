@@ -37,8 +37,8 @@ namespace org::vfat
     public:
         Fat(BootSector *bootSector);
         void Create();
-        void Read(FileDisk *device);
-        void Write(FileDisk *device) const;
+        void Read(Device *device);
+        void Write(Device *device) const;
         uint32_t AllocateChain(uint32_t length);
         void AppendChain(uint32_t startCluster1, uint32_t startCluster2) const;
         uint32_t GetChainLength(uint32_t startCluster) const;

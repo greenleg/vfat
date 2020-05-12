@@ -52,7 +52,7 @@ uint32_t ClusterChain::SetSizeInBytes(uint32_t size)
 }
 
 
-void ClusterChain::ReadData(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
+void ClusterChain::ReadData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
     if (this->startCluster == 0 && nbytes > 0) {
         // Cannot read from an empty cluster chain
@@ -87,7 +87,7 @@ void ClusterChain::ReadData(FileDisk *device, uint32_t offset, uint32_t nbytes, 
     }
 }
 
-void ClusterChain::WriteData(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+void ClusterChain::WriteData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     if (nbytes == 0) {
         return;

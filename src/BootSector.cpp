@@ -63,7 +63,7 @@ void BootSector::Create(uint64_t deviceSizeInBytes, uint16_t bytesPerSector, uin
     this->rootDirFirstCluster = 2;
 }
 
-void BootSector::Read(FileDisk *device)
+void BootSector::Read(Device *device)
 {
     uint8_t buffer[BS_HEADER_SIZE];
     device->Read(buffer, 0, BS_HEADER_SIZE);
@@ -79,7 +79,7 @@ void BootSector::Read(FileDisk *device)
 }
 
 
-void BootSector::Write(FileDisk *device) const
+void BootSector::Write(Device *device) const
 {
     uint8_t buffer[BS_HEADER_SIZE];
 

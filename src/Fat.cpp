@@ -26,7 +26,7 @@ void Fat::Create()
     this->entries[1] = FAT_EOF;
 }
 
-void Fat::Read(FileDisk *device)
+void Fat::Read(Device *device)
 {
     this->lastAllocatedCluster = FAT_FIRST_CLUSTER - 1;
     uint32_t fatOffset = this->bootSector->GetFatOffset();
@@ -34,7 +34,7 @@ void Fat::Read(FileDisk *device)
     device->Read((uint8_t *)this->entries, fatOffset, sizeof(uint32_t) * clusterCount);
 }
 
-void Fat::Write(FileDisk *device) const
+void Fat::Write(Device *device) const
 {
     uint32_t fatOffset = this->bootSector->GetFatOffset();
     uint32_t clusterCount = this->bootSector->GetClusterCount();

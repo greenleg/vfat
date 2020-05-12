@@ -14,6 +14,9 @@ using namespace org::vfat::cli;
 
 int ProcessCommand(string input, FileSystemHandle *fsh);
 
+/**
+ * Points to a function that implements a command.
+ */
 typedef void (*CmdImplFunc)(CommandLine *cmdLine, FileSystemHandle *fsh);
 
 std::map<string, CmdImplFunc> CmdImplMap
@@ -34,12 +37,23 @@ std::map<string, CmdImplFunc> CmdImplMap
 int main(int argc, char *argv[])
 {
     CommandLine cmdLine(argc, argv);
-    string devName = cmdLine.FetchByPrefix("-dev:");
+    string devName = cmdLine.TryFetchByPrefix("-dev:");
+    if (devName == "") {
+        throw std::logic_error("Device is not specified.");
+    }
 
     FileSystemHandle fsh(devName);
     if (cmdLine.HasOption("-f")) {
-        string volumeSizeStr = cmdLine.FetchByPrefix("-size:");
-        uint64_t volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
+        uint64_t volumeSize;
+        string volumeSizeStr = cmdLine.TryFetchByPrefix("-size:");
+        if (volumeSizeStr != "") {
+            volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
+        } else {
+            // The volume size is 10MB by default;
+            volumeSize = 10 * 1024 * 1024;
+            cout << "The '-size' option is not specified, the default value 10MB will be used." << endl;
+        }
+
         fsh.Format(volumeSize, 512, 1);
     } else {
         fsh.Read();

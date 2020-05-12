@@ -45,8 +45,10 @@ set(vfat_lib_src
     include/ClusterChain.h
     include/ClusterChainDirectory.h
     include/ClusterChainFile.h
-    include/Fat.h
+    include/Fat.h    
+    include/Device.h
     include/FileDisk.h
+    include/RamDisk.h
     include/api/FileSystem.h
     include/api/Directory.h
     include/api/DirectoryItem.h

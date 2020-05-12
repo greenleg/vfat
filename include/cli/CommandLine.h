@@ -47,7 +47,20 @@ namespace org::vfat::cli
             return iter != this->args.end();
         }
 
-        string FetchByPrefix(string key)
+//        string FetchByPrefix(string key)
+//        {
+//            vector<string>::iterator iter;
+//            for (iter = this->args.begin(); iter < this->args.end(); iter++) {
+//                string arg = *iter;
+//                if (arg.rfind(key, 0) == 0) {
+//                    return arg.substr(key.size());
+//                }
+//            }
+
+//            throw new std::logic_error("Parameter not found.");
+//        }
+
+        string TryFetchByPrefix(string key)
         {
             vector<string>::iterator iter;
             for (iter = this->args.begin(); iter < this->args.end(); iter++) {
@@ -57,7 +70,7 @@ namespace org::vfat::cli
                 }
             }
 
-            throw new std::logic_error("Parameter not found.");
+            return "";
         }
     };
 }

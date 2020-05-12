@@ -5,10 +5,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "Device.h"
 
 namespace org::vfat
 {
-    class FileDisk
+    class FileDisk : public Device
     {
     private:
         char *fileName;

@@ -18,8 +18,8 @@ namespace org::vfat
 
     public:
         ClusterChain(Fat *fat, uint32_t startCluster);
-        void ReadData(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
-        void WriteData(FileDisk *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        void ReadData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
+        void WriteData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
         uint32_t GetLength() const;
         uint64_t GetSizeInBytes() const;
         void SetLength(uint32_t clusterCount);

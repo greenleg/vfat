@@ -236,7 +236,7 @@ void Directory::Write() const
 
 void Directory::Move(string srcPath, string destPath)
 {
-    FileDisk *dev = this->fs->GetDevice();
+    Device *dev = this->fs->GetDevice();
     Fat *fat = this->fs->GetFat();
 
     Path *srcPathObj = this->path->Clone();
@@ -340,7 +340,7 @@ void Directory::Move(string srcPath, string destPath)
 
 void Directory::Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
 {
-    FileDisk *dev = this->fs->GetDevice();
+    Device *dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
         // Rename file or directory;
@@ -446,7 +446,7 @@ void Directory::Import(string path)
 
 void Directory::Copy(string srcPath, string destPath)
 {
-    FileDisk *dev = this->fs->GetDevice();
+    Device *dev = this->fs->GetDevice();
     Fat *fat = this->fs->GetFat();
 
     Path *srcPathObj = this->path->Clone();
@@ -550,7 +550,7 @@ void Directory::Copy(string srcPath, string destPath)
 
 void Directory::CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
 {
-    FileDisk *dev = this->fs->GetDevice();
+    Device *dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
         // Copy to the same directory;
@@ -563,7 +563,7 @@ void Directory::CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry
 
 void Directory::CopyDirectory(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
 {
-    FileDisk *dev = this->fs->GetDevice();
+    Device *dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
         // Copy to the same directory;

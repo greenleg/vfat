@@ -11,7 +11,7 @@ namespace org::vfat::cli
     class FileSystemHandle
     {
     private:
-        FileDisk *dev = nullptr;
+        Device *dev = nullptr;
         FileSystem *fs = nullptr;
         Path *path = nullptr;
 

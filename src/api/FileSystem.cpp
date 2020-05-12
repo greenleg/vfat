@@ -8,7 +8,7 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-FileSystem::FileSystem(FileDisk *device)
+FileSystem::FileSystem(Device *device)
 {
     this->device = device;
 }

@@ -15,18 +15,18 @@ namespace org::vfat::api
     class FileSystem
     {
     private:
-        FileDisk *device;
+        Device *device;
         BootSector *bootSector;
         Fat *fat;
 
     public:
-        FileSystem(FileDisk *device);
+        FileSystem(Device *device);
         ~FileSystem();
         void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
         void Read();
         void Write();
 
-        FileDisk* GetDevice() const { return this->device; }
+        Device* GetDevice() const { return this->device; }
         BootSector* GetBootSector() const { return this->bootSector; }
         Fat* GetFat() const { return this->fat; }
         ClusterChainDirectory* GetRootDirectory() const;// { return this->root; }
