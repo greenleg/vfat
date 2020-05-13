@@ -39,7 +39,8 @@ int main(int argc, char *argv[])
     CommandLine cmdLine(argc, argv);
     string devName = cmdLine.TryFetchByPrefix("-dev:");
     if (devName == "") {
-        throw std::logic_error("Device is not specified.");
+        cout << "Device is not specified." << endl;
+        return 1;
     }
 
     FileSystemHandle fsh(devName);
