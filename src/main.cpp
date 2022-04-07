@@ -5,19 +5,19 @@
 #include "../include/api/FileSystem.h"
 #include "../include/Common.h"
 #include "../include/cli/CommandLine.h"
-#include "../include/cli/FileSystemHandle.h"
+#include "../include/cli/FileSystemHelper.h"
 #include "../include/cli/Commands.h"
 
 using namespace std;
 using namespace org::vfat::api;
 using namespace org::vfat::cli;
 
-int ProcessCommand(string input, FileSystemHandle *fsh);
+int ProcessCommand(string input, FileSystemHelper *fsh);
 
 /**
  * Points to a function that implements a command.
  */
-typedef void (*CmdImplFunc)(CommandLine *cmdLine, FileSystemHandle *fsh);
+typedef void (*CmdImplFunc)(CommandLine *cmdLine, FileSystemHelper *fsh);
 
 std::map<string, CmdImplFunc> CmdImplMap
 {
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    FileSystemHandle fsh(devName);
+    FileSystemHelper fsh(devName);
     if (cmdLine.HasOption("-f")) {
         uint64_t volumeSize;
         string volumeSizeStr = cmdLine.TryFetchByPrefix("-size:");
@@ -84,7 +84,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int ProcessCommand(string input, FileSystemHandle *fsh)
+int ProcessCommand(string input, FileSystemHelper *fsh)
 {
     try {
         CommandLine cmdLine(input);

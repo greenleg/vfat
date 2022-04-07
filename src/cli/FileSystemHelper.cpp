@@ -1,15 +1,15 @@
 #include <iostream>
 #include "../../include/FileDisk.h"
-#include "../../include/cli/FileSystemHandle.h"
+#include "../../include/cli/FileSystemHelper.h"
 
 using namespace org::vfat::cli;
 
-FileSystemHandle::FileSystemHandle(string deviceName)
+FileSystemHelper::FileSystemHelper(const std::string& deviceName)
 {
-    this->dev = new FileDisk(deviceName.c_str());
+    this->dev = std::make_shared<FileDisk>(deviceName.c_str());
 }
 
-FileSystemHandle::~FileSystemHandle()
+FileSystemHelper::~FileSystemHelper()
 {
     if (this->path != nullptr) {
         delete this->path;
@@ -20,26 +20,25 @@ FileSystemHandle::~FileSystemHandle()
     }
 
     this->dev->Close();
-    delete this->dev;
 }
 
-void FileSystemHandle::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
+void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
     this->dev->Create();
-    this->fs = new FileSystem(this->dev);
+    this->fs = new FileSystem(this->dev.get());
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
     this->path = new Path();
 }
 
-void FileSystemHandle::Read()
+void FileSystemHelper::Read()
 {
     this->dev->Open();
-    this->fs = new FileSystem(this->dev);
+    this->fs = new FileSystem(this->dev.get());
     this->fs->Read();
     this->path = new Path();
 }
 
-void FileSystemHandle::ChangeDirectory(string path)
+void FileSystemHelper::ChangeDirectory(const std::string& path)
 {
     Path *newPath = this->path->Clone();
     newPath->Combine(path, false);
@@ -55,7 +54,7 @@ void FileSystemHandle::ChangeDirectory(string path)
     this->path = newNormalizedPath;
 }
 
-Directory* FileSystemHandle::GetCurrentDirectory() const
+Directory* FileSystemHelper::GetCurrentDirectory() const
 {
     return new Directory(this->fs, this->path->Clone());
 }

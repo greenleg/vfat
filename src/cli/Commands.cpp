@@ -4,7 +4,7 @@
 using namespace std;
 using namespace org::vfat::cli;
 
-void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Ls(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     Directory *currentDir = fsh->GetCurrentDirectory();
 
@@ -82,7 +82,7 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
     }
 }
 
-void Commands::Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mkdir(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("Directory is not specified.");
@@ -94,13 +94,13 @@ void Commands::Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Cd(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cd(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     string dirPath = cmdLine->GetArg(1);
     fsh->ChangeDirectory(dirPath);
 }
 
-void Commands::Touch(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Touch(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
@@ -112,7 +112,7 @@ void Commands::Touch(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cat(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
@@ -128,7 +128,7 @@ void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
     cout << text <<  endl;
 }
 
-void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Import(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("File or directory to import is not specified.");
@@ -140,7 +140,7 @@ void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Mv(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mv(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -153,7 +153,7 @@ void Commands::Mv(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Cp(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cp(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -166,7 +166,7 @@ void Commands::Cp(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Rm(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Rm(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() < 2) {
         throw std::logic_error("File or directory is not specified.");
@@ -183,7 +183,7 @@ void Commands::Rm(CommandLine *cmdLine, FileSystemHandle *fsh)
     delete currentDir;
 }
 
-void Commands::Tree(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Tree(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     if (cmdLine->GetArgCount() > 1) {
         throw std::logic_error("Too many arguments.");

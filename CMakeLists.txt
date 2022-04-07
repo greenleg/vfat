@@ -54,7 +54,7 @@ set(vfat_lib_src
     include/api/DirectoryItem.h
     include/api/File.h
     include/api/Path.h
-    include/cli/FileSystemHandle.h
+    include/cli/FileSystemHelper.h
     include/cli/CommandLine.h
     include/cli/Commands.h
     include/DirectoryEntry.h
@@ -69,7 +69,7 @@ set(vfat_lib_src
     src/api/Directory.cpp
     src/api/File.cpp
     src/api/Path.cpp
-    src/cli/FileSystemHandle.cpp
+    src/cli/FileSystemHelper.cpp
     src/cli/Commands.cpp
     src/DirectoryEntry.cpp
     src/BootSector.cpp)

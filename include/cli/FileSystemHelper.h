@@ -1,6 +1,7 @@
-#ifndef VFAT_FILESYSTEMHANDLE_H
-#define VFAT_FILESYSTEMHANDLE_H
+#ifndef VFAT_FILESYSTEMHELPER_H
+#define VFAT_FILESYSTEMHELPER_H
 
+#include <memory>
 #include "../api/FileSystem.h"
 #include "../api/Directory.h"
 
@@ -8,21 +9,24 @@ using namespace org::vfat::api;
 
 namespace org::vfat::cli
 {
-    class FileSystemHandle
+    /** 
+     * FileSystem CLI helper 
+     */
+    class FileSystemHelper
     {
     private:
-        Device *dev = nullptr;
+        std::shared_ptr<Device> dev = nullptr;
         FileSystem *fs = nullptr;
         Path *path = nullptr;
 
     public:
-        FileSystemHandle(string deviceName);
-        ~FileSystemHandle();
+        FileSystemHelper(const std::string& deviceName);
+        ~FileSystemHelper();
 
         void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
         void Read();
 
-        void ChangeDirectory(string path);
+        void ChangeDirectory(const std::string& path);
 
         FileSystem* GetFileSystem() const { return this->fs; }
         Path* GetCurrentPath() const { return this->path; }
@@ -30,4 +34,4 @@ namespace org::vfat::cli
     };
 }
 
-#endif // VFAT_FILESYSTEMHANDLE_H
+#endif // VFAT_FILESYSTEMHELPER_H
