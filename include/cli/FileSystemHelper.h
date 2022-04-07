@@ -15,7 +15,7 @@ namespace org::vfat::cli
     class FileSystemHelper
     {
     private:
-        std::shared_ptr<Device> dev = nullptr;
+        Device *dev = nullptr;
         FileSystem *fs = nullptr;
         Path *path = nullptr;
 

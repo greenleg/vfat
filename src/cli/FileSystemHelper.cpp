@@ -6,7 +6,7 @@ using namespace org::vfat::cli;
 
 FileSystemHelper::FileSystemHelper(const std::string& deviceName)
 {
-    this->dev = std::make_shared<FileDisk>(deviceName.c_str());
+    this->dev = new FileDisk(deviceName.c_str());
 }
 
 FileSystemHelper::~FileSystemHelper()
@@ -25,7 +25,7 @@ FileSystemHelper::~FileSystemHelper()
 void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
     this->dev->Create();
-    this->fs = new FileSystem(this->dev.get());
+    this->fs = new FileSystem(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
     this->path = new Path();
 }
@@ -33,7 +33,7 @@ void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint
 void FileSystemHelper::Read()
 {
     this->dev->Open();
-    this->fs = new FileSystem(this->dev.get());
+    this->fs = new FileSystem(this->dev);
     this->fs->Read();
     this->path = new Path();
 }
