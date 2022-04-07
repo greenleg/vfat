@@ -7,6 +7,11 @@ cd "$VFAT_DIR"
 # Prepare Makefile;
 SOURCE_DIR="."
 BINARY_DIR="../build-vfat-Release"
+
+if [[ ! -e $BINARY_DIR ]]; then
+    mkdir $BINARY_DIR
+fi
+
 cmake -S "$SOURCE_DIR" -B "$BINARY_DIR" -D BUILD_GMOCK:BOOL=OFF -D CMAKE_BUILD_TYPE:STRING=Release -D INSTALL_GTEST:BOOL=OFF
 
 # Build Makefile;
