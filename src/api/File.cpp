@@ -7,21 +7,30 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-File::File(FileSystem *fs, Path *path)
+File::File(FileSystem *fs, Path& path)
+    : fs(fs), path(path) 
 {
-    this->fs = fs;
-    this->path = path;
+    Init();
+}
 
+File::File(FileSystem *fs, Path&& path)
+    : fs(fs), path(std::move(path)) 
+{
+    Init();
+}
+
+void File::Init()
+{
     std::queue<ClusterChainDirectory*> subDirectories;
     ClusterChainDirectory *dir = fs->GetRootDirectory();
     DirectoryEntry *e;
     size_t i = 0;
-    for (; i < path->GetItemCount() - 1; i++) {
-        string name = path->GetItem(i);
+    for (; i < path.GetItemCount() - 1; i++) {
+        std::string name = this->path.GetItem(i);
         e = dir->FindEntry(name.c_str());
         if (e == nullptr) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory";
+            msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
             throw std::ios_base::failure(msgStream.str());
         }
 
@@ -30,11 +39,11 @@ File::File(FileSystem *fs, Path *path)
         dir = subDir;
     }
 
-    string name = path->GetItem(i);
+    std::string name = path.GetItem(i);
     e = dir->FindEntry(name.c_str());
     if (e == nullptr) {
         std::ostringstream msgStream;
-        msgStream << "Couldn't find '" << path->ToString() << "': No such file or directory";
+        msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
         throw std::ios::failure(msgStream.str());
     }
 
@@ -45,7 +54,6 @@ File::File(FileSystem *fs, Path *path)
 File::~File()
 {
     delete this->parentCchDir;
-    delete this->path;
 }
 
 uint32_t File::GetSize() const
@@ -53,7 +61,7 @@ uint32_t File::GetSize() const
     return this->entry->GetDataLength();
 }
 
-string File::GetName() const
+std::string File::GetName() const
 {
     char nameBuf[256];
     this->entry->GetName(nameBuf);
@@ -82,7 +90,7 @@ void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
     delete cchFile;
 }
 
-string File::ReadText(uint32_t offset, uint32_t nchars) const
+std::string File::ReadText(uint32_t offset, uint32_t nchars) const
 {
     // Read raw data;
     uint8_t *buf = new uint8_t[nchars];
@@ -103,7 +111,7 @@ string File::ReadText(uint32_t offset, uint32_t nchars) const
     return str;
 }
 
-void File::WriteText(string s, uint32_t offset) const
+void File::WriteText(const std::string& s, uint32_t offset) const
 {
     const char *cstr = s.c_str();
     uint8_t *buf = new uint8_t[s.size()];

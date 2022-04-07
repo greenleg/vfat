@@ -17,7 +17,7 @@ namespace org::vfat::cli
     private:
         Device *dev = nullptr;
         FileSystem *fs = nullptr;
-        Path *path = nullptr;
+        Path path;
 
     public:
         FileSystemHelper(const std::string& deviceName);
@@ -29,7 +29,7 @@ namespace org::vfat::cli
         void ChangeDirectory(const std::string& path);
 
         FileSystem* GetFileSystem() const { return this->fs; }
-        Path* GetCurrentPath() const { return this->path; }
+        Path GetCurrentPath() const { return this->path; }
         Directory* GetCurrentDirectory() const;
     };
 }

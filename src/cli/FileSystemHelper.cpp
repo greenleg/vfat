@@ -11,15 +11,12 @@ FileSystemHelper::FileSystemHelper(const std::string& deviceName)
 
 FileSystemHelper::~FileSystemHelper()
 {
-    if (this->path != nullptr) {
-        delete this->path;
-    }
-
     if (this->fs != nullptr) {
         delete this->fs;
     }
 
     this->dev->Close();
+    delete this->dev;
 }
 
 void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
@@ -27,7 +24,6 @@ void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint
     this->dev->Create();
     this->fs = new FileSystem(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
-    this->path = new Path();
 }
 
 void FileSystemHelper::Read()
@@ -35,26 +31,25 @@ void FileSystemHelper::Read()
     this->dev->Open();
     this->fs = new FileSystem(this->dev);
     this->fs->Read();
-    this->path = new Path();
 }
 
 void FileSystemHelper::ChangeDirectory(const std::string& path)
 {
-    Path *newPath = this->path->Clone();
-    newPath->Combine(path, false);
+    Path newPath(this->path);
+    newPath.Combine(path, false);
 
     // Check availability of the new path;
     Directory *newDir = new Directory(this->fs, newPath);
     delete newDir;
 
-    Path *newNormalizedPath = this->path->Clone();
-    newNormalizedPath->Combine(path, true);
+    Path newNormalizedPath(this->path);
+    newNormalizedPath.Combine(path, true);
 
-    delete this->path;
-    this->path = newNormalizedPath;
+    this->path = std::move(newNormalizedPath);
 }
 
 Directory* FileSystemHelper::GetCurrentDirectory() const
 {
-    return new Directory(this->fs, this->path->Clone());
+    Path tmp(this->path);
+    return new Directory(this->fs, std::move(tmp));
 }

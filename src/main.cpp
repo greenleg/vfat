@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     }
 
     // Print the command line prompt;
-    string fullPath = fsh.GetCurrentPath()->ToString(true);
+    string fullPath = fsh.GetCurrentPath().ToString(true);
     cout << fullPath << "$ ";
 
     string input;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         }
 
         // Print the command line prompt;
-        string fullPath = fsh.GetCurrentPath()->ToString(true);
+        string fullPath = fsh.GetCurrentPath().ToString(true);
         cout << fullPath << "$ ";
 
         std::getline(std::cin, input);

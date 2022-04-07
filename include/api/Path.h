@@ -4,26 +4,26 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 namespace org::vfat::api
 {
     class Path
     {
     private:
-        vector<string> *items;
+        std::vector<std::string> items;
 
     public:
-        Path();
-        ~Path();
-        void Combine(std::string path, bool normalize = false);
-        Path* Clone() const;
+        Path() {} 
+        Path(const Path& other);
+        Path(Path&& other);
+        Path& operator=(Path&& other);
+
+        void Combine(const std::string& path, bool normalize = false);
         std::string ToString(bool normalize = true) const;
         bool IsRoot() const;
 
-        string GetItem(size_t index) const;
+        std::string GetItem(size_t index) const;
         size_t GetItemCount() const;
-        Path* GetParent() const;
+        Path GetParent() const;
     };
 }
 
