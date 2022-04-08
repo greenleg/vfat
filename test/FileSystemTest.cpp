@@ -1,4 +1,5 @@
 #include <cstring>
+#include <iostream>
 #include "gtest/gtest.h"
 #include "../include/api/FileSystem.h"
 #include "../include/api/Directory.h"
@@ -145,10 +146,9 @@ TEST_F(FileSystemTest, CreateFile)
 
         // Create a file and write data to it;
         dir00->CreateFile("dump0.bin");
-        File *file0 = dir00->GetFile("dump0.bin");
-        file0->WriteText("The quick brown fox jumps over the lazy dog.", 0);
+        File file0 = dir00->GetFile("dump0.bin");
+        file0.WriteText("The quick brown fox jumps over the lazy dog.", 0);
 
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;
@@ -171,14 +171,13 @@ TEST_F(FileSystemTest, CreateFile)
         File *file0 = files.at(0);
         ASSERT_EQ("dump0.bin", file0->GetName());
 
-        string s = file0->ReadText(0, file0->GetSize());
+        std::string s = file0->ReadText(0, file0->GetSize());
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
 
-        File *file0_copy = dir00->GetFile("dump0.bin");
-        string s_copy = file0->ReadText(0, file0_copy->GetSize());
+        File file0_copy = dir00->GetFile("dump0.bin");
+        std::string s_copy = file0->ReadText(0, file0_copy.GetSize());
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s_copy);
 
-        delete file0_copy;
         delete file0;
         delete dir00;
         delete dir0;
@@ -349,15 +348,14 @@ TEST_F(FileSystemTest, MoveFile)
 
         // Create a file and write data to it;
         dir00->CreateFile("dump0.bin");
-        File *file0 = dir00->GetFile("dump0.bin");
-        file0->WriteText("A journey of thousand miles begins with a single step.", 0);
+        File file0 = dir00->GetFile("dump0.bin");
+        file0.WriteText("A journey of thousand miles begins with a single step.", 0);
 
         // Re-read 'home' directory.
         Directory *dir0_copy = rootDir->GetDirectory("home");
         dir0_copy->Move("./user/dump0.bin", "..");
 
         delete dir0_copy;
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;
@@ -371,11 +369,10 @@ TEST_F(FileSystemTest, MoveFile)
         fs.Read();
 
         Directory *rootDir = Directory::GetRoot(&fs);
-        File *file0 = rootDir->GetFile("/dump0.bin");
-        string text = file0->ReadText(0, file0->GetSize());
+        File file0 = rootDir->GetFile("/dump0.bin");
+        std::string text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("A journey of thousand miles begins with a single step.", text);
 
-        delete file0;
         delete rootDir;
 
         fs.Write();
@@ -397,8 +394,8 @@ TEST_F(FileSystemTest, CopyFile)
 
         // Create a file and write data to it;
         dir00->CreateFile("dump0.bin");
-        File *file0 = dir00->GetFile("dump0.bin");
-        file0->WriteText("If you want something done right, you have to do it yourself.", 0);
+        File file0 = dir00->GetFile("dump0.bin");
+        file0.WriteText("If you want something done right, you have to do it yourself.", 0);
 
         // Re-read 'home' directory.
         Directory *dir0_copy = rootDir->GetDirectory("home");
@@ -406,7 +403,6 @@ TEST_F(FileSystemTest, CopyFile)
         dir0_copy->Copy("./user/dump0.bin", "../dump0_copy.bin");
 
         delete dir0_copy;
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;
@@ -421,20 +417,17 @@ TEST_F(FileSystemTest, CopyFile)
 
         Directory *rootDir = Directory::GetRoot(&fs);
 
-        File *file0 = rootDir->GetFile("/home/user/dump0.bin");
-        string text = file0->ReadText(0, file0->GetSize());
+        File file0 = rootDir->GetFile("/home/user/dump0.bin");
+        std::string text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
-        delete file0;
 
         file0 = rootDir->GetFile("/dump0.bin");
-        text = file0->ReadText(0, file0->GetSize());
+        text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
-        delete file0;
 
         file0 = rootDir->GetFile("/dump0_copy.bin");
-        text = file0->ReadText(0, file0->GetSize());
+        text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("If you want something done right, you have to do it yourself.", text);
-        delete file0;
 
         delete rootDir;
 
@@ -457,15 +450,14 @@ TEST_F(FileSystemTest, CopyDirectory)
 
         // Create a file and write data to it;
         dir00->CreateFile("dump0.bin");
-        File *file0 = dir00->GetFile("dump0.bin");
-        file0->WriteText("Fortune favors the bold.", 0);
+        File file0 = dir00->GetFile("dump0.bin");
+        file0.WriteText("Fortune favors the bold.", 0);
 
         // Re-read 'home' directory.
         Directory *dir0_copy = rootDir->GetDirectory("home");
         dir0_copy->Copy("./user/", "..");
 
         delete dir0_copy;
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;
@@ -480,15 +472,13 @@ TEST_F(FileSystemTest, CopyDirectory)
 
         Directory *rootDir = Directory::GetRoot(&fs);
 
-        File *file0 = rootDir->GetFile("/home/user/dump0.bin");
-        string text = file0->ReadText(0, file0->GetSize());
+        File file0 = rootDir->GetFile("/home/user/dump0.bin");
+        std::string text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("Fortune favors the bold.", text);
-        delete file0;
 
         file0 = rootDir->GetFile("/user/dump0.bin");
-        text = file0->ReadText(0, file0->GetSize());
+        text = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("Fortune favors the bold.", text);
-        delete file0;
 
         delete rootDir;
 
@@ -511,19 +501,17 @@ TEST_F(FileSystemTest, DeleteDirectory2)
 
         // Create a file and write data to it;
         dir0->CreateFile("file0.txt");
-        File *file0 = dir0->GetFile("file0.txt");
-        file0->WriteText("Actions speak louder than words.", 0);
+        File file0 = dir0->GetFile("file0.txt");
+        file0.WriteText("Actions speak louder than words.", 0);
 
         // Create a file and write data to it;
         dir00->CreateFile("file1.txt");
-        File *file1 = dir00->GetFile("file1.txt");
-        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+        File file1 = dir00->GetFile("file1.txt");
+        file1.WriteText("An idle brain is the devil’s workshop.", 0);
 
         // Remove a directory;
         rootDir->DeleteDirectory("home/user");
 
-        delete file1;
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;
@@ -546,10 +534,9 @@ TEST_F(FileSystemTest, DeleteDirectory2)
 
         ASSERT_TRUE(errorWasThrown);
 
-        File *file0 = rootDir->GetFile("/home/file0.txt");
-        ASSERT_EQ("Actions speak louder than words.", file0->ReadText(0, file0->GetSize()));
+        File file0 = rootDir->GetFile("/home/file0.txt");
+        ASSERT_EQ("Actions speak louder than words.", file0.ReadText(0, file0.GetSize()));
 
-        delete file0;
         delete rootDir;
     }
 }
@@ -569,20 +556,18 @@ TEST_F(FileSystemTest, DeleteFile)
 
         // Create a file and write data to it;
         dir0->CreateFile("file0.txt");
-        File *file0 = dir0->GetFile("file0.txt");
-        file0->WriteText("Actions speak louder than words.", 0);
+        File file0 = dir0->GetFile("file0.txt");
+        file0.WriteText("Actions speak louder than words.", 0);
 
         // Create a file and write data to it;
         dir00->CreateFile("file1.txt");
-        File *file1 = dir00->GetFile("file1.txt");
-        file1->WriteText("An idle brain is the devil’s workshop.", 0);
+        File file1 = dir00->GetFile("file1.txt");
+        file1.WriteText("An idle brain is the devil’s workshop.", 0);
 
         // Remove all files;
         rootDir->DeleteFile("home/file0.txt");
         rootDir->DeleteFile("home/user/file1.txt");
 
-        delete file1;
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;

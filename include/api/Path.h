@@ -15,6 +15,7 @@ namespace org::vfat::api
         Path() {} 
         Path(const Path& other);
         Path(Path&& other);
+        Path& operator=(const Path& other);
         Path& operator=(Path&& other);
 
         void Combine(const std::string& path, bool normalize = false);

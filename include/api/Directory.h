@@ -42,7 +42,7 @@ namespace org::vfat::api
         void DeleteFile(const std::string& path) const;
         void CreateDirectory(const std::string& name) const;
         void DeleteDirectory(const std::string& path) const;
-        File* GetFile(const std::string& path) const;
+        File GetFile(const std::string& path) const;
         Directory* GetDirectory(const std::string& path) const;        
         Path GetPath() const { return this->path; }
 

@@ -3,13 +3,23 @@
 
 using namespace org::vfat::api;
 
-Path::Path(const Path& other) {    
-    for (auto iter = other.items.begin(); iter < other.items.end(); ++iter) {
-        this->items.push_back(*iter);
-    }
-}
 
-Path::Path(Path&& other) : items(std::move(other.items)) {
+
+Path::Path(const Path& other) :
+    items(other.items) 
+{ }
+
+Path::Path(Path&& other) : 
+    items(std::move(other.items)) 
+{ }
+
+Path& Path::operator=(const Path& other)
+{
+    if (this != &other) {
+        items = other.items;
+    }
+
+    return *this;
 }
 
 Path& Path::operator=(Path&& other)

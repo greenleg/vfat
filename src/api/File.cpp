@@ -51,9 +51,59 @@ void File::Init()
     this->entry = e;
 }
 
+File::File(const File& other) :
+    fs(other.fs),
+    parentCchDir(other.parentCchDir),
+    entry(other.entry),
+    path(other.path)
+{ }
+
+File::File(File&& other) :
+    fs(std::exchange(other.fs, nullptr)),
+    parentCchDir(std::exchange(other.parentCchDir, nullptr)),
+    entry(std::exchange(other.entry, nullptr)),
+    path(std::move(other.path))
+{ }
+
+File& File::operator=(const File& other)
+{
+    if (this != &other) {
+        delete parentCchDir;
+        
+        fs = other.fs;
+        parentCchDir = other.parentCchDir;
+        entry = other.entry;
+        path = other.path;
+    }
+    return *this;
+}
+
+File& File::operator=(File&& other)
+{
+    if (this != &other) {
+        delete parentCchDir;
+
+        fs = std::exchange(other.fs, nullptr);
+        parentCchDir = std::exchange(other.parentCchDir, nullptr);
+        entry = std::exchange(other.entry, nullptr);
+        path = std::move(other.path);
+    }
+    return *this;
+}
+
+//File::Swap(File& other)
+//{
+//    std::swap(fs, other.fs);
+//    std::swap(parentCchDir, other.parentCchDir);
+//    std::swap(entry, other.entry);
+//    std::swap(path, other.path);
+//}
+
 File::~File()
 {
-    delete this->parentCchDir;
+    if (parentCchDir != nullptr) {
+        delete parentCchDir;
+    }
 }
 
 uint32_t File::GetSize() const
@@ -65,7 +115,7 @@ std::string File::GetName() const
 {
     char nameBuf[256];
     this->entry->GetName(nameBuf);
-    string s(nameBuf);
+    std::string s(nameBuf);
     return s; // return a copy of the local variable s;
 }
 
@@ -102,7 +152,7 @@ std::string File::ReadText(uint32_t offset, uint32_t nchars) const
     cstr[nchars] = '\0';
 
     // Create C++ string;
-    string str(cstr);
+    std::string str(cstr);
 
     // Deallocate memory allocated for buffers because they are not used any longer;
     delete[] buf;

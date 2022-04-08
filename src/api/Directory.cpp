@@ -199,11 +199,11 @@ void Directory::CreateFile(const std::string& name) const
     delete cchDir;
 }
 
-File* Directory::GetFile(const std::string& path) const
+File Directory::GetFile(const std::string& path) const
 {
     Path filePath(this->path);
     filePath.Combine(path);
-    return new File(this->fs, std::move(filePath));
+    return File(this->fs, std::move(filePath));
 }
 
 void Directory::DeleteDirectory(const std::string& path) const
@@ -380,7 +380,7 @@ void Directory::ImportFile(const std::string& path)
     std::string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
 
     this->CreateFile(fileName);
-    File *file = this->GetFile(fileName);
+    File file = this->GetFile(fileName);
 
     const size_t BUFFER_SIZE = 4096;
     uint8_t buf[BUFFER_SIZE];
@@ -389,13 +389,12 @@ void Directory::ImportFile(const std::string& path)
     fseek(fp, 0, SEEK_SET);
     size_t nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
     while (nread > 0) {
-        file->Write(offset, nread, buf);
+        file.Write(offset, nread, buf);
         offset += nread;
         nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
     }
 
     fclose(fp);
-    delete file;
 }
 
 void Directory::ImportDirectory(const std::string& path)

@@ -118,14 +118,14 @@ void Commands::Cat(CommandLine *cmdLine, FileSystemHelper *fsh)
         throw std::logic_error("File is not specified.");
     }
 
-    string fileName = cmdLine->GetArg(1);
+    std::string fileName = cmdLine->GetArg(1);
     Directory *currentDir = fsh->GetCurrentDirectory();
-    File *file = currentDir->GetFile(fileName);
-    string text = file->ReadText(0, file->GetSize());
-    delete file;
+    File file = currentDir->GetFile(fileName);
+    std::string text = file.ReadText(0, file.GetSize());
+
     delete currentDir;
 
-    cout << text <<  endl;
+    std::cout << text << std::endl;
 }
 
 void Commands::Import(CommandLine *cmdLine, FileSystemHelper *fsh)
