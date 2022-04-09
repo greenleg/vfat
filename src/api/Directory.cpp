@@ -118,8 +118,10 @@ void Directory::GetDirectories(std::vector<Directory*>& container) const
     delete cchDir;
 }
 
-void Directory::GetFiles(std::vector<File*>& container) const
+std::vector<File> Directory::GetFiles() const
 {
+    std::vector<File> result;
+
     auto cchDir = this->GetCchDirectory();
     std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
     for (size_t i = 0; i < entries->size(); i++) {
@@ -129,12 +131,14 @@ void Directory::GetFiles(std::vector<File*>& container) const
             e->GetName(nameBuf);
             Path filePath(this->path);
             filePath.Combine(nameBuf);
-            File *file = new File(this->fs, std::move(filePath));
-            container.push_back(file);
+            File file(this->fs, std::move(filePath));
+            result.push_back(std::move(file));
         }
     }
 
     delete cchDir;
+    
+    return result;
 }
 
 //void Directory::GetItems(std::vector<DirectoryItem*>& container) const

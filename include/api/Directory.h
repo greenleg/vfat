@@ -8,7 +8,6 @@
 #include "File.h"
 #include "Path.h"
 
-using namespace std;
 using namespace org::vfat;
 
 namespace org::vfat::api
@@ -33,11 +32,12 @@ namespace org::vfat::api
     public:
         Directory(FileSystem *fs, Path& path);
         Directory(FileSystem *fs, Path&& path);
+
         static Directory* GetRoot(FileSystem *fs);
         ~Directory();
         void GetDirectories(std::vector<Directory*>& container) const;
-        void GetFiles(std::vector<File*>& container) const;
-        //void GetItems(std::vector<DirectoryItem*>& container) const;
+        std::vector<File> GetFiles() const;
+
         void CreateFile(const std::string& name) const;
         void DeleteFile(const std::string& path) const;
         void CreateDirectory(const std::string& name) const;

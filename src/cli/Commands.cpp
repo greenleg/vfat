@@ -1,20 +1,18 @@
 #include <iostream>
 #include "../../include/cli/Commands.h"
 
-using namespace std;
 using namespace org::vfat::cli;
 
 void Commands::Ls(CommandLine *cmdLine, FileSystemHelper *fsh)
 {
     Directory *currentDir = fsh->GetCurrentDirectory();
 
-    vector<Directory *> directories;
+    std::vector<Directory *> directories;
     currentDir->GetDirectories(directories);
-    vector<Directory *>::iterator dirIter;
+    std::vector<Directory *>::iterator dirIter;
 
-    vector<File *> files;
-    currentDir->GetFiles(files);
-    vector<File *>::iterator fileIter;
+    std::vector<File> files = currentDir->GetFiles();
+    std::vector<File>::iterator fileIter;
 
     delete currentDir;
 
@@ -34,19 +32,17 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHelper *fsh)
 
         uint32_t totalFilesSize = 0;
         for (fileIter = files.begin(); fileIter < files.end(); fileIter++) {
-            File *file = *fileIter;
-            string created = Utils::FormatDate(file->GetCreatedTime());
+            File file = *fileIter;
+            string created = Utils::FormatDate(file.GetCreatedTime());
 
 
             cout << Utils::StringPadding(created, 20)
                  << Utils::StringPadding("", 10)
-                 << Utils::StringPadding(to_string(file->GetSize()) + " bytes", 20)
-                 << Utils::StringPadding(file->GetName(), 30)
+                 << Utils::StringPadding(to_string(file.GetSize()) + " bytes", 20)
+                 << Utils::StringPadding(file.GetName(), 30)
                  << endl;
 
-            totalFilesSize += file->GetSize();
-
-            delete file;
+            totalFilesSize += file.GetSize();
         }
 
         cout << Utils::StringPadding("", 10)
@@ -71,9 +67,8 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHelper *fsh)
         }
 
         for (fileIter = files.begin(); fileIter < files.end(); fileIter++) {
-            File *file = *fileIter;
-            cout << file->GetName() << " ";
-            delete file;
+            File file = *fileIter;
+            cout << file.GetName() << " ";
         }
 
         if (directories.size() + files.size() > 0) {
@@ -202,27 +197,26 @@ void Commands::Tree(CommandLine *cmdLine, FileSystemHelper *fsh)
 
 void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
 {
-    vector<Directory*> directories;
+    std::vector<Directory*> directories;
     dir->GetDirectories(directories);
 
-    vector<File*> files;
-    dir->GetFiles(files);
+    std::vector<File> files = dir->GetFiles();
 
-    string gap = "";
-    for (int i = 0; i < level; i++) {
+    std::string gap = "";
+    for (size_t i = 0; i < level; ++i) {
         gap += "│   ";
     }
 
-    string itemIndent = "├── ";
-    string lastItemIndent = "└── ";
-    for (auto iter = directories.begin(); iter < directories.end(); iter++) {
+    std::string itemIndent = "├── ";
+    std::string lastItemIndent = "└── ";
+    for (auto iter = directories.begin(); iter < directories.end(); ++iter) {
         Directory *subDir = *iter;
-        string subDirName = subDir->GetName();
+        std::string subDirName = subDir->GetName();
         if (subDirName != "." && subDirName != "..") {
             if (iter + 1 == directories.end() && files.size() == 0) {
-                cout << gap << lastItemIndent << subDirName << endl;
+                std::cout << gap << lastItemIndent << subDirName << std::endl;
             } else {
-                cout << gap << itemIndent << subDirName << endl;
+                std::cout << gap << itemIndent << subDirName << std::endl;
             }
 
             PrintSubTree(subDir, stat, level + 1);
@@ -231,15 +225,13 @@ void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
         delete subDir;
     }
 
-    for (auto iter = files.begin(); iter < files.end(); iter++) {
-        File *file = *iter;
+    for (auto iter = files.begin(); iter < files.end(); ++iter) {
+        File file = *iter;
         if (iter + 1 == files.end()) {
-            cout << gap << lastItemIndent << file->GetName() << endl;
+            std::cout << gap << lastItemIndent << file.GetName() << std::endl;
         } else {
-            cout << gap << itemIndent << file->GetName() << endl;
+            std::cout << gap << itemIndent << file.GetName() << std::endl;
         }
-
-        delete file;
     }
 
     stat->totalDir += directories.size();

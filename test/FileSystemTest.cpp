@@ -165,20 +165,19 @@ TEST_F(FileSystemTest, CreateFile)
         Directory *dir0 = rootDir->GetDirectory("home");
         Directory *dir00 = dir0->GetDirectory("user");
 
-        vector<File*> files;
-        dir00->GetFiles(files);
+        std::vector<File> files = dir00->GetFiles();
         ASSERT_EQ(1, files.size());
-        File *file0 = files.at(0);
-        ASSERT_EQ("dump0.bin", file0->GetName());
+        // TODO Make copying work    File file0 = std::move(files[0]);
+        File file0 = files[0];
+        ASSERT_EQ("dump0.bin", file0.GetName());
 
-        std::string s = file0->ReadText(0, file0->GetSize());
+        std::string s = file0.ReadText(0, file0.GetSize());
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
 
         File file0_copy = dir00->GetFile("dump0.bin");
-        std::string s_copy = file0->ReadText(0, file0_copy.GetSize());
+        std::string s_copy = file0.ReadText(0, file0_copy.GetSize());
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s_copy);
 
-        delete file0;
         delete dir00;
         delete dir0;
         delete rootDir;

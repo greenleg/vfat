@@ -91,14 +91,6 @@ File& File::operator=(File&& other)
     return *this;
 }
 
-//File::Swap(File& other)
-//{
-//    std::swap(fs, other.fs);
-//    std::swap(parentCchDir, other.parentCchDir);
-//    std::swap(entry, other.entry);
-//    std::swap(path, other.path);
-//}
-
 File::~File()
 {
     if (parentCchDir != nullptr) {
