@@ -7,6 +7,10 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
+File::File()
+    : fs(nullptr), parentCchDir(nullptr), entry(nullptr)
+{ }
+
 File::File(FileSystem *fs, Path& path)
     : fs(fs), path(path) 
 {
@@ -68,7 +72,7 @@ File::File(File&& other) :
 File& File::operator=(const File& other)
 {
     if (this != &other) {
-        delete parentCchDir;
+        Cleanup();
         
         fs = other.fs;
         parentCchDir = other.parentCchDir;
@@ -81,7 +85,7 @@ File& File::operator=(const File& other)
 File& File::operator=(File&& other)
 {
     if (this != &other) {
-        delete parentCchDir;
+        Cleanup();
 
         fs = std::exchange(other.fs, nullptr);
         parentCchDir = std::exchange(other.parentCchDir, nullptr);
@@ -91,11 +95,16 @@ File& File::operator=(File&& other)
     return *this;
 }
 
-File::~File()
+void File::Cleanup()
 {
     if (parentCchDir != nullptr) {
         delete parentCchDir;
     }
+}
+
+File::~File()
+{
+    Cleanup();
 }
 
 uint32_t File::GetSize() const

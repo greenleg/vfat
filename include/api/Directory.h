@@ -28,14 +28,22 @@ namespace org::vfat::api
         void ImportDirectory(const std::string& path);
         ClusterChainDirectory* GetCchDirectory() const;
         void Init();
+        void Cleanup();
 
     public:
+        ClusterChainDirectory* GetParentCchDirectory() const {  return this->parentCchDir; }
+        Directory();
         Directory(FileSystem *fs, Path& path);
         Directory(FileSystem *fs, Path&& path);
 
-        static Directory* GetRoot(FileSystem *fs);
+        Directory(const Directory& other);
+        Directory(Directory&& other);
+        Directory& operator=(const Directory& other);
+        Directory& operator=(Directory&& other);
+
+        static Directory GetRoot(FileSystem *fs);
         ~Directory();
-        void GetDirectories(std::vector<Directory*>& container) const;
+        std::vector<Directory> GetDirectories() const;
         std::vector<File> GetFiles() const;
 
         void CreateFile(const std::string& name) const;
@@ -43,7 +51,7 @@ namespace org::vfat::api
         void CreateDirectory(const std::string& name) const;
         void DeleteDirectory(const std::string& path) const;
         File GetFile(const std::string& path) const;
-        Directory* GetDirectory(const std::string& path) const;        
+        Directory GetDirectory(const std::string& path) const;        
         Path GetPath() const { return this->path; }
 
         void Move(const std::string& srcPath, const std::string& destPath);

@@ -20,8 +20,10 @@ namespace org::vfat::api
         Path path;
         
         void Init();
+        void Cleanup();
 
-    public:        
+    public:  
+        File();      
         File(FileSystem *fs, Path& path);
         File(FileSystem *fs, Path&& path);
         File(const File& other);

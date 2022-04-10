@@ -39,8 +39,7 @@ void FileSystemHelper::ChangeDirectory(const std::string& path)
     newPath.Combine(path, false);
 
     // Check availability of the new path;
-    Directory *newDir = new Directory(this->fs, newPath);
-    delete newDir;
+    Directory newDir(this->fs, newPath);
 
     Path newNormalizedPath(this->path);
     newNormalizedPath.Combine(path, true);
@@ -48,8 +47,8 @@ void FileSystemHelper::ChangeDirectory(const std::string& path)
     this->path = std::move(newNormalizedPath);
 }
 
-Directory* FileSystemHelper::GetCurrentDirectory() const
+Directory FileSystemHelper::GetCurrentDirectory() const
 {
     Path tmp(this->path);
-    return new Directory(this->fs, std::move(tmp));
+    return Directory(this->fs, std::move(tmp));
 }

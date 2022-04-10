@@ -30,7 +30,7 @@ namespace org::vfat::cli
 
         FileSystem* GetFileSystem() const { return this->fs; }
         Path GetCurrentPath() const { return this->path; }
-        Directory* GetCurrentDirectory() const;
+        Directory GetCurrentDirectory() const;
     };
 }
 

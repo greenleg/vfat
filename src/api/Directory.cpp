@@ -11,6 +11,10 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
+Directory::Directory()
+    : fs(nullptr), parentCchDir(nullptr), entry(nullptr)
+{ }
+
 Directory::Directory(FileSystem *fs, Path&& path)
     : fs(fs), path(std::move(path))
 {
@@ -67,9 +71,51 @@ void Directory::Init()
     }
 }
 
-Directory* Directory::GetRoot(FileSystem *fs)
+Directory::Directory(const Directory& other) :
+    fs(other.fs),
+    parentCchDir(other.parentCchDir),
+    entry(other.entry),
+    path(other.path)
+{ std::cout << "Dir Copy ctor other.name=" << other.GetName() << ", other=" << &other << std::endl; }
+
+Directory::Directory(Directory&& other) :
+    fs(std::exchange(other.fs, nullptr)),
+    parentCchDir(std::exchange(other.parentCchDir, nullptr)),
+    entry(std::exchange(other.entry, nullptr)),
+    path(std::move(other.path))
+{ std::cout << "Dir Move ctor other=" << &other << std::endl; }
+
+Directory& Directory::operator=(const Directory& other)
 {
-    return new Directory(fs, std::move(Path()));
+//    std::cout << "Dir Copy assign this=" << this << ", other=" << &other << std::endl;
+    if (this != &other) {
+        Cleanup();
+        
+        fs = other.fs;
+        parentCchDir = other.parentCchDir;
+        entry = other.entry;
+        path = other.path;
+    }
+    return *this;
+}
+
+Directory& Directory::operator=(Directory&& other)
+{
+//    std::cout << "Dir Move assign this=" << this << ", other=" << &other << std::endl;
+    if (this != &other) {
+        Cleanup();
+
+        fs = std::exchange(other.fs, nullptr);
+        parentCchDir = std::exchange(other.parentCchDir, nullptr);
+        entry = std::exchange(other.entry, nullptr);
+        path = std::move(other.path);
+    }
+    return *this;
+}
+
+Directory Directory::GetRoot(FileSystem *fs)
+{
+    return Directory(fs, std::move(Path()));
 }
 
 ClusterChainDirectory* Directory::GetCchDirectory() const
@@ -81,16 +127,23 @@ ClusterChainDirectory* Directory::GetCchDirectory() const
     }
 }
 
-Directory::~Directory()
+void Directory::Cleanup()
 {
     if (this->parentCchDir != nullptr) {
+        //std::cout << "Directory::~Directory() this=" << this << " Name=" << GetName() << " IsRoot=" << path.IsRoot() << " delete this->parentCchDir; " << parentCchDir <<  std::endl;
         delete this->parentCchDir; // delete this->entry;  will be invoked automatically;
     }
 
     if (this->path.IsRoot()) {
         // Deallocate memory occupied by the fake root entry;
+        //std::cout << "Directory::~Directory() delete this->entry;" <<  std::endl;
         delete this->entry;
     }
+}
+
+Directory::~Directory()
+{
+    Cleanup();
 }
 
 bool Directory::IsRoot() const
@@ -99,40 +152,64 @@ bool Directory::IsRoot() const
             (this->entry->GetStartCluster() == this->fs->GetBootSector()->GetRootDirFirstCluster());
 }
 
-void Directory::GetDirectories(std::vector<Directory*>& container) const
+std::vector<Directory> Directory::GetDirectories() const
 {
     auto cchDir = GetCchDirectory();
     std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
-    for (size_t i = 0; i < entries->size(); i++) {
-        DirectoryEntry *e = entries->at(i);
+    size_t dirCount = 0;
+    for (size_t i = 0; i < entries->size(); ++i) {
+        DirectoryEntry *e = (*entries)[i];
+        if (e->IsDir()) {
+            ++dirCount;
+        }
+    }
+    
+    std::vector<Directory> result(dirCount);
+    
+    size_t dirIdx = 0;
+    for (size_t i = 0; i < entries->size(); ++i) {
+        DirectoryEntry *e = (*entries)[i];
         if (e->IsDir()) {
             char nameBuf[256];
             e->GetName(nameBuf);
             Path dirPath(this->path);
             dirPath.Combine(nameBuf);
-            Directory *dir = new Directory(this->fs, dirPath);
-            container.push_back(dir);
+            Directory dir(this->fs, std::move(dirPath));
+//            std::cout << "GetDirectories() dirName=" << dir.GetName() << ", dir=" << &dir << std::endl;
+            result[dirIdx++] = std::move(dir);
+//            std::cout << "result[" << dirIdx - 1 << "]=" << &result[dirIdx - 1] << std::endl;
         }
     }
 
     delete cchDir;
+    
+//    std::cout << "GetDirectories() return  result;" << std::endl;
+    return result;
 }
 
 std::vector<File> Directory::GetFiles() const
 {
-    std::vector<File> result;
-
     auto cchDir = this->GetCchDirectory();
     std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
-    for (size_t i = 0; i < entries->size(); i++) {
-        DirectoryEntry *e = entries->at(i);
+    size_t fileCount = 0;
+    for (size_t i = 0; i < entries->size(); ++i) {
+        DirectoryEntry *e = (*entries)[i];
+        if (e->IsFile()) {
+            ++fileCount;
+        }
+    }
+
+    std::vector<File> result(fileCount);
+    size_t fileIdx = 0;
+    for (size_t i = 0; i < entries->size(); ++i) {
+        DirectoryEntry *e = (*entries)[i];
         if (e->IsFile()) {
             char nameBuf[256];
             e->GetName(nameBuf);
             Path filePath(this->path);
             filePath.Combine(nameBuf);
             File file(this->fs, std::move(filePath));
-            result.push_back(std::move(file));
+            result[fileIdx++] = std::move(file);
         }
     }
 
@@ -141,43 +218,27 @@ std::vector<File> Directory::GetFiles() const
     return result;
 }
 
-//void Directory::GetItems(std::vector<DirectoryItem*>& container) const
-//{
-//    std::vector<Directory*> directories;
-//    this->GetDirectories(directories);
-//    for (auto iter = directories.begin(); iter != directories.end(); ++iter) {
-//        container.push_back(*iter);
-//    }
-
-//    std::vector<File*> files;
-//    this->GetFiles(files);
-//    for (auto iter = files.begin(); iter != files.end(); ++iter) {
-//        container.push_back(*iter);
-//    }
-//}
-
-string Directory::GetName() const
+std::string Directory::GetName() const
 {
-    char nameBuf[256];
     if (this->path.IsRoot()) {
         return "/";
     }
 
+    char nameBuf[256];
     this->entry->GetName(nameBuf);
-    string s(nameBuf);
-    return s; // return a copy of the local variable s;
+    std::string s(nameBuf);
+    return s;
 }
 
-Directory* Directory::GetDirectory(const std::string& path) const
+Directory Directory::GetDirectory(const std::string& path) const
 {
     Path dirPath(this->path);
     dirPath.Combine(path);
-    return new Directory(this->fs, std::move(dirPath));
+    return Directory(this->fs, std::move(dirPath));
 }
 
 void Directory::CreateDirectory(const std::string& name) const
 {
-    //const char *cname = name.c_str();
     auto cchDir = this->GetCchDirectory();
     DirectoryEntry *subEntry = cchDir->AddDirectory(name.c_str(), this->fs->GetDevice());
 
@@ -383,8 +444,8 @@ void Directory::ImportFile(const std::string& path)
     pathObj.Combine(path);
     std::string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
 
-    this->CreateFile(fileName);
-    File file = this->GetFile(fileName);
+    CreateFile(fileName);
+    File file = GetFile(fileName);
 
     const size_t BUFFER_SIZE = 4096;
     uint8_t buf[BUFFER_SIZE];
@@ -415,16 +476,15 @@ void Directory::ImportDirectory(const std::string& path)
         try {
             if (ent->d_type == DT_REG) {
                 // Import a regular file;
-                string filePath = path + "/" + ent->d_name;
+                std::string filePath = path + "/" + ent->d_name;
                 this->ImportFile(filePath);
             } else if (ent->d_type == DT_DIR) {
                 if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
                     // Import a sub-directory;
                     this->CreateDirectory(ent->d_name);
-                    Directory *subDir = this->GetDirectory(ent->d_name);
-                    string subDirPath = path + "/" + ent->d_name;
-                    subDir->ImportDirectory(subDirPath);
-                    delete subDir;
+                    Directory subDir = this->GetDirectory(ent->d_name);
+                    std::string subDirPath = path + "/" + ent->d_name;
+                    subDir.ImportDirectory(subDirPath);
                 }
             }
         } catch (const std::ios_base::failure& error) {

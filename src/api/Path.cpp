@@ -3,8 +3,6 @@
 
 using namespace org::vfat::api;
 
-
-
 Path::Path(const Path& other) :
     items(other.items) 
 { }

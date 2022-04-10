@@ -9,7 +9,7 @@ namespace org::vfat::cli
     class Commands
     {
     private:
-        static void PrintSubTree(Directory *dir, struct TreeStat *stat, int level);
+        static void PrintSubTree(Directory& dir, struct TreeStat *stat, int level);
 
     public:
         /**
