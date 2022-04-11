@@ -31,7 +31,7 @@ protected:
     }
 };
 
-TEST_F(FileSystemTest, DISABLED_MakeDirectory)
+TEST_F(FileSystemTest, MakeDirectory)
 {
     {
         FileSystem fs(this->device);

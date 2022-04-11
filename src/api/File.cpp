@@ -8,7 +8,7 @@ using namespace org::vfat;
 using namespace org::vfat::api;
 
 File::File()
-    : fs(nullptr), parentCchDir(nullptr), entry(nullptr)
+    : fs(nullptr), entry(nullptr)
 { }
 
 File::File(FileSystem *fs, Path& path)
@@ -25,33 +25,32 @@ File::File(FileSystem *fs, Path&& path)
 
 void File::Init()
 {
-    std::queue<ClusterChainDirectory*> subDirectories;
-    ClusterChainDirectory *dir = fs->GetRootDirectory();
+    std::queue<ClusterChainDirectory> subDirectories;
+    ClusterChainDirectory dir = fs->GetRootDirectory();
     DirectoryEntry *e;
     size_t i = 0;
-    for (; i < path.GetItemCount() - 1; i++) {
+    for (; i < path.GetItemCount() - 1; ++i) {
         std::string name = this->path.GetItem(i);
-        e = dir->FindEntry(name.c_str());
+        e = dir.FindEntry(name.c_str());
         if (e == nullptr) {
             std::ostringstream msgStream;
             msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
             throw std::ios_base::failure(msgStream.str());
         }
 
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-        delete dir;
-        dir = subDir;
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
+        dir = std::move(subDir);
     }
 
     std::string name = path.GetItem(i);
-    e = dir->FindEntry(name.c_str());
+    e = dir.FindEntry(name.c_str());
     if (e == nullptr) {
         std::ostringstream msgStream;
         msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
         throw std::ios::failure(msgStream.str());
     }
 
-    this->parentCchDir = dir;
+    this->parentCchDir = std::move(dir);
     this->entry = e;
 }
 
@@ -64,7 +63,7 @@ File::File(const File& other) :
 
 File::File(File&& other) :
     fs(std::exchange(other.fs, nullptr)),
-    parentCchDir(std::exchange(other.parentCchDir, nullptr)),
+    parentCchDir(std::move(other.parentCchDir)),
     entry(std::exchange(other.entry, nullptr)),
     path(std::move(other.path))
 { }
@@ -88,7 +87,7 @@ File& File::operator=(File&& other)
         Cleanup();
 
         fs = std::exchange(other.fs, nullptr);
-        parentCchDir = std::exchange(other.parentCchDir, nullptr);
+        parentCchDir = std::move(other.parentCchDir);
         entry = std::exchange(other.entry, nullptr);
         path = std::move(other.path);
     }
@@ -97,9 +96,9 @@ File& File::operator=(File&& other)
 
 void File::Cleanup()
 {
-    if (parentCchDir != nullptr) {
-        delete parentCchDir;
-    }
+//    if (parentCchDir != nullptr) {
+//        delete parentCchDir;
+//    }
 }
 
 File::~File()
@@ -136,7 +135,7 @@ void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 
     // The parent directory contains information about a file including name, size, creation time etc.
     // This updated information should be stored to a device as well.
-    this->parentCchDir->Write(this->fs->GetDevice());
+    this->parentCchDir.Write(this->fs->GetDevice());
 
     delete cchFile;
 }

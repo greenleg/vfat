@@ -8,7 +8,7 @@
 #include "ClusterChainFile.h"
 #include "BootSector.h"
 
-using namespace org::vfat;
+//using namespace org::vfat;
 
 namespace org::vfat
 {
@@ -16,7 +16,7 @@ namespace org::vfat
     {
     private:
         ClusterChain *chain;
-        std::vector<DirectoryEntry *> *entries;
+        std::vector<DirectoryEntry *> entries;
         uint32_t capacity;
         bool isRoot;
         bool isDirty;
@@ -28,8 +28,14 @@ namespace org::vfat
         void ChangeSize(uint32_t fat32EntryCount);
         int32_t FindEntryIndex(const char *name);
         void CheckUniqueName(const char *name);
-
+        void Cleanup();
+        
     public:
+        ClusterChainDirectory();
+        ClusterChainDirectory(const ClusterChainDirectory& other);
+        ClusterChainDirectory(ClusterChainDirectory&& other);
+        ClusterChainDirectory& operator=(const ClusterChainDirectory& other);
+        ClusterChainDirectory& operator=(ClusterChainDirectory&& other);
         ~ClusterChainDirectory();
         void Write(Device *device) const;
         void Read(Device *device, Fat *fat, uint32_t firstCluster, bool isRoot);
@@ -50,18 +56,18 @@ namespace org::vfat
         DirectoryEntry* AddDirectory(const char *name, Device *device);
         DirectoryEntry* AddFile(const char *name, Device *device);
 
-        static ClusterChainDirectory* GetDirectory(Device *device, Fat *fat, DirectoryEntry *e);
+        static ClusterChainDirectory GetDirectory(Device *device, Fat *fat, DirectoryEntry *e);
         static ClusterChainFile* GetFile(Fat *fat, DirectoryEntry *e);
 
         void SetName(Device *device, DirectoryEntry *e, const char *name);
-        void Move(Device *device, DirectoryEntry *e, ClusterChainDirectory *dest, const char *newName);
+        void Move(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest, const char *newName);
 
-        void CopyFile(Device *device, DirectoryEntry *e, ClusterChainDirectory *dest) const;
-        void CopyFile(Device *device, DirectoryEntry *e, ClusterChainDirectory *dest, const char *newName) const;
-        void CopyDirectory(Device *device, DirectoryEntry *e, ClusterChainDirectory *dest) const;
-        void CopyDirectory(Device *device, DirectoryEntry *e, ClusterChainDirectory *dest, const char *newName) const;
+        void CopyFile(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest) const;
+        void CopyFile(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest, const char *newName) const;
+        void CopyDirectory(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest) const;
+        void CopyDirectory(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest, const char *newName) const;
 
-        std::vector<DirectoryEntry *> * GetEntries() const { return this->entries; }
+        std::vector<DirectoryEntry *> GetEntries() const { return this->entries; }
         uint32_t GetStartCluster() const { return this->chain->GetStartCluster(); }
     };
 }

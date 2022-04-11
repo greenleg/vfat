@@ -29,7 +29,7 @@ namespace org::vfat::api
         Device* GetDevice() const { return this->device; }
         BootSector* GetBootSector() const { return this->bootSector; }
         Fat* GetFat() const { return this->fat; }
-        ClusterChainDirectory* GetRootDirectory() const;// { return this->root; }
+        ClusterChainDirectory GetRootDirectory() const;
     };
 }
 

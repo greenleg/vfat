@@ -50,9 +50,9 @@ FileSystem::~FileSystem()
     delete this->bootSector;
 }
 
-ClusterChainDirectory* FileSystem::GetRootDirectory() const
+ClusterChainDirectory FileSystem::GetRootDirectory() const
 {
-    ClusterChainDirectory *root = new ClusterChainDirectory();
-    root->ReadRoot(device, this->fat);
+    ClusterChainDirectory root;
+    root.ReadRoot(device, this->fat);
     return root;
 }

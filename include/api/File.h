@@ -15,7 +15,7 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
-        ClusterChainDirectory *parentCchDir;
+        ClusterChainDirectory parentCchDir;
         DirectoryEntry *entry;
         Path path;
         

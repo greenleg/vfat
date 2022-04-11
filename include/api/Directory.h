@@ -16,22 +16,22 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
-        ClusterChainDirectory *parentCchDir;
+        ClusterChainDirectory parentCchDir;
         DirectoryEntry *entry;
         Path path;
 
         bool IsRoot() const;
-        void Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, const std::string& destName);
-        void CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, const std::string& destName);
-        void CopyDirectory(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, const std::string& destName);
+        void Move(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
         void ImportFile(const std::string& path);
         void ImportDirectory(const std::string& path);
-        ClusterChainDirectory* GetCchDirectory() const;
+        ClusterChainDirectory GetCchDirectory() const;
         void Init();
         void Cleanup();
 
     public:
-        ClusterChainDirectory* GetParentCchDirectory() const {  return this->parentCchDir; }
+//        ClusterChainDirectory* GetParentCchDirectory() const {  return this->parentCchDir; }
         Directory();
         Directory(FileSystem *fs, Path& path);
         Directory(FileSystem *fs, Path&& path);
