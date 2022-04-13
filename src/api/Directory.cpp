@@ -32,6 +32,8 @@ void Directory::Init()
    if (path.IsRoot()) {
         time_t now = time(0);
 
+//std::cout << "Create a root dir, path=" << path.ToString(false) << std::endl;
+
         // Fake root entry;
         this->entry = new DirectoryEntry();
         this->entry->SetStartCluster(fs->GetBootSector()->GetRootDirFirstCluster());
@@ -39,6 +41,8 @@ void Directory::Init()
         this->entry->SetLastModifiedTime(now);
         this->entry->SetIsDir(true);
     } else {
+//std::cout << "Create a non-root dir, path=" << path.ToString(false) << std::endl;
+    
         ClusterChainDirectory dir = fs->GetRootDirectory();
         DirectoryEntry *e;
         size_t i = 0;
@@ -63,7 +67,7 @@ void Directory::Init()
             throw std::ios_base::failure(msgStream.str());
         }
 
-
+//std::cout << "this->parentCchDir = std::move(dir);" << std::endl;
         this->parentCchDir = std::move(dir);
         this->entry = e;
     }
@@ -131,9 +135,9 @@ ClusterChainDirectory Directory::GetCchDirectory() const
 
 void Directory::Cleanup()
 {
-    if (this->path.IsRoot()) {
+    if (this->path.IsRoot() && this->entry != nullptr) {
         // Deallocate memory occupied by the fake root entry;
-        //std::cout << "Directory::~Directory() delete this->entry;" <<  std::endl;
+        std::cout << "Directory::~Directory() delete this->entry = " << this->entry <<  std::endl;
         delete this->entry;
     }
 }

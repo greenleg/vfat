@@ -15,7 +15,7 @@ namespace org::vfat
     class ClusterChainDirectory
     {
     private:
-        ClusterChain *chain;
+        ClusterChain chain;
         std::vector<DirectoryEntry *> entries;
         uint32_t capacity;
         bool isRoot;
@@ -37,10 +37,10 @@ namespace org::vfat
         ClusterChainDirectory& operator=(const ClusterChainDirectory& other);
         ClusterChainDirectory& operator=(ClusterChainDirectory&& other);
         ~ClusterChainDirectory();
-        void Write(Device *device) const;
+        void Write(Device *device);
         void Read(Device *device, Fat *fat, uint32_t firstCluster, bool isRoot);
         void ReadRoot(Device *device, Fat *fat);
-        void Create(ClusterChain *cc);
+        void Create(ClusterChain& cc);
         void CreateRoot(Fat *fat);
         void AddEntry(DirectoryEntry *e);
         DirectoryEntry* GetEntry(uint32_t index) const;
@@ -68,7 +68,7 @@ namespace org::vfat
         void CopyDirectory(Device *device, DirectoryEntry *e, ClusterChainDirectory& dest, const char *newName) const;
 
         std::vector<DirectoryEntry *> GetEntries() const { return this->entries; }
-        uint32_t GetStartCluster() const { return this->chain->GetStartCluster(); }
+        uint32_t GetStartCluster() const { return this->chain.GetStartCluster(); }
     };
 }
 

@@ -33,9 +33,9 @@ namespace org::vfat::api
         ~File();
         uint32_t GetSize() const;
         uint32_t Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
-        void Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
+        void Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer);
         std::string ReadText(uint32_t offset, uint32_t nchars) const;
-        void WriteText(const std::string& s, uint32_t offset) const;
+        void WriteText(const std::string& s, uint32_t offset);
 
         /* `DirectoryItem` implementation */
         std::string GetName() const;

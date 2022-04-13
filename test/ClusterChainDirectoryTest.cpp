@@ -36,6 +36,7 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
+
     ASSERT_EQ(0, root.GetEntries().size());
 
     DirectoryEntry *e = new DirectoryEntry();

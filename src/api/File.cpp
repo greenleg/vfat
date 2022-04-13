@@ -128,7 +128,7 @@ uint32_t File::Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
     return nread;
 }
 
-void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
+void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     ClusterChainFile *cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), this->entry);
     cchFile->Write(this->fs->GetDevice(), offset, nbytes, buffer);
@@ -161,7 +161,7 @@ std::string File::ReadText(uint32_t offset, uint32_t nchars) const
     return str;
 }
 
-void File::WriteText(const std::string& s, uint32_t offset) const
+void File::WriteText(const std::string& s, uint32_t offset)
 {
     const char *cstr = s.c_str();
     uint8_t *buf = new uint8_t[s.size()];

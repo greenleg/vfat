@@ -1,4 +1,5 @@
 #include <math.h>
+#include <utility>
 #include "../include/ClusterChain.h"
 
 using namespace org::vfat;
@@ -6,16 +7,42 @@ using namespace org::vfat;
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
 ClusterChain::ClusterChain(Fat *fat, uint32_t startCluster)
+    : fat(fat), startCluster(startCluster)
+{ }
+
+ClusterChain::ClusterChain() 
+    : fat(nullptr), startCluster(0)
+{}
+
+ClusterChain::ClusterChain(const ClusterChain& other) 
+  : fat(other.fat), 
+    startCluster(other.startCluster)
+{ }
+
+ClusterChain::ClusterChain(ClusterChain&& other)
+  : fat(std::exchange(other.fat, nullptr)), 
+    startCluster(std::exchange(other.startCluster, 0))
+{ }
+
+ClusterChain& ClusterChain::operator=(const ClusterChain& other)
 {
-    this->fat = fat;
-    this->startCluster = startCluster;
+    if (this != &other) {
+        fat = other.fat;
+        startCluster = other.startCluster;
+    }
+
+    return *this;
 }
 
-//void ClusterChain::Create(uint32_t length)
-//{
-//    this->startCluster = 0;
-//    this->SetLength(length);
-//}
+ClusterChain& ClusterChain::operator=(ClusterChain&& other)
+{
+    if (this != &other) {    
+        fat = std::exchange(other.fat, nullptr);
+        startCluster = std::exchange(other.startCluster, 0);
+    }
+
+    return *this;
+}
 
 uint64_t ClusterChain::GetDeviceOffset(uint32_t cluster, uint32_t clusterOffset) const
 {
