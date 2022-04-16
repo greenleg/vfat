@@ -46,9 +46,9 @@ ClusterChain& ClusterChain::operator=(ClusterChain&& other)
 
 uint64_t ClusterChain::GetDeviceOffset(uint32_t cluster, uint32_t clusterOffset) const
 {
-    BootSector *bs = this->fat->GetBootSector();
-    uint32_t dataOffset = bs->GetClusterHeapOffset();
-    uint32_t clusterSize = bs->GetBytesPerCluster();
+    const BootSector& bs = this->fat->GetBootSector();
+    uint32_t dataOffset = bs.GetClusterHeapOffset();
+    uint32_t clusterSize = bs.GetBytesPerCluster();
     return dataOffset + cluster * clusterSize + clusterOffset;
 }
 
@@ -64,14 +64,14 @@ uint32_t ClusterChain::GetLength() const
 uint64_t ClusterChain::GetSizeInBytes() const
 {
     uint32_t clusterCount = this->GetLength();
-    uint32_t clusterSize = this->fat->GetBootSector()->GetBytesPerCluster();
+    uint32_t clusterSize = this->fat->GetBootSector().GetBytesPerCluster();
 
     return clusterCount * clusterSize;
 }
 
 uint32_t ClusterChain::SetSizeInBytes(uint32_t size)
 {
-    uint32_t clusterSize = this->fat->GetBootSector()->GetBytesPerCluster();
+    uint32_t clusterSize = this->fat->GetBootSector().GetBytesPerCluster();
     uint32_t clusterCount = (size + clusterSize - 1) / clusterSize;
     this->SetLength(clusterCount);
 
@@ -85,8 +85,8 @@ void ClusterChain::ReadData(const Device& device, uint32_t offset, uint32_t nbyt
         // Cannot read from an empty cluster chain
     }
 
-    BootSector* bootSector = this->fat->GetBootSector();
-    uint32_t clusterSize = bootSector->GetBytesPerCluster();
+    const BootSector& bootSector = this->fat->GetBootSector();
+    uint32_t clusterSize = bootSector.GetBytesPerCluster();
     uint32_t chainIndex;
     uint32_t bytesLeft;
 
@@ -120,8 +120,8 @@ void ClusterChain::WriteData(Device& device, uint32_t offset, uint32_t nbytes, u
         return;
     }
 
-    BootSector *bootSector = this->fat->GetBootSector();
-    uint32_t clusterSize = bootSector->GetBytesPerCluster();
+    const BootSector& bootSector = this->fat->GetBootSector();
+    uint32_t clusterSize = bootSector.GetBytesPerCluster();
     uint32_t minSize = offset + nbytes;
     uint32_t chainIndex;
     uint32_t bytesLeft;

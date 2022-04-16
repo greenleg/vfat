@@ -15,13 +15,13 @@ FileSystem::FileSystem(Device &device)
 
 void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
-    this->bootSector = new BootSector();
-    this->bootSector->Create(volumeSize, bytesPerSector, sectorsPerCluster);
+//    this->bootSector = new BootSector();
+    this->bootSector.Create(volumeSize, bytesPerSector, sectorsPerCluster);
 
     this->fat = new Fat(this->bootSector);
     this->fat->Create();
 
-    this->bootSector->Write(this->device);
+    this->bootSector.Write(this->device);
     this->fat->Write(this->device);
 
     ClusterChainDirectory root;
@@ -31,8 +31,8 @@ void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t s
 
 void FileSystem::Read()
 {
-    this->bootSector = new BootSector();
-    this->bootSector->Read(this->device);
+//    this->bootSector = new BootSector();
+    this->bootSector.Read(this->device);
 
     this->fat = new Fat(this->bootSector);
     this->fat->Read(this->device);
@@ -41,13 +41,13 @@ void FileSystem::Read()
 void FileSystem::Write()
 {
     this->fat->Write(this->device);
-    this->bootSector->Write(this->device);
+    this->bootSector.Write(this->device);
 }
 
 FileSystem::~FileSystem()
 {
     delete this->fat;
-    delete this->bootSector;
+//    delete this->bootSector;
 }
 
 ClusterChainDirectory FileSystem::GetRootDirectory() const

@@ -21,7 +21,7 @@ protected:
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(this->device);
 
-        Fat fat(&bootSector);
+        Fat fat(bootSector);
         fat.Create();
         fat.Write(this->device);
     }
@@ -38,7 +38,7 @@ TEST_F(FatTest, ReadFat)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ASSERT_EQ(FAT_FIRST_CLUSTER - 1, fat.GetLastAllocatedCluster());
@@ -58,7 +58,7 @@ TEST_F(FatTest, AllocateCluster)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     uint32_t newCluster = fat.AllocateChain(1);
@@ -70,7 +70,7 @@ TEST_F(FatTest, GetFreeClusterCount)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ASSERT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat.GetFreeClusterCount());
@@ -81,7 +81,7 @@ TEST_F(FatTest, GetFreeClusterCount2)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     uint32_t cluster;

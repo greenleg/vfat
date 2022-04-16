@@ -33,7 +33,7 @@ void Directory::Init()
         time_t now = time(0);
 
         // Fake root entry;
-        this->entry.SetStartCluster(fs->GetBootSector()->GetRootDirFirstCluster());
+        this->entry.SetStartCluster(fs->GetBootSector().GetRootDirFirstCluster());
         this->entry.SetCreatedTime(now);
         this->entry.SetLastModifiedTime(now);
         this->entry.SetIsDir(true);
@@ -137,7 +137,7 @@ Directory::~Directory()
 
 bool Directory::IsRoot() const
 {
-    return this->entry.GetStartCluster() == this->fs->GetBootSector()->GetRootDirFirstCluster();
+    return this->entry.GetStartCluster() == this->fs->GetBootSector().GetRootDirFirstCluster();
 }
 
 std::vector<Directory> Directory::GetDirectories() const

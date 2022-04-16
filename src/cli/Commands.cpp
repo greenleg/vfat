@@ -45,7 +45,7 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHelper *fsh)
              << endl;
 
         uint32_t freeClusterCount = fsh->GetFileSystem()->GetFat()->GetFreeClusterCount();
-        uint32_t bytesPerCluster = fsh->GetFileSystem()->GetBootSector()->GetBytesPerCluster();
+        uint32_t bytesPerCluster = fsh->GetFileSystem()->GetBootSector().GetBytesPerCluster();
         uint32_t freeSpaceInBytes = freeClusterCount * bytesPerCluster;
 
         cout << Utils::StringPadding("", 10)

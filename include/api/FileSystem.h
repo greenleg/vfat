@@ -16,7 +16,7 @@ namespace org::vfat::api
     {
     private:
         Device& device;
-        BootSector *bootSector;
+        BootSector bootSector;
         Fat *fat;
 
     public:
@@ -27,7 +27,7 @@ namespace org::vfat::api
         void Write();
 
         Device& GetDevice() const { return this->device; }
-        BootSector* GetBootSector() const { return this->bootSector; }
+        const BootSector& GetBootSector() const { return this->bootSector; }
         Fat* GetFat() const { return this->fat; }
         ClusterChainDirectory GetRootDirectory() const;
     };

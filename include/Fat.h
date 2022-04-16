@@ -29,7 +29,7 @@ namespace org::vfat
     class Fat
     {
     private:
-        BootSector *bootSector;
+        BootSector& bootSector;
         std::vector<uint32_t> entries;
         uint32_t lastAllocatedCluster;
 
@@ -42,7 +42,7 @@ namespace org::vfat
         Fat& operator=(const Fat& other) = delete;
         Fat& operator=(Fat&& other) = delete;        
     
-        Fat(BootSector *bootSector);
+        Fat(BootSector& bootSector);
         void Create();
         void Read(const Device& device);
         void Write(Device& device) const;
@@ -56,7 +56,7 @@ namespace org::vfat
         uint32_t GetFreeClusterCount() const;
         uint32_t GetEntry(int i) const;  // only for testing purpose;
 
-        BootSector * GetBootSector() const { return this->bootSector; }
+        BootSector& GetBootSector() const { return this->bootSector; }
         uint32_t GetLastAllocatedCluster() const { return this->lastAllocatedCluster; }
 
         ~Fat();

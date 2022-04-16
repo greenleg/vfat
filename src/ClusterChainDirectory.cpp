@@ -117,22 +117,6 @@ uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSiz
     return offset;
 }
 
-void ClusterChainDirectory::FormatDevice(Device& device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
-{
-    BootSector bootSector;
-    bootSector.Create(volumeSize, bytesPerSector, sectorPerCluster);
-    bootSector.Write(device);
-
-    Fat fat(&bootSector);
-    fat.Create();
-
-    ClusterChainDirectory root;
-    root.CreateRoot(&fat);
-
-    root.Write(device);
-    fat.Write(device);
-}
-
 void ClusterChainDirectory::Read(const Device& device, Fat *fat, uint32_t firstCluster, bool isRoot)
 {
     ClusterChain cc(fat, firstCluster);
@@ -164,10 +148,10 @@ void ClusterChainDirectory::Create(ClusterChain& cc)
 
 void ClusterChainDirectory::CreateRoot(Fat *fat)
 {
-    BootSector *bootSector = fat->GetBootSector();
+    BootSector& bootSector = fat->GetBootSector();
     ClusterChain cc(fat, 0);
     cc.SetLength(1);
-    bootSector->SetRootDirFirstCluster(cc.GetStartCluster());
+    bootSector.SetRootDirFirstCluster(cc.GetStartCluster());
 
     this->isRoot = true;
     this->capacity = cc.GetSizeInBytes() / FAT_DIR_ENTRY_SIZE;
@@ -176,7 +160,7 @@ void ClusterChainDirectory::CreateRoot(Fat *fat)
 
 void ClusterChainDirectory::ReadRoot(const Device& device, Fat *fat)
 {
-    this->Read(device, fat, fat->GetBootSector()->GetRootDirFirstCluster(), true);
+    this->Read(device, fat, fat->GetBootSector().GetRootDirFirstCluster(), true);
 }
 
 void ClusterChainDirectory::ChangeSize(uint32_t fat32EntryCount)

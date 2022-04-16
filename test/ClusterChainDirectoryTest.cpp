@@ -11,11 +11,27 @@ protected:
     FileDisk device;
     
     ClusterChainDirectoryTest() : device("disk0") {}
+    
+    void FormatDevice(Device& device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
+    {
+        BootSector bootSector;
+        bootSector.Create(volumeSize, bytesPerSector, sectorPerCluster);
+        bootSector.Write(device);
+
+        Fat fat(bootSector);
+        fat.Create();
+
+        ClusterChainDirectory root;
+        root.CreateRoot(&fat);
+
+        root.Write(device);
+        fat.Write(device);
+    }
 
     void SetUp() override
     {
         this->device.Create();
-        ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
+        FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
@@ -30,7 +46,7 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -50,7 +66,7 @@ TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -76,7 +92,7 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -100,7 +116,7 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -127,7 +143,7 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -153,7 +169,7 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -179,7 +195,7 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -201,7 +217,7 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -226,7 +242,7 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -269,7 +285,7 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -324,7 +340,7 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;

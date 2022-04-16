@@ -18,7 +18,7 @@ protected:
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(device);
 
-        Fat fat(&bootSector);
+        Fat fat(bootSector);
         fat.Create();
         fat.Write(device);
     }
@@ -35,7 +35,7 @@ TEST_F(ClusterChainTest, ReadDataWithOffset)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChain cc(&fat, 0);
@@ -65,7 +65,7 @@ TEST_F(ClusterChainTest, WriteData)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChain cc(&fat, 0);
@@ -92,7 +92,7 @@ TEST_F(ClusterChainTest, GetFreeClusterCount)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChain cc(&fat, 0);
@@ -114,7 +114,7 @@ TEST_F(ClusterChainTest, SetSize)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChain cc(&fat, 0);
@@ -137,7 +137,7 @@ TEST_F(ClusterChainTest, GetSize)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChain cc(&fat, 0);

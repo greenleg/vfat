@@ -13,11 +13,27 @@ protected:
     FileDisk device;
     
     ClusterChainFileTest() : device("disk0") { }
+    
+    void FormatDevice(Device& device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
+    {
+        BootSector bootSector;
+        bootSector.Create(volumeSize, bytesPerSector, sectorPerCluster);
+        bootSector.Write(device);
+
+        Fat fat(bootSector);
+        fat.Create();
+
+        ClusterChainDirectory root;
+        root.CreateRoot(&fat);
+
+        root.Write(device);
+        fat.Write(device);
+    }
 
     void SetUp() override
     {
         this->device.Create();
-        ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
+        FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
@@ -32,7 +48,7 @@ TEST_F(ClusterChainFileTest, SetLength)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
@@ -51,7 +67,7 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ClusterChainDirectory root;
