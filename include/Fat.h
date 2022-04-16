@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <vector>
 #include "BootSector.h"
 
 /*
@@ -29,23 +30,29 @@ namespace org::vfat
     {
     private:
         BootSector *bootSector;
-        uint32_t *entries;
+        std::vector<uint32_t> entries;
         uint32_t lastAllocatedCluster;
 
         uint32_t AllocateCluster();
 
     public:
+        Fat() = delete;
+        Fat(const Fat& other) = delete;
+        Fat(Fat&& other) = delete;
+        Fat& operator=(const Fat& other) = delete;
+        Fat& operator=(Fat&& other) = delete;        
+    
         Fat(BootSector *bootSector);
         void Create();
         void Read(Device *device);
         void Write(Device *device) const;
         uint32_t AllocateChain(uint32_t length);
-        void AppendChain(uint32_t startCluster1, uint32_t startCluster2) const;
+        void AppendChain(uint32_t startCluster1, uint32_t startCluster2);
         uint32_t GetChainLength(uint32_t startCluster) const;
         void GetChain(uint32_t startCluster, uint32_t *chain) const;
 
-        void SetEof(uint32_t cluster) const;
-        void SetFree(uint32_t cluster) const;
+        void SetEof(uint32_t cluster);
+        void SetFree(uint32_t cluster);
         uint32_t GetFreeClusterCount() const;
         uint32_t GetEntry(int i) const;  // only for testing purpose;
 

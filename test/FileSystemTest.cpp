@@ -125,7 +125,6 @@ TEST_F(FileSystemTest, CreateFile)
         dir00.CreateFile("dump0.bin");
         File file0 = dir00.GetFile("dump0.bin");
         file0.WriteText("The quick brown fox jumps over the lazy dog.", 0);
-std::cout << "#0   file0.GetSize()=" << file0.GetSize() << std::endl;
 
         fs.Write();
     }
