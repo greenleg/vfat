@@ -144,7 +144,6 @@ TEST_F(FileSystemTest, CreateFile)
         ASSERT_EQ("dump0.bin", file0.GetName());
 
         std::string s = file0.ReadText(0, file0.GetSize());
-std::cout << "#1   file0.GetSize()=" << file0.GetSize() << std::endl;
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
 
         File file0_copy = dir00.GetFile("dump0.bin");
