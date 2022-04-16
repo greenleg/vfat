@@ -14,6 +14,7 @@ namespace org::vfat
     private:
         uint32_t startCluster;
         Fat *fat;
+        
         uint64_t GetDeviceOffset(uint32_t cluster, uint32_t clusterOffset) const;
 
     public:
@@ -23,8 +24,8 @@ namespace org::vfat
         ClusterChain& operator=(const ClusterChain& other);
         ClusterChain& operator=(ClusterChain&& other);
         ClusterChain(Fat *fat, uint32_t startCluster);
-        void ReadData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
-        void WriteData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        void ReadData(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
+        void WriteData(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
         uint32_t GetLength() const;
         uint64_t GetSizeInBytes() const;
         void SetLength(uint32_t clusterCount);

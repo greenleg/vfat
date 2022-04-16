@@ -15,12 +15,12 @@ namespace org::vfat::cli
     class FileSystemHelper
     {
     private:
-        Device *dev = nullptr;
+        Device& dev;
         FileSystem *fs = nullptr;
         Path path;
 
     public:
-        FileSystemHelper(const std::string& deviceName);
+        FileSystemHelper(Device& device);
         ~FileSystemHelper();
 
         void Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
@@ -31,6 +31,8 @@ namespace org::vfat::cli
         FileSystem* GetFileSystem() const { return this->fs; }
         Path GetCurrentPath() const { return this->path; }
         Directory GetCurrentDirectory() const;
+        
+//        FileSystemHelper(const std::string& deviceName);
     };
 }
 

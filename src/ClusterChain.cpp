@@ -79,7 +79,7 @@ uint32_t ClusterChain::SetSizeInBytes(uint32_t size)
 }
 
 
-void ClusterChain::ReadData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
+void ClusterChain::ReadData(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
     if (this->startCluster == 0 && nbytes > 0) {
         // Cannot read from an empty cluster chain
@@ -99,7 +99,7 @@ void ClusterChain::ReadData(Device *device, uint32_t offset, uint32_t nbytes, ui
     if (offset % clusterSize != 0) {
         uint32_t cluster_offset = (offset % clusterSize);
         uint32_t size = MIN(clusterSize - cluster_offset, bytesLeft);
-        device->Read(buffer, this->GetDeviceOffset(chain[chainIndex], cluster_offset), size);
+        device.Read(buffer, this->GetDeviceOffset(chain[chainIndex], cluster_offset), size);
         buffer += size;
         bytesLeft -= size;
         chainIndex++;
@@ -107,14 +107,14 @@ void ClusterChain::ReadData(Device *device, uint32_t offset, uint32_t nbytes, ui
 
     while (bytesLeft > 0) {
         uint32_t size = MIN(clusterSize, bytesLeft);
-        device->Read(buffer, this->GetDeviceOffset(chain[chainIndex], 0), size);
+        device.Read(buffer, this->GetDeviceOffset(chain[chainIndex], 0), size);
         buffer += size;
         bytesLeft -= size;
         chainIndex++;
     }
 }
 
-void ClusterChain::WriteData(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+void ClusterChain::WriteData(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     if (nbytes == 0) {
         return;
@@ -141,7 +141,7 @@ void ClusterChain::WriteData(Device *device, uint32_t offset, uint32_t nbytes, u
     if (offset % clusterSize != 0) {
         clusterOffset = (offset % clusterSize);
         size = MIN(clusterSize - clusterOffset, bytesLeft);
-        device->Write(buffer, this->GetDeviceOffset(chain[chainIndex], clusterOffset), size);
+        device.Write(buffer, this->GetDeviceOffset(chain[chainIndex], clusterOffset), size);
         buffer += size;
         bytesLeft -= size;
         chainIndex++;
@@ -149,7 +149,7 @@ void ClusterChain::WriteData(Device *device, uint32_t offset, uint32_t nbytes, u
 
     while (bytesLeft > 0) {
         size = MIN(clusterSize, bytesLeft);
-        device->Write(buffer, this->GetDeviceOffset(chain[chainIndex], 0), size);
+        device.Write(buffer, this->GetDeviceOffset(chain[chainIndex], 0), size);
         buffer += size;
         bytesLeft -= size;
         chainIndex++;

@@ -4,9 +4,15 @@
 
 using namespace org::vfat::cli;
 
-FileSystemHelper::FileSystemHelper(const std::string& deviceName)
+/*FileSystemHelper::FileSystemHelper(const std::string& deviceName)
 {
     this->dev = new FileDisk(deviceName.c_str());
+}*/
+
+FileSystemHelper::FileSystemHelper(Device& device)
+   : dev(device)
+{
+    //this->dev = new FileDisk(deviceName.c_str());
 }
 
 FileSystemHelper::~FileSystemHelper()
@@ -15,20 +21,20 @@ FileSystemHelper::~FileSystemHelper()
         delete this->fs;
     }
 
-    this->dev->Close();
-    delete this->dev;
+    this->dev.Close();
+//    delete this->dev;
 }
 
 void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
-    this->dev->Create();
+    this->dev.Create();
     this->fs = new FileSystem(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
 }
 
 void FileSystemHelper::Read()
 {
-    this->dev->Open();
+    this->dev.Open();
     this->fs = new FileSystem(this->dev);
     this->fs->Read();
 }

@@ -58,9 +58,9 @@ namespace org::vfat
          * @param buffer
          * @return
          */
-        uint32_t Read(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        uint32_t Read(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
 
-        void Write(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        void Write(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
         
         const DirectoryEntry& GetEntry() const { return this->entry; }
 

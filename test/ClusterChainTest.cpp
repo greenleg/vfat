@@ -6,15 +6,15 @@ using namespace org::vfat;
 class ClusterChainTest : public ::testing::Test
 {
 protected:
-    FileDisk *device;
+    FileDisk device;
+    
+    ClusterChainTest() : device("disk0") { }
 
     void SetUp() override
     {
-        this->device = new FileDisk("disk0");
-        BootSector bootSector;        
+        this->device.Create();
 
-        this->device->Create();
-
+        BootSector bootSector;
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(device);
 
@@ -25,10 +25,8 @@ protected:
 
     void TearDown() override
     {
-        this->device->Close();
-        device->Delete();
-
-        delete this->device;
+        this->device.Close();
+        this->device.Delete();
     }
 };
 

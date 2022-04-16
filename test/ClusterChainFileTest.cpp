@@ -10,21 +10,20 @@ using namespace org::vfat;
 class ClusterChainFileTest : public ::testing::Test
 {
 protected:
-    FileDisk *device;
+    FileDisk device;
+    
+    ClusterChainFileTest() : device("disk0") { }
 
     void SetUp() override
     {
-        this->device = new FileDisk("disk0");
-
-        this->device->Create();
+        this->device.Create();
         ClusterChainDirectory::FormatDevice(this->device, 1024 * 1024, 512, 1);
     }
 
     void TearDown() override
     {
-        this->device->Close();
-        this->device->Delete();
-        delete this->device;
+        this->device.Close();
+        this->device.Delete();
     }
 };
 

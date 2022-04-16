@@ -1,3 +1,4 @@
+#include <string>
 #include "gtest/gtest.h"
 #include "../include/FileDisk.h"
 #include "../include/BootSector.h"
@@ -8,12 +9,13 @@ using namespace org::vfat;
 class FatTest : public ::testing::Test
 {
 protected:
-    FileDisk *device;
+    FileDisk device;
+    
+    FatTest() : device("disk0") { }     
 
     void SetUp() override
     {
-        this->device = new FileDisk("disk0");
-        this->device->Create();
+        this->device.Create();
 
         BootSector bootSector;
         bootSector.Create(1024 * 1024, 512, 1);
@@ -26,10 +28,8 @@ protected:
 
     void TearDown() override
     {
-        this->device->Close();
-        device->Delete();
-
-        delete this->device;
+        this->device.Close();
+        this->device.Delete();
     }
 };
 
@@ -46,7 +46,7 @@ TEST_F(FatTest, ReadFat)
     ASSERT_EQ(FAT_MEDIA_DESCRIPTOR, fat.GetEntry(0));
     ASSERT_EQ(FAT_EOF, fat.GetEntry(1));
 
-    for (uint32_t i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); i++) {
+    for (uint32_t i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); ++i) {
         ASSERT_EQ(0, fat.GetEntry(i));
     }
 

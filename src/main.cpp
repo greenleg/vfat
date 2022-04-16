@@ -8,11 +8,10 @@
 #include "../include/cli/FileSystemHelper.h"
 #include "../include/cli/Commands.h"
 
-using namespace std;
 using namespace org::vfat::api;
 using namespace org::vfat::cli;
 
-int ProcessCommand(string input, FileSystemHelper *fsh);
+int ProcessCommand(const std::string& input, FileSystemHelper *fsh);
 
 /**
  * Points to a function that implements a command.
@@ -37,16 +36,18 @@ std::map<string, CmdImplFunc> CmdImplMap
 int main(int argc, char *argv[])
 {
     CommandLine cmdLine(argc, argv);
-    string devName = cmdLine.TryFetchByPrefix("-dev:");
+    std::string devName = cmdLine.TryFetchByPrefix("-dev:");
     if (devName == "") {
-        cout << "Device is not specified." << endl;
+        std::cout << "Device is not specified." << std::endl;
         return 1;
     }
 
-    FileSystemHelper fsh(devName);
+    FileDisk device(devName);
+    FileSystemHelper fsh(device);
+    
     if (cmdLine.HasOption("-f")) {
         uint64_t volumeSize;
-        string volumeSizeStr = cmdLine.TryFetchByPrefix("-size:");
+        std::string volumeSizeStr = cmdLine.TryFetchByPrefix("-size:");
         if (volumeSizeStr != "") {
             volumeSize = std::stoul(volumeSizeStr) * 1024 * 1024;
         } else {
@@ -61,10 +62,10 @@ int main(int argc, char *argv[])
     }
 
     // Print the command line prompt;
-    string fullPath = fsh.GetCurrentPath().ToString(true);
+    std::string fullPath = fsh.GetCurrentPath().ToString(true);
     cout << fullPath << "$ ";
 
-    string input;
+    std::string input;
     std::getline(std::cin, input);
 
     while (true) {
@@ -75,8 +76,8 @@ int main(int argc, char *argv[])
         }
 
         // Print the command line prompt;
-        string fullPath = fsh.GetCurrentPath().ToString(true);
-        cout << fullPath << "$ ";
+        std::string fullPath = fsh.GetCurrentPath().ToString(true);
+        std::cout << fullPath << "$ ";
 
         std::getline(std::cin, input);
     }
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int ProcessCommand(string input, FileSystemHelper *fsh)
+int ProcessCommand(const std::string& input, FileSystemHelper *fsh)
 {
     try {
         CommandLine cmdLine(input);
@@ -93,7 +94,7 @@ int ProcessCommand(string input, FileSystemHelper *fsh)
             return 0;
         }
 
-        string cmdName = cmdLine.GetArg(0);
+        std::string cmdName = cmdLine.GetArg(0);
 
         if (cmdName == "exit") {
             fsh->GetFileSystem()->Write();
@@ -109,7 +110,7 @@ int ProcessCommand(string input, FileSystemHelper *fsh)
 
         return 0;
     } catch (const exception& err) {
-        cout << err.what() << endl;
+        std::cout << err.what() << endl;
         return 0;
     }
 }

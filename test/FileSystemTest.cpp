@@ -11,12 +11,13 @@ using namespace org::vfat::api;
 class FileSystemTest : public ::testing::Test
 {
 protected:
-    FileDisk *device;
+    FileDisk device;
+    
+    FileSystemTest() : device("disk0") { }
 
     void SetUp() override
     {
-        this->device = new FileDisk("disk0");
-        this->device->Create();
+        this->device.Create();
 
         FileSystem fs(this->device);
         fs.Format(1024 * 1024, 512, 1);
@@ -25,9 +26,8 @@ protected:
 
     void TearDown() override
     {
-        this->device->Close();
-        this->device->Delete();
-        delete this->device;
+        this->device.Close();
+        this->device.Delete();
     }
 };
 

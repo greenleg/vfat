@@ -117,7 +117,7 @@ uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSiz
     return offset;
 }
 
-void ClusterChainDirectory::FormatDevice(Device * device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
+void ClusterChainDirectory::FormatDevice(Device& device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster)
 {
     BootSector bootSector;
     bootSector.Create(volumeSize, bytesPerSector, sectorPerCluster);
@@ -133,7 +133,7 @@ void ClusterChainDirectory::FormatDevice(Device * device, uint64_t volumeSize, u
     fat.Write(device);
 }
 
-void ClusterChainDirectory::Read(Device *device, Fat *fat, uint32_t firstCluster, bool isRoot)
+void ClusterChainDirectory::Read(const Device& device, Fat *fat, uint32_t firstCluster, bool isRoot)
 {
     ClusterChain cc(fat, firstCluster);
     uint64_t size = cc.GetSizeInBytes();
@@ -147,7 +147,7 @@ void ClusterChainDirectory::Read(Device *device, Fat *fat, uint32_t firstCluster
     this->ReadEntries(buffer);
 }
 
-void ClusterChainDirectory::Write(Device *device)
+void ClusterChainDirectory::Write(Device& device)
 {
     uint32_t nbytes = this->capacity * FAT_DIR_ENTRY_SIZE;
     uint8_t buffer[nbytes];
@@ -174,7 +174,7 @@ void ClusterChainDirectory::CreateRoot(Fat *fat)
     this->chain = std::move(cc);
 }
 
-void ClusterChainDirectory::ReadRoot(Device *device, Fat *fat)
+void ClusterChainDirectory::ReadRoot(const Device& device, Fat *fat)
 {
     this->Read(device, fat, fat->GetBootSector()->GetRootDirFirstCluster(), true);
 }
@@ -271,7 +271,7 @@ void ClusterChainDirectory::RemoveEntry(uint32_t index)
     }
 }
 
-DirectoryEntry& ClusterChainDirectory::AddDirectory(const char *name, Device *device)
+DirectoryEntry& ClusterChainDirectory::AddDirectory(const char *name, Device& device)
 {
     this->CheckUniqueName(name);
 
@@ -318,7 +318,7 @@ DirectoryEntry& ClusterChainDirectory::AddDirectory(const char *name, Device *de
     return this->entries.back();   // subde
 }
 
-void ClusterChainDirectory::RemoveDirectory(const char *name, Device *device)
+void ClusterChainDirectory::RemoveDirectory(const char *name, Device& device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
@@ -330,7 +330,7 @@ void ClusterChainDirectory::RemoveDirectory(const char *name, Device *device)
     return this->RemoveDirectory(index, device);
 }
 
-void ClusterChainDirectory::RemoveDirectory(uint32_t index, Device *device)
+void ClusterChainDirectory::RemoveDirectory(uint32_t index, Device& device)
 {
     DirectoryEntry& e = this->GetEntry(index);
     char nameBuf[256];
@@ -358,7 +358,7 @@ void ClusterChainDirectory::RemoveDirectory(uint32_t index, Device *device)
     this->Write(device);
 }
 
-void ClusterChainDirectory::RemoveFile(const char *name, Device *device)
+void ClusterChainDirectory::RemoveFile(const char *name, Device& device)
 {
     uint32_t index = this->FindEntryIndex(name);
     if (index < 0) {
@@ -370,7 +370,7 @@ void ClusterChainDirectory::RemoveFile(const char *name, Device *device)
     this->RemoveFile(index, device);
 }
 
-void ClusterChainDirectory::RemoveFile(uint32_t index, Device *device)
+void ClusterChainDirectory::RemoveFile(uint32_t index, Device& device)
 {
     DirectoryEntry e = this->GetEntry(index);
     ClusterChain cc(this->chain.GetFat(), e.GetStartCluster());
@@ -380,7 +380,7 @@ void ClusterChainDirectory::RemoveFile(uint32_t index, Device *device)
     this->Write(device);
 }
 
-DirectoryEntry& ClusterChainDirectory::AddFile(const char *name, Device *device)
+DirectoryEntry& ClusterChainDirectory::AddFile(const char *name, Device& device)
 {
     this->CheckUniqueName(name);
 
@@ -407,7 +407,7 @@ ClusterChainFile ClusterChainDirectory::GetFile(Fat *fat, const DirectoryEntry& 
     return file;
 }
 
-ClusterChainDirectory ClusterChainDirectory::GetDirectory(Device *device, Fat *fat, const DirectoryEntry& e)
+ClusterChainDirectory ClusterChainDirectory::GetDirectory(const Device& device, Fat *fat, const DirectoryEntry& e)
 {
     uint32_t firstCluster = e.GetStartCluster();
     ClusterChainDirectory dir;
@@ -416,7 +416,7 @@ ClusterChainDirectory ClusterChainDirectory::GetDirectory(Device *device, Fat *f
     return dir;
 }
 
-void ClusterChainDirectory::Move(Device *device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName)
+void ClusterChainDirectory::Move(Device& device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName)
 {
     dest.CheckUniqueName(newName);
 
@@ -441,7 +441,7 @@ void ClusterChainDirectory::Move(Device *device, DirectoryEntry& e, ClusterChain
     }
 }
 
-void ClusterChainDirectory::CopyDirectory(Device *device, DirectoryEntry& e, ClusterChainDirectory& dest) const
+void ClusterChainDirectory::CopyDirectory(Device& device, DirectoryEntry& e, ClusterChainDirectory& dest) const
 {
     char nameBuf[256];
     e.GetName(nameBuf);
@@ -449,7 +449,7 @@ void ClusterChainDirectory::CopyDirectory(Device *device, DirectoryEntry& e, Clu
     this->CopyDirectory(device, e, dest, nameBuf);
 }
 
-void ClusterChainDirectory::CopyDirectory(Device *device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const
+void ClusterChainDirectory::CopyDirectory(Device& device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const
 {
     assert(e.IsDir());
 
@@ -473,7 +473,7 @@ void ClusterChainDirectory::CopyDirectory(Device *device, DirectoryEntry& e, Clu
     copy.Write(device);
 }
 
-ClusterChainFile ClusterChainDirectory::CopyFile(Device *device, DirectoryEntry& e, ClusterChainDirectory& dest) const
+ClusterChainFile ClusterChainDirectory::CopyFile(Device& device, DirectoryEntry& e, ClusterChainDirectory& dest) const
 {
     char nameBuf[256];
     e.GetName(nameBuf);
@@ -481,7 +481,7 @@ ClusterChainFile ClusterChainDirectory::CopyFile(Device *device, DirectoryEntry&
     return this->CopyFile(device, e, dest, nameBuf);
 }
 
-ClusterChainFile ClusterChainDirectory::CopyFile(Device *device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const
+ClusterChainFile ClusterChainDirectory::CopyFile(Device& device, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const
 {
     assert(e.IsFile());
 
@@ -508,7 +508,7 @@ ClusterChainFile ClusterChainDirectory::CopyFile(Device *device, DirectoryEntry&
     return copy;
 }
 
-void ClusterChainDirectory::SetName(Device *device, DirectoryEntry& e, const char *name)
+void ClusterChainDirectory::SetName(Device& device, DirectoryEntry& e, const char *name)
 {
     this->Move(device, e, *this, name);
 }

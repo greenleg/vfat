@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <string>
 #include "Device.h"
 
 namespace org::vfat
@@ -12,11 +13,11 @@ namespace org::vfat
     class FileDisk : public Device
     {
     private:
-        char *fileName;
+        std::string fileName;
         FILE *filePtr;
 
     public:
-        FileDisk(const char* fileName);
+        FileDisk(const std::string& fileName);
         ~FileDisk();
         void Create();
         void Open();

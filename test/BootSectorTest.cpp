@@ -34,11 +34,11 @@ TEST_F(BootSectorTest, CreateAndSaveBootRecord)
 
     device.Create();
     bootSector.Create(1024 * 1024, 512, 1);
-    bootSector.Write(&device);
+    bootSector.Write(device);
     device.Close();
 
     device.Open();
-    bootSector.Read(&device);
+    bootSector.Read(device);
 
     ASSERT_EQ(1024 * 1024, bootSector.GetDeviceSizeInBytes());
     ASSERT_EQ(512,  bootSector.GetBytesPerSector());

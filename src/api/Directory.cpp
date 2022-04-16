@@ -280,7 +280,7 @@ void Directory::Write() const
 
 void Directory::Move(const std::string& srcPath, const std::string& destPath)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
     Fat *fat = this->fs->GetFat();
 
     Path srcPathObj(this->path);
@@ -385,7 +385,7 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
 
 void Directory::Move(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Rename file or directory;
@@ -489,7 +489,7 @@ void Directory::Import(const std::string& path)
 
 void Directory::Copy(const std::string& srcPath, const std::string& destPath)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
     Fat *fat = this->fs->GetFat();
 
     Path srcPathObj(this->path);
@@ -590,7 +590,7 @@ void Directory::Copy(const std::string& srcPath, const std::string& destPath)
 
 void Directory::CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Copy to the same directory;
@@ -603,7 +603,7 @@ void Directory::CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry
 
 void Directory::CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
     const char *newName = destName.c_str();
     if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Copy to the same directory;

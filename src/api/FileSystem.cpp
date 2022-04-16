@@ -8,9 +8,9 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-FileSystem::FileSystem(Device *device)
+FileSystem::FileSystem(Device &device)
+  : device(device)
 {
-    this->device = device;
 }
 
 void FileSystem::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)

@@ -29,7 +29,7 @@ void ClusterChainFile::SetLength(uint32_t val)
  * @param buffer
  * @return
  */
-uint32_t ClusterChainFile::Read(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+uint32_t ClusterChainFile::Read(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     uint32_t dataLength = this->GetLength();
     if (offset + nbytes > dataLength) {
@@ -48,7 +48,7 @@ uint32_t ClusterChainFile::Read(Device *device, uint32_t offset, uint32_t nbytes
     return nbytes;
 }
 
-void ClusterChainFile::Write(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+void ClusterChainFile::Write(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     uint32_t length = offset + nbytes;
     if (length > this->GetLength()) {

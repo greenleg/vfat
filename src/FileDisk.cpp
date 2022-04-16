@@ -9,13 +9,9 @@
  * @brief Initializes a new instance of the org::vfat::FileDisk.
  * @param fileName
  */
-org::vfat::FileDisk::FileDisk(const char *fileName)
+org::vfat::FileDisk::FileDisk(const std::string& fileName)
+  : fileName(fileName), filePtr(nullptr)
 {
-    size_t len = strlen(fileName);
-    this->fileName = new char[len + 1];
-    strcpy(this->fileName, fileName);
-
-    this->filePtr = nullptr;
 }
 
 org::vfat::FileDisk::~FileDisk()
@@ -25,7 +21,7 @@ org::vfat::FileDisk::~FileDisk()
 
 void org::vfat::FileDisk::Create()
 {
-    this->filePtr = fopen(this->fileName, "w+b");
+    this->filePtr = fopen(this->fileName.c_str(), "w+b");
     if (this->filePtr == nullptr) {
         std::ostringstream msgStream;
         msgStream << "Couldn't create the file '" << this->fileName << "'";
@@ -36,7 +32,7 @@ void org::vfat::FileDisk::Create()
 
 void org::vfat::FileDisk::Open()
 {
-    this->filePtr = fopen(this->fileName, "r+b");
+    this->filePtr = fopen(this->fileName.c_str(), "r+b");
     if (this->filePtr == nullptr) {
         std::ostringstream msgStream;
         msgStream << "Couldn't open the file '" << this->fileName << "'";
@@ -88,6 +84,6 @@ void org::vfat::FileDisk::Delete()
         throw std::ios_base::failure(msgStream.str());
     }
 
-    remove(this->fileName);
+    remove(this->fileName.c_str());
 }
 
