@@ -11,14 +11,14 @@
  */
 uint32_t ClusterChainFile::GetLength() const
 {
-    return this->entry->GetDataLength();
+    return this->entry.GetDataLength();
 }
 
 void ClusterChainFile::SetLength(uint32_t val)
 {
-    this->chain->SetSizeInBytes(val);
-    this->entry->SetStartCluster(this->chain->GetStartCluster());
-    this->entry->SetDataLength(val);
+    this->chain.SetSizeInBytes(val);
+    this->entry.SetStartCluster(this->chain.GetStartCluster());
+    this->entry.SetDataLength(val);
 }
 
 /**
@@ -42,7 +42,7 @@ uint32_t ClusterChainFile::Read(Device *device, uint32_t offset, uint32_t nbytes
     }
 
     if (nbytes > 0) {
-        this->chain->ReadData(device, offset, nbytes, buffer);
+        this->chain.ReadData(device, offset, nbytes, buffer);
     }
 
     return nbytes;
@@ -55,10 +55,10 @@ void ClusterChainFile::Write(Device *device, uint32_t offset, uint32_t nbytes, u
         this->SetLength(length);
     }
 
-    this->chain->WriteData(device, offset, nbytes, buffer);
+    this->chain.WriteData(device, offset, nbytes, buffer);
 }
 
-ClusterChainFile::ClusterChainFile(DirectoryEntry *entry, ClusterChain *chain)
+ClusterChainFile::ClusterChainFile(const DirectoryEntry& entry, ClusterChain& chain)
 {
     this->entry = entry;
     this->chain = chain;
@@ -66,5 +66,4 @@ ClusterChainFile::ClusterChainFile(DirectoryEntry *entry, ClusterChain *chain)
 
 ClusterChainFile::~ClusterChainFile()
 {
-    delete this->chain;
 }

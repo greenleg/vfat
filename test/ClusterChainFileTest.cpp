@@ -36,18 +36,15 @@ TEST_F(ClusterChainFileTest, SetLength)
     Fat fat(&bootSector);
     fat.Read(this->device);
 
-    ClusterChainDirectory *root = new ClusterChainDirectory();
-    root->ReadRoot(this->device, &fat);
+    ClusterChainDirectory root;
+    root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root->AddFile("index.htm", this->device);
-    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
+    DirectoryEntry e = root.AddFile("index.htm", this->device);
+    ClusterChainFile file = ClusterChainDirectory::GetFile(&fat, e);
 
-    ASSERT_EQ(0, file->GetLength());
-    file->SetLength(100);
-    ASSERT_EQ(100, file->GetLength());
-
-    delete file;
-    delete root;
+    ASSERT_EQ(0, file.GetLength());
+    file.SetLength(100);
+    ASSERT_EQ(100, file.GetLength());
 }
 
 TEST_F(ClusterChainFileTest, ReadWrite)
@@ -58,35 +55,32 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     Fat fat(&bootSector);
     fat.Read(this->device);
 
-    ClusterChainDirectory *root = new ClusterChainDirectory();
-    root->ReadRoot(this->device, &fat);
+    ClusterChainDirectory root;
+    root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root->AddFile("dump.bin", this->device);
-    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, e);
+    DirectoryEntry e = root.AddFile("dump.bin", this->device);
+    ClusterChainFile file = ClusterChainDirectory::GetFile(&fat, e);
 
     uint32_t len = 10000;
     uint8_t writeBuf[len];
     uint8_t readBuf[len];
 
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; ++i) {
         writeBuf[i] = i % 256;
     }
 
     // Write to device
-    file->Write(this->device, 0, len, writeBuf);
+    file.Write(this->device, 0, len, writeBuf);
 
     // Read from device    
-    uint32_t nread = file->Read(this->device, 0, len, readBuf);
+    uint32_t nread = file.Read(this->device, 0, len, readBuf);
     ASSERT_EQ(len, nread);
 
-    for (uint32_t i = 0; i < len; i++) {
+    for (uint32_t i = 0; i < len; ++i) {
         ASSERT_EQ(i % 256, readBuf[i]);
     }
 
     // Read too long    
-    nread = file->Read(this->device, 0, len + 1, readBuf);
+    nread = file.Read(this->device, 0, len + 1, readBuf);
     ASSERT_EQ(len, nread);
-
-    delete file;
-    delete root;
 }

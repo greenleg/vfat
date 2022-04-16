@@ -22,7 +22,8 @@ namespace org::vfat::api
         std::string ToString(bool normalize = true) const;
         bool IsRoot() const;
 
-        std::string GetItem(size_t index) const;
+        const std::string& GetItem(size_t index) const;
+        const std::string& GetLastItem() const;
         size_t GetItemCount() const;
         Path GetParent() const;
     };

@@ -36,16 +36,13 @@ TEST_F(ClusterChainDirectoryTest, AddEntry)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-
     ASSERT_EQ(0, root.GetEntries().size());
 
-    DirectoryEntry *e = new DirectoryEntry();
+    DirectoryEntry e;
     root.AddEntry(e);
     ASSERT_EQ(1, root.GetEntries().size());
     ASSERT_NE(0, bootSector.GetRootDirFirstCluster());
     //ASSERT_EQ(root.capacity, root->chain->GetSizeInBytes() / FAT_DIR_ENTRY_SIZE);
-
-//    delete e;
 }
 
 TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
@@ -62,7 +59,7 @@ TEST_F(ClusterChainDirectoryTest, AddRemoveEntries)
     ASSERT_EQ(0, root.GetEntries().size());
 
     for (uint32_t i = 0; i < 100; ++i) {
-        DirectoryEntry *e = new DirectoryEntry();
+        DirectoryEntry e;
         root.AddEntry(e);
     }
 
@@ -87,14 +84,14 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
 
     const char *name = "A nice directory";
 
-    DirectoryEntry *e1 = root.AddDirectory(name, this->device);
-    DirectoryEntry *e2 = root.FindEntry(name);
+    DirectoryEntry e1 = root.AddDirectory(name, this->device);
+    DirectoryEntry e2 = root.FindEntry(name);
 
     char nameBuf[32];
-    e1->GetName(nameBuf);
+    e1.GetName(nameBuf);
     ASSERT_STREQ(name, nameBuf);
 
-    e2->GetName(nameBuf);
+    e2.GetName(nameBuf);
     ASSERT_STREQ(name, nameBuf);
 }
 
@@ -117,7 +114,7 @@ TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
         sprintf(nameBuf, "this is test directory with index %d", count++);
         //bool errorWasThrown = false;
         try {
-            DirectoryEntry *e = root.AddDirectory(nameBuf, this->device);
+            DirectoryEntry e = root.AddDirectory(nameBuf, this->device);
         } catch (std::runtime_error err) {
             ASSERT_EQ(freeBeforeAdd, fat.GetFreeClusterCount());
             break;
@@ -143,12 +140,12 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     root.AddDirectory(dirName, this->device);
     ASSERT_EQ(freeBefore - 1, fat.GetFreeClusterCount());
     ASSERT_EQ(entriesBefore + 1, root.GetEntries().size());
-    ASSERT_NE(root.FindEntry(dirName), nullptr);
+    ASSERT_NE(-1, root.FindEntryIndex(dirName));
 
     root.RemoveDirectory(dirName, this->device);
     ASSERT_EQ(freeBefore, fat.GetFreeClusterCount());
     ASSERT_EQ(entriesBefore, root.GetEntries().size());
-    ASSERT_FALSE(root.FindEntry(dirName));
+    ASSERT_EQ(-1, root.FindEntryIndex(dirName));
 }
 
 TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
@@ -162,10 +159,10 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    ASSERT_TRUE(root.AddDirectory("home", this->device));
+    root.AddDirectory("home", this->device);
     bool errorWasThrown = false;
     try {
-        DirectoryEntry *e = root.AddDirectory("home", this->device);
+        DirectoryEntry e = root.AddDirectory("home", this->device);
     } catch (std::runtime_error error) {
         errorWasThrown = true;
     }
@@ -174,7 +171,7 @@ TEST_F(ClusterChainDirectoryTest, UniqueDirectoryName)
 
     // Reuse name
     root.RemoveDirectory("home", this->device);
-    ASSERT_NE(root.AddDirectory("home", this->device), nullptr);
+    root.AddDirectory("home", this->device);
 }
 
 TEST_F(ClusterChainDirectoryTest, RenameFile)
@@ -188,15 +185,15 @@ TEST_F(ClusterChainDirectoryTest, RenameFile)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *e = root.AddFile("oldfile", this->device);
+    DirectoryEntry e = root.AddFile("oldfile", this->device);
 
-    ASSERT_NE(root.FindEntry("oldfile"), nullptr);
-    ASSERT_EQ(root.FindEntry("newfile"), nullptr);
+    ASSERT_NE(-1, root.FindEntryIndex("oldfile"));
+    ASSERT_EQ(-1, root.FindEntryIndex("newfile"));
 
     root.SetName(this->device, e, "newfile");
 
-    ASSERT_EQ(root.FindEntry("oldfile"), nullptr);
-    ASSERT_NE(root.FindEntry("newfile"), nullptr);
+    ASSERT_EQ(-1, root.FindEntryIndex("oldfile"));
+    ASSERT_NE(-1, root.FindEntryIndex("newfile"));
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveFile)
@@ -210,20 +207,18 @@ TEST_F(ClusterChainDirectoryTest, MoveFile)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *de = root.AddDirectory("home", this->device);
-    DirectoryEntry *fe = root.AddFile("dump.bin", this->device);
+    DirectoryEntry de = root.AddDirectory("home", this->device);
+    DirectoryEntry fe = root.AddFile("dump.bin", this->device);
 
-    ASSERT_NE(de, nullptr);
-    ASSERT_NE(fe, nullptr);
     ClusterChainDirectory dir = ClusterChainDirectory::GetDirectory(this->device, &fat, de);
     root.Move(this->device, fe, dir, "dump2.bin");    
 
     ASSERT_EQ(1, root.GetEntries().size());
     ASSERT_EQ(3, dir.GetEntries().size());  // including "." and ".." directories.    
-    ASSERT_NE(root.FindEntry("home"), nullptr);
-    ASSERT_EQ(root.FindEntry("dump.bin"), nullptr);
-    ASSERT_EQ(root.FindEntry("dump2.bin"), nullptr);
-    ASSERT_NE(dir.FindEntry("dump2.bin"), nullptr);
+    ASSERT_NE(-1, root.FindEntryIndex("home"));
+    ASSERT_EQ(-1, root.FindEntryIndex("dump.bin"));
+    ASSERT_EQ(-1, root.FindEntryIndex("dump2.bin"));
+    ASSERT_NE(-1, dir.FindEntryIndex("dump2.bin"));
 }
 
 TEST_F(ClusterChainDirectoryTest, MoveDirectory)
@@ -237,17 +232,17 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *de1 = root.AddDirectory("dir1", this->device);
-    DirectoryEntry *de2 = root.AddDirectory("dir2", this->device);
+    DirectoryEntry de1 = root.AddDirectory("dir1", this->device);
+    DirectoryEntry de2 = root.AddDirectory("dir2", this->device);
 
     ClusterChainDirectory dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
     ClusterChainDirectory dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    DirectoryEntry *fe1 = dir1.AddFile("dump1.bin", this->device);
-    DirectoryEntry *fe2 = dir1.AddFile("dump2.bin", this->device);
-    DirectoryEntry *fe3 = dir1.AddFile("dump3.bin", this->device);
+    DirectoryEntry fe1 = dir1.AddFile("dump1.bin", this->device);
+    DirectoryEntry fe2 = dir1.AddFile("dump2.bin", this->device);
+    DirectoryEntry fe3 = dir1.AddFile("dump3.bin", this->device);
 
-    ClusterChainFile *file3 = ClusterChainDirectory::GetFile(&fat, fe3);
+    ClusterChainFile file3 = ClusterChainDirectory::GetFile(&fat, fe3);
 
     ASSERT_EQ(2, root.GetEntries().size());
     ASSERT_EQ(5, dir1.GetEntries().size()); // including "." and ".." directories
@@ -258,17 +253,15 @@ TEST_F(ClusterChainDirectoryTest, MoveDirectory)
     dir1.Write(this->device);
     dir2.Write(this->device);
 
-    ASSERT_NE(root.FindEntry("dir2"), nullptr);
+    ASSERT_NE(-1, root.FindEntryIndex("dir2"));
     dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    ASSERT_NE(dir2.FindEntry("dir1"), nullptr);
+    ASSERT_NE(-1, dir2.FindEntryIndex("dir1"));
     dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
 
     ASSERT_EQ(1, root.GetEntries().size());
     ASSERT_EQ(5, dir1.GetEntries().size());
     ASSERT_EQ(3, dir2.GetEntries().size());
-
-    delete file3;
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyFile)
@@ -282,12 +275,12 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *de1 = root.AddDirectory("dir1", this->device);
-    DirectoryEntry *de2 = root.AddDirectory("dir2", this->device);
+    DirectoryEntry de1 = root.AddDirectory("dir1", this->device);
+    DirectoryEntry de2 = root.AddDirectory("dir2", this->device);
 
     ClusterChainDirectory dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
     ClusterChainDirectory dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
-    DirectoryEntry *orige = dir1.AddFile("dump.bin", this->device);
+    DirectoryEntry orige = dir1.AddFile("dump.bin", this->device);
 
     ASSERT_EQ(2, root.GetEntries().size());
     ASSERT_EQ(3, dir1.GetEntries().size()); // including "." and ".." directories
@@ -300,20 +293,22 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     }    
 
     // Write to source file    
-    ClusterChainFile *orig = ClusterChainDirectory::GetFile(&fat, orige);
-    orig->Write(this->device, 0, len, buf);
-
-    dir1.CopyFile(this->device, orige, dir2);
+    ClusterChainFile orig = ClusterChainDirectory::GetFile(&fat, orige);
+    orig.Write(this->device, 0, len, buf);
 
     orige = dir1.FindEntry("dump.bin");
-    DirectoryEntry *copye = dir2.FindEntry("dump.bin");
-    ASSERT_NE(orige, nullptr);
-    ASSERT_NE(copye, nullptr);
+    orige = orig.GetEntry();
 
-    // Read from copy
-    ClusterChainFile *copy = ClusterChainDirectory::GetFile(&fat, copye);
-    ASSERT_EQ(len, copy->GetLength());
-    uint32_t nread = copy->Read(this->device, 0, len, buf);
+    ClusterChainFile copy = dir1.CopyFile(this->device, orige, dir2);
+    
+    DirectoryEntry& copye = dir2.FindEntry("dump.bin");
+
+//    // Read from copy
+//    std::cout << "Reading from copy..." << std::endl;
+//    ClusterChainFile copy = ClusterChainDirectory::GetFile(&fat, copye);
+
+    ASSERT_EQ(len, copy.GetLength());
+    uint32_t nread = copy.Read(this->device, 0, len, buf);
 
     for (uint32_t i = 0; i < len; ++i) {
         ASSERT_EQ(i % 256, buf[i]);
@@ -322,9 +317,6 @@ TEST_F(ClusterChainDirectoryTest, CopyFile)
     ASSERT_EQ(2, root.GetEntries().size());
     ASSERT_EQ(3, dir1.GetEntries().size());
     ASSERT_EQ(3, dir2.GetEntries().size());
-
-    delete orig;
-    delete copy;
 }
 
 TEST_F(ClusterChainDirectoryTest, CopyDirectory)
@@ -338,14 +330,12 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, &fat);
 
-    DirectoryEntry *de1 = root.AddDirectory("dir1", this->device);
-
-    DirectoryEntry *de2 = root.AddDirectory("dir2", this->device);
+    DirectoryEntry de1 = root.AddDirectory("dir1", this->device);
+    DirectoryEntry de2 = root.AddDirectory("dir2", this->device);
     ClusterChainDirectory dir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, de1);
     ClusterChainDirectory dir2 = ClusterChainDirectory::GetDirectory(this->device, &fat, de2);
 
-    //EXPECT_TRUE(cchdir_addfile(&dir1, "dump.bin", &fe));
-    DirectoryEntry *fe = dir1.AddFile("dump.bin", this->device);
+    DirectoryEntry& fe = dir1.AddFile("dump.bin", this->device);
 
     // Keep in mind that all directories except root include "." and ".." sub-directories
     ASSERT_EQ(2, root.GetEntries().size());
@@ -359,35 +349,34 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
     }
 
     // Write to file
-    ClusterChainFile *file = ClusterChainDirectory::GetFile(&fat, fe);
-    file->Write(this->device, 0, len, buf);
+    ClusterChainFile file = ClusterChainDirectory::GetFile(&fat, fe);
+    file.Write(this->device, 0, len, buf);
+    fe = file.GetEntry();
 
     dir1.Write(this->device);
     dir2.Write(this->device);
 
     root.CopyDirectory(this->device, de1, dir2);
 
-    DirectoryEntry *copyde1 = dir2.FindEntry("dir1");
-    ClusterChainFile *copyfile;
-
-    ASSERT_NE(root.FindEntry("dir1"), nullptr);
-    ASSERT_NE(root.FindEntry("dir2"), nullptr);
-    ASSERT_NE(copyde1, nullptr);
-    ASSERT_NE(dir1.FindEntry("dump.bin"), nullptr);
-
-    ClusterChainDirectory copydir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, copyde1);
-    DirectoryEntry *copyfe = copydir1.FindEntry("dump.bin");
-    ASSERT_NE(nullptr, copyfe);
+    ASSERT_NE(-1, root.FindEntryIndex("dir1"));
+    ASSERT_NE(-1, root.FindEntryIndex("dir2"));
+    ASSERT_NE(-1, dir1.FindEntryIndex("dump.bin"));
 
     ASSERT_EQ(2, root.GetEntries().size());
     ASSERT_EQ(3, dir1.GetEntries().size());
     ASSERT_EQ(3, dir2.GetEntries().size());
+    
+    DirectoryEntry copyde1 = dir2.FindEntry("dir1");
+
+    ClusterChainDirectory copydir1 = ClusterChainDirectory::GetDirectory(this->device, &fat, copyde1);
+    DirectoryEntry copyfe = copydir1.FindEntry("dump.bin");
+
     ASSERT_EQ(3, copydir1.GetEntries().size());
 
     // Read from copy
-    copyfile = ClusterChainDirectory::GetFile(&fat, copyfe);
-    ASSERT_EQ(len, copyfile->GetLength());
-    uint32_t nread = copyfile->Read(this->device, 0, len, buf);
+    ClusterChainFile copyfile = ClusterChainDirectory::GetFile(&fat, copyfe);
+    ASSERT_EQ(len, copyfile.GetLength());
+    uint32_t nread = copyfile.Read(this->device, 0, len, buf);
 
     for (uint32_t i = 0; i < len; ++i) {
         ASSERT_EQ(i % 256, buf[i]);
@@ -395,12 +384,9 @@ TEST_F(ClusterChainDirectoryTest, CopyDirectory)
 
     // Writing to the copy doesn't affect to the origin file.
     buf[0] = 50;
-    copyfile->Write(this->device, 0, 1, buf);
-    nread = file->Read(this->device, 0, 1, buf);
+    copyfile.Write(this->device, 0, 1, buf);
+    nread = file.Read(this->device, 0, 1, buf);
     ASSERT_EQ(0, buf[0]);
-    nread = copyfile->Read(this->device, 0, 1, buf);
+    nread = copyfile.Read(this->device, 0, 1, buf);
     ASSERT_EQ(50, buf[0]);
-
-    delete copyfile;
-    delete file;
 }

@@ -17,13 +17,13 @@ namespace org::vfat::api
     private:
         FileSystem *fs;
         ClusterChainDirectory parentCchDir;
-        DirectoryEntry *entry;
+        DirectoryEntry entry;
         Path path;
 
         bool IsRoot() const;
-        void Move(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
-        void CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
-        void CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void Move(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
         void ImportFile(const std::string& path);
         void ImportDirectory(const std::string& path);
         ClusterChainDirectory GetCchDirectory() const;
@@ -60,7 +60,7 @@ namespace org::vfat::api
 
         void Import(const std::string& path);
 
-        string GetName() const;
+        std::string GetName() const;
         tm* GetCreatedTime() const;
         tm* GetModifiedTime() const;
     };

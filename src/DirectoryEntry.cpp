@@ -35,30 +35,46 @@ using namespace org::vfat;
 #define DIRECTORY_MASK 0x10
 
 DirectoryEntry::DirectoryEntry()
+    : pImpl(std::make_unique<DirectoryEntryImpl>())
 {
-    this->nameLength = 0;
-    this->firstCluster = 0;
-    this->fndeList = new std::vector<FileNameDirectoryEntry *>();
+}
+
+DirectoryEntry::DirectoryEntry(const DirectoryEntry& other)
+    : pImpl(std::make_unique<DirectoryEntryImpl>(*other.pImpl))
+{
+}
+
+DirectoryEntry::DirectoryEntry(DirectoryEntry&& other)
+   : pImpl(std::move(other.pImpl))
+{
+}
+
+DirectoryEntry& DirectoryEntry::operator=(const DirectoryEntry& other)
+{
+    if (this != &other) {
+        pImpl = std::make_unique<DirectoryEntryImpl>(*other.pImpl);
+    }
+    return *this;
+}
+
+DirectoryEntry& DirectoryEntry::operator=(DirectoryEntry&& other)
+{
+    if (this != &other) {
+        pImpl = std::move(other.pImpl);
+    }
+    return *this;
 }
 
 DirectoryEntry::~DirectoryEntry()
 {
-    // Clear list
-    for (uint8_t fndeIdx = 0; fndeIdx < this->fndeList->size(); fndeIdx++) {
-        struct FileNameDirectoryEntry *fnde = this->fndeList->at(fndeIdx);
-        delete fnde;
-    }
-
-    this->fndeList->clear();
-    delete this->fndeList;
 }
 
-uint16_t DirectoryEntry::GetFat32EntryCount() const
+uint16_t DirectoryEntryImpl::GetFat32EntryCount() const
 {
-    return 1 + this->fndeList->size();
+    return 1 + this->fndeList.size();
 }
 
-void DirectoryEntry::Read(uint8_t *buffer)
+void DirectoryEntryImpl::Read(uint8_t *buffer)
 {
     uint8_t entryType = BinaryReader::ReadUInt8(buffer, FDE_ENTRYTYPE_OFFSET);
     assert(entryType == BASE_DIR_ENTRY);
@@ -74,19 +90,19 @@ void DirectoryEntry::Read(uint8_t *buffer)
     buffer += FAT_DIR_ENTRY_SIZE;
 
     int fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
-    for (uint8_t i = 0; i < fndeCount; i++) {
+    for (uint8_t i = 0; i < fndeCount; ++i) {
         uint8_t entryType = BinaryReader::ReadUInt8(buffer, FNDE_ENTRYTYPE_OFFSET);
         assert(entryType == FILENAME_DIR_ENTRY);
 
-        struct FileNameDirectoryEntry *fnde = new FileNameDirectoryEntry();
-        memcpy(fnde->nameBuffer, buffer + FNDE_FILENAME_OFFSET, FNDE_NAME_LENGTH);
-        this->fndeList->push_back(fnde);
+        struct FileNameDirectoryEntry fnde;
+        memcpy(fnde.nameBuffer, buffer + FNDE_FILENAME_OFFSET, FNDE_NAME_LENGTH);
+        this->fndeList.push_back(fnde);
 
         buffer += FAT_DIR_ENTRY_SIZE;
     }
 }
 
-void DirectoryEntry::Write(uint8_t *buffer) const
+void DirectoryEntryImpl::Write(uint8_t *buffer) const
 {
     uint8_t fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
     assert(this->fndeList->size() == fndeCount);
@@ -102,28 +118,28 @@ void DirectoryEntry::Write(uint8_t *buffer) const
 
     buffer += FAT_DIR_ENTRY_SIZE;
 
-    for (uint8_t i = 0; i < this->fndeList->size(); i++) {
-        struct FileNameDirectoryEntry *fnde = this->fndeList->at(i);
+    for (uint8_t i = 0; i < this->fndeList.size(); ++i) {
+        const FileNameDirectoryEntry& fnde = this->fndeList[i];
         BinaryReader::WriteUInt8(buffer, FNDE_ENTRYTYPE_OFFSET, FILENAME_DIR_ENTRY);
-        memcpy(buffer + FNDE_FILENAME_OFFSET, fnde->nameBuffer, FNDE_NAME_LENGTH);
+        memcpy(buffer + FNDE_FILENAME_OFFSET, fnde.nameBuffer, FNDE_NAME_LENGTH);
 
         buffer += FAT_DIR_ENTRY_SIZE;
     }
 }
 
-bool DirectoryEntry::IsDir() const
+bool DirectoryEntryImpl::IsDir() const
 {
     uint16_t attr = this->attributes;
     return (attr & DIRECTORY_MASK) != 0;
 }
 
-bool DirectoryEntry::IsFile() const
+bool DirectoryEntryImpl::IsFile() const
 {
     uint16_t attr = this->attributes;
     return (attr & DIRECTORY_MASK) == 0;
 }
 
-void DirectoryEntry::SetIsDir(bool val)
+void DirectoryEntryImpl::SetIsDir(bool val)
 {
     uint16_t attr = this->attributes;
     if (val) {
@@ -135,125 +151,97 @@ void DirectoryEntry::SetIsDir(bool val)
     this->attributes = attr;
 }
 
-uint32_t DirectoryEntry::GetDataLength() const
+uint32_t DirectoryEntryImpl::GetDataLength() const
 {
     return this->dataLength;
 }
 
-void DirectoryEntry::SetDataLength(uint32_t val)
+void DirectoryEntryImpl::SetDataLength(uint32_t val)
 {
     this->dataLength = val;
 }
 
-uint32_t DirectoryEntry::GetStartCluster() const
+uint32_t DirectoryEntryImpl::GetStartCluster() const
 {
     return this->firstCluster;
 }
 
-void DirectoryEntry::SetStartCluster(uint32_t val)
+void DirectoryEntryImpl::SetStartCluster(uint32_t val)
 {
     this->firstCluster = val;
 }
 
-void DirectoryEntry::GetName(/*out*/ char *name) const
+void DirectoryEntryImpl::GetName(/*out*/ char *name) const
 {
     uint8_t fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
     assert(this->fndeList->size() == fndeCount);
 
-    struct FileNameDirectoryEntry *fnde;
     uint8_t fndeIdx;
     uint8_t charIdx = 0;
-    for (fndeIdx = 0; fndeIdx < fndeCount - 1; fndeIdx++) {
-        fnde = this->fndeList->at(fndeIdx);
-        for (uint8_t i = 0; i < FNDE_NAME_LENGTH; i++) {
-            name[charIdx + i] = fnde->nameBuffer[i];
+    for (fndeIdx = 0; fndeIdx < fndeCount - 1; ++fndeIdx) {
+        const FileNameDirectoryEntry& fnde = this->fndeList[fndeIdx];
+        for (uint8_t i = 0; i < FNDE_NAME_LENGTH; ++i) {
+            name[charIdx + i] = fnde.nameBuffer[i];
         }
 
         charIdx += FNDE_NAME_LENGTH;
     }
 
-    fnde = this->fndeList->at(fndeIdx);
-    for (uint8_t i = 0; i < this->nameLength - charIdx; i++) {
-        name[charIdx + i] = fnde->nameBuffer[i];
+    const FileNameDirectoryEntry& fnde = this->fndeList[fndeIdx];
+    for (uint8_t i = 0; i < this->nameLength - charIdx; ++i) {
+        name[charIdx + i] = fnde.nameBuffer[i];
     }
 
     name[this->nameLength] = '\0';
 }
 
-void DirectoryEntry::SetName(const char *name)
+void DirectoryEntryImpl::SetName(const char *name)
 {
-    //struct fnede fnede;
     uint8_t len = strlen(name);
-    uint8_t fndeCount = this->fndeList->size();
+    uint8_t fndeCount = this->fndeList.size();
     uint8_t newFndeCount = (len + (FNDE_NAME_LENGTH - 1)) / FNDE_NAME_LENGTH;
 
     // Clear list
-    for (uint8_t fndeIdx = 0; fndeIdx < fndeCount; fndeIdx++) {
-        struct FileNameDirectoryEntry *fnde = this->fndeList->at(fndeIdx);
-        delete fnde;
-    }
-
-    this->fndeList->clear();
+    this->fndeList.clear();
 
     // Fill the list with the new values
     uint8_t charIdx = 0;
-    for (uint8_t fndeIdx = 0; fndeIdx < newFndeCount - 1; fndeIdx++) {
-        struct FileNameDirectoryEntry *fnde = new FileNameDirectoryEntry();
-        for (uint8_t i = 0; i < FNDE_NAME_LENGTH; i++) {
-            fnde->nameBuffer[i] = name[charIdx + i];
+    for (uint8_t fndeIdx = 0; fndeIdx < newFndeCount - 1; ++fndeIdx) {
+        FileNameDirectoryEntry fnde;
+        for (uint8_t i = 0; i < FNDE_NAME_LENGTH; ++i) {
+            fnde.nameBuffer[i] = name[charIdx + i];
         }
 
         charIdx += FNDE_NAME_LENGTH;
-        this->fndeList->push_back(fnde);
+        this->fndeList.push_back(std::move(fnde));
     }
 
     // Special case for the last item
-    struct FileNameDirectoryEntry *fnde = new FileNameDirectoryEntry();
-    for (uint8_t i = 0; i < len - charIdx; i++) {
-        fnde->nameBuffer[i] = name[charIdx + i];
+    FileNameDirectoryEntry fnde;
+    for (uint8_t i = 0; i < len - charIdx; ++i) {
+        fnde.nameBuffer[i] = name[charIdx + i];
     }
 
-    this->fndeList->push_back(fnde);
+    this->fndeList.push_back(fnde);
     this->nameLength = len;
 }
 
-DirectoryEntry* DirectoryEntry::Clone() const
-{
-    DirectoryEntry *copy = new DirectoryEntry();
-    copy->attributes = this->attributes;
-    copy->created = this->created;
-    copy->lastModified = this->lastModified;
-    copy->lastAccessed = this->lastAccessed;
-    copy->nameLength = this->nameLength;
-    copy->firstCluster = this->firstCluster;
-    copy->dataLength = this->dataLength;
-
-    for (size_t i = 0; i < this->fndeList->size(); i++) {
-        FileNameDirectoryEntry *fnde = this->fndeList->at(i);
-        FileNameDirectoryEntry *copyFnde = new FileNameDirectoryEntry();
-        memcpy(copyFnde->nameBuffer, fnde->nameBuffer, FNDE_NAME_LENGTH);
-        copy->fndeList->push_back(copyFnde);
-    }
-
-    return copy;
-}
-
-time_t DirectoryEntry::GetCreatedTime() const
+time_t DirectoryEntryImpl::GetCreatedTime() const
 {
     return (time_t) this->created;
 }
 
-void DirectoryEntry::SetCreatedTime(time_t time)
+void DirectoryEntryImpl::SetCreatedTime(time_t time)
 {
     this->created = (uint32_t) time;
 }
 
-time_t DirectoryEntry::GetLastModifiedTime() const
+time_t DirectoryEntryImpl::GetLastModifiedTime() const
 {
     return (time_t) this->lastModified;
 }
 
-void DirectoryEntry::SetLastModifiedTime(time_t time)
+void DirectoryEntryImpl::SetLastModifiedTime(time_t time)
 {
     this->lastModified = (uint32_t) time;
 }

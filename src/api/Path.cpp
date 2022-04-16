@@ -100,9 +100,14 @@ bool Path::IsRoot() const
 //    return numberOfItems == 0;
 }
 
-std::string Path::GetItem(size_t index) const
+const std::string& Path::GetItem(size_t index) const
 {
     return this->items[index];
+}
+
+const std::string& Path::GetLastItem() const
+{
+    return this->items.back();
 }
 
 size_t Path::GetItemCount() const

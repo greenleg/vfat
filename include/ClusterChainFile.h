@@ -4,18 +4,44 @@
 #include "ClusterChain.h"
 #include "DirectoryEntry.h"
 
-using namespace org::vfat;
-
 namespace org::vfat
 {
     class ClusterChainFile
     {
     private:
-        DirectoryEntry *entry;
-        ClusterChain *chain;
+        DirectoryEntry entry;
+        ClusterChain chain;
 
     public:
-        ClusterChainFile(DirectoryEntry *entry, ClusterChain *chain);
+        ClusterChainFile() {}
+        
+        ClusterChainFile(const ClusterChainFile& other)
+            : entry(other.entry), chain(other.chain)
+        {}
+        
+        ClusterChainFile(ClusterChainFile&& other)
+            : entry(std::move(other.entry)), chain(std::move(other.chain))
+        {}
+        
+        ClusterChainFile& operator=(const ClusterChainFile& other)
+        {
+            if (this != &other) {
+                entry = other.entry;
+                chain = other.chain;
+            }
+            return *this;
+        }
+        
+        ClusterChainFile& operator=(ClusterChainFile&& other)
+        {
+            if (this != &other) {
+                entry = std::move(other.entry);
+                chain = std::move(other.chain);
+            }
+            return *this;
+        }
+        
+        ClusterChainFile(const DirectoryEntry& entry, ClusterChain& chain);
 
         /**
          * @brief Gets the length of this file in bytes.
@@ -35,6 +61,8 @@ namespace org::vfat
         uint32_t Read(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
 
         void Write(Device *device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        
+        const DirectoryEntry& GetEntry() const { return this->entry; }
 
         ~ClusterChainFile();
     };

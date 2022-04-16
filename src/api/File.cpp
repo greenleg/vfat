@@ -8,7 +8,7 @@ using namespace org::vfat;
 using namespace org::vfat::api;
 
 File::File()
-    : fs(nullptr), entry(nullptr)
+    : fs(nullptr)
 { }
 
 File::File(FileSystem *fs, Path& path)
@@ -27,44 +27,40 @@ void File::Init()
 {
     std::queue<ClusterChainDirectory> subDirectories;
     ClusterChainDirectory dir = fs->GetRootDirectory();
-    DirectoryEntry *e;
-    size_t i = 0;
-    for (; i < path.GetItemCount() - 1; ++i) {
+    for (size_t i = 0; i < path.GetItemCount() - 1; ++i) {
         std::string name = this->path.GetItem(i);
-        e = dir.FindEntry(name.c_str());
-        if (e == nullptr) {
+        auto eIdx = dir.FindEntryIndex(name.c_str());
+        if (eIdx == -1) {
             std::ostringstream msgStream;
             msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
             throw std::ios_base::failure(msgStream.str());
         }
 
+        DirectoryEntry& e = dir.FindEntry(name.c_str());
         ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
         dir = std::move(subDir);
     }
 
-    std::string name = path.GetItem(i);
-    e = dir.FindEntry(name.c_str());
-    if (e == nullptr) {
+    const std::string& name = path.GetLastItem();
+    auto eIdx = dir.FindEntryIndex(name.c_str());
+    if (eIdx == -1) {
         std::ostringstream msgStream;
         msgStream << "Couldn't find '" << path.ToString() << "': No such file or directory";
         throw std::ios::failure(msgStream.str());
     }
 
     this->parentCchDir = std::move(dir);
-    this->entry = e;
 }
 
 File::File(const File& other) :
     fs(other.fs),
     parentCchDir(other.parentCchDir),
-    entry(other.entry),
     path(other.path)
 { }
 
 File::File(File&& other) :
     fs(std::exchange(other.fs, nullptr)),
     parentCchDir(std::move(other.parentCchDir)),
-    entry(std::exchange(other.entry, nullptr)),
     path(std::move(other.path))
 { }
 
@@ -75,7 +71,6 @@ File& File::operator=(const File& other)
         
         fs = other.fs;
         parentCchDir = other.parentCchDir;
-        entry = other.entry;
         path = other.path;
     }
     return *this;
@@ -88,7 +83,6 @@ File& File::operator=(File&& other)
 
         fs = std::exchange(other.fs, nullptr);
         parentCchDir = std::move(other.parentCchDir);
-        entry = std::exchange(other.entry, nullptr);
         path = std::move(other.path);
     }
     return *this;
@@ -96,9 +90,6 @@ File& File::operator=(File&& other)
 
 void File::Cleanup()
 {
-//    if (parentCchDir != nullptr) {
-//        delete parentCchDir;
-//    }
 }
 
 File::~File()
@@ -108,36 +99,37 @@ File::~File()
 
 uint32_t File::GetSize() const
 {
-    return this->entry->GetDataLength();
+    const std::string& fileName = this->path.GetLastItem();
+    const DirectoryEntry& entry = parentCchDir.FindEntry(fileName.c_str());
+    return entry.GetDataLength();
 }
 
 std::string File::GetName() const
 {
-    char nameBuf[256];
-    this->entry->GetName(nameBuf);
-    std::string s(nameBuf);
-    return s; // return a copy of the local variable s;
+    return this->path.GetLastItem();
 }
 
 uint32_t File::Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
-    ClusterChainFile *cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), this->entry);
-    uint32_t nread = cchFile->Read(this->fs->GetDevice(), offset, nbytes, buffer);
-    delete cchFile;
+    const std::string& fileName = this->path.GetLastItem();
+    const DirectoryEntry& entry = this->parentCchDir.FindEntry(fileName.c_str());
+    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), entry);
+    uint32_t nread = cchFile.Read(this->fs->GetDevice(), offset, nbytes, buffer);
 
     return nread;
 }
 
 void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
-    ClusterChainFile *cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), this->entry);
-    cchFile->Write(this->fs->GetDevice(), offset, nbytes, buffer);
+    const std::string& fileName = this->path.GetLastItem();
+    DirectoryEntry& entry = parentCchDir.FindEntry(fileName.c_str());
+    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), entry);
+    cchFile.Write(this->fs->GetDevice(), offset, nbytes, buffer);
+    entry = cchFile.GetEntry();
 
     // The parent directory contains information about a file including name, size, creation time etc.
     // This updated information should be stored to a device as well.
     this->parentCchDir.Write(this->fs->GetDevice());
-
-    delete cchFile;
 }
 
 std::string File::ReadText(uint32_t offset, uint32_t nchars) const
@@ -171,12 +163,16 @@ void File::WriteText(const std::string& s, uint32_t offset)
 
 tm* File::GetCreatedTime() const
 {
-    time_t time = this->entry->GetCreatedTime();
+    const std::string& fileName = this->path.GetLastItem();
+    const DirectoryEntry& entry = this->parentCchDir.FindEntry(fileName.c_str());
+    time_t time = entry.GetCreatedTime();
     return localtime(&time);
 }
 
 tm* File::GetModifiedTime() const
 {
-    time_t time = this->entry->GetLastModifiedTime();
+    const std::string& fileName = this->path.GetLastItem();
+    const DirectoryEntry& entry = this->parentCchDir.FindEntry(fileName.c_str());
+    time_t time = entry.GetLastModifiedTime();
     return localtime(&time);
 }

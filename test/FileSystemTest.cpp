@@ -106,7 +106,7 @@ TEST_F(FileSystemTest, MakeDirectory2)
               Utils::FormatDate(rootDir2.GetModifiedTime()));
 }
 
-TEST_F(FileSystemTest, DISABLED_CreateFile)
+TEST_F(FileSystemTest, CreateFile)
 {
     {
         FileSystem fs(this->device);
@@ -125,6 +125,7 @@ TEST_F(FileSystemTest, DISABLED_CreateFile)
         dir00.CreateFile("dump0.bin");
         File file0 = dir00.GetFile("dump0.bin");
         file0.WriteText("The quick brown fox jumps over the lazy dog.", 0);
+std::cout << "#0   file0.GetSize()=" << file0.GetSize() << std::endl;
 
         fs.Write();
     }
@@ -144,6 +145,7 @@ TEST_F(FileSystemTest, DISABLED_CreateFile)
         ASSERT_EQ("dump0.bin", file0.GetName());
 
         std::string s = file0.ReadText(0, file0.GetSize());
+std::cout << "#1   file0.GetSize()=" << file0.GetSize() << std::endl;
         ASSERT_EQ("The quick brown fox jumps over the lazy dog.", s);
 
         File file0_copy = dir00.GetFile("dump0.bin");
