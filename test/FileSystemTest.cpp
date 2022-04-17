@@ -36,10 +36,11 @@ TEST_F(FileSystemTest, MakeDirectory)
     {
         FileSystem fs(this->device);
         fs.Read();
-
+        
         // Create directories;
         Directory rootDir = Directory::GetRoot(&fs);
         rootDir.CreateDirectory("home");
+        
         Directory dir0 = rootDir.GetDirectory("home");
         dir0.CreateDirectory("user");
 

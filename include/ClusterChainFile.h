@@ -48,7 +48,7 @@ namespace org::vfat
          * @return A length that is stored in the directory entry that is associated with this file.
          */
         uint32_t GetLength() const;
-        void SetLength(uint32_t val);
+        void SetLength(Fat& fat, uint32_t val);
 
         /**
          * @brief Reads from this file into the specified buffer.
@@ -58,9 +58,9 @@ namespace org::vfat
          * @param buffer
          * @return
          */
-        uint32_t Read(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        uint32_t Read(const Device& device, const Fat& fat, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const;
 
-        void Write(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
+        void Write(Device& device, Fat& fat, uint32_t offset, uint32_t nbytes, uint8_t *buffer);
         
         const DirectoryEntry& GetEntry() const { return this->entry; }
 

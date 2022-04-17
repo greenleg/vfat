@@ -38,19 +38,19 @@ TEST_F(ClusterChainTest, ReadDataWithOffset)
     Fat fat(bootSector);
     fat.Read(this->device);
 
-    ClusterChain cc(&fat, 0);
+    ClusterChain cc(0);
 
     uint8_t writeBuf[1025];
     for (uint32_t i = 0; i < 1025; ++i) {
         writeBuf[i] = i % 256;
     }
 
-    cc.WriteData(this->device, 0, 1025, writeBuf);
+    cc.WriteData(this->device, fat, 0, 1025, writeBuf);
 
     ASSERT_EQ(3, fat.GetChainLength(cc.GetStartCluster()));
 
     uint8_t readBuf[1020];
-    cc.ReadData(this->device, 5, 1020, readBuf);
+    cc.ReadData(this->device, fat, 5, 1020, readBuf);
 
     for (uint32_t i = 5; i < 1025; ++i) {
         ASSERT_EQ(i % 256, readBuf[i - 5]);
@@ -68,7 +68,7 @@ TEST_F(ClusterChainTest, WriteData)
     Fat fat(bootSector);
     fat.Read(this->device);
 
-    ClusterChain cc(&fat, 0);
+    ClusterChain cc(0);
 
     uint8_t data[chunkSize];
     for (uint32_t i = 0; i < chunkSize; ++i) {
@@ -76,11 +76,11 @@ TEST_F(ClusterChainTest, WriteData)
     }
 
     for (uint32_t i = 0; i < writes; ++i) {
-        cc.WriteData(this->device, i * chunkSize, chunkSize, data);
+        cc.WriteData(this->device, fat, i * chunkSize, chunkSize, data);
     }
 
     uint8_t readBuf[writes * chunkSize];
-    cc.ReadData(this->device, 0, writes * chunkSize, readBuf);
+    cc.ReadData(this->device, fat, 0, writes * chunkSize, readBuf);
 
     for (uint32_t i = 0; i < writes * chunkSize; ++i) {
         ASSERT_EQ(i % chunkSize, readBuf[i]);
@@ -95,17 +95,17 @@ TEST_F(ClusterChainTest, GetFreeClusterCount)
     Fat fat(bootSector);
     fat.Read(this->device);
 
-    ClusterChain cc(&fat, 0);
+    ClusterChain cc(0);
 
     uint32_t n = fat.GetFreeClusterCount();
 
-    cc.SetLength(1);
+    cc.SetLength(fat, 1);
     ASSERT_EQ(n - 1, fat.GetFreeClusterCount());
 
-    cc.SetLength(10);
+    cc.SetLength(fat, 10);
     ASSERT_EQ(n - 10, fat.GetFreeClusterCount());
 
-    cc.SetLength(0);
+    cc.SetLength(fat, 0);
     ASSERT_EQ(n, fat.GetFreeClusterCount());
 }
 
@@ -117,19 +117,19 @@ TEST_F(ClusterChainTest, SetSize)
     Fat fat(bootSector);
     fat.Read(this->device);
 
-    ClusterChain cc(&fat, 0);
+    ClusterChain cc(0);
 
-    cc.SetSizeInBytes(bootSector.GetBytesPerCluster());
-    ASSERT_EQ(1, cc.GetLength());
+    cc.SetSizeInBytes(fat, bootSector.GetBytesPerCluster());
+    ASSERT_EQ(1, cc.GetLength(fat));
 
-    cc.SetSizeInBytes(bootSector.GetBytesPerCluster() + 1);
-    ASSERT_EQ(2, cc.GetLength());
+    cc.SetSizeInBytes(fat, bootSector.GetBytesPerCluster() + 1);
+    ASSERT_EQ(2, cc.GetLength(fat));
 
-    cc.SetSizeInBytes(0);
-    ASSERT_EQ(0, cc.GetLength());
+    cc.SetSizeInBytes(fat, 0);
+    ASSERT_EQ(0, cc.GetLength(fat));
 
-    cc.SetSizeInBytes(1);
-    ASSERT_EQ(1, cc.GetLength());
+    cc.SetSizeInBytes(fat, 1);
+    ASSERT_EQ(1, cc.GetLength(fat));
 }
 
 TEST_F(ClusterChainTest, GetSize)
@@ -140,8 +140,8 @@ TEST_F(ClusterChainTest, GetSize)
     Fat fat(bootSector);
     fat.Read(this->device);
 
-    ClusterChain cc(&fat, 0);
-    cc.SetSizeInBytes(bootSector.GetBytesPerCluster());
+    ClusterChain cc(0);
+    cc.SetSizeInBytes(fat, bootSector.GetBytesPerCluster());
 
-    ASSERT_EQ(bootSector.GetBytesPerCluster(), cc.GetSizeInBytes());
+    ASSERT_EQ(bootSector.GetBytesPerCluster(), cc.GetSizeInBytes(fat));
 }

@@ -17,7 +17,7 @@ namespace org::vfat::api
     private:
         Device& device;
         BootSector bootSector;
-        Fat *fat;
+        std::unique_ptr<Fat> fat;
 
     public:
         FileSystem(Device& device);
@@ -28,7 +28,7 @@ namespace org::vfat::api
 
         Device& GetDevice() const { return this->device; }
         const BootSector& GetBootSector() const { return this->bootSector; }
-        Fat* GetFat() const { return this->fat; }
+        Fat& GetFat() { return *(this->fat); }
         ClusterChainDirectory GetRootDirectory() const;
     };
 }

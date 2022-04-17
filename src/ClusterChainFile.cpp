@@ -14,9 +14,9 @@ uint32_t ClusterChainFile::GetLength() const
     return this->entry.GetDataLength();
 }
 
-void ClusterChainFile::SetLength(uint32_t val)
+void ClusterChainFile::SetLength(Fat& fat, uint32_t val)
 {
-    this->chain.SetSizeInBytes(val);
+    this->chain.SetSizeInBytes(fat, val);
     this->entry.SetStartCluster(this->chain.GetStartCluster());
     this->entry.SetDataLength(val);
 }
@@ -29,7 +29,7 @@ void ClusterChainFile::SetLength(uint32_t val)
  * @param buffer
  * @return
  */
-uint32_t ClusterChainFile::Read(const Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+uint32_t ClusterChainFile::Read(const Device& device, const Fat& fat, uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
     uint32_t dataLength = this->GetLength();
     if (offset + nbytes > dataLength) {
@@ -42,20 +42,20 @@ uint32_t ClusterChainFile::Read(const Device& device, uint32_t offset, uint32_t 
     }
 
     if (nbytes > 0) {
-        this->chain.ReadData(device, offset, nbytes, buffer);
+        this->chain.ReadData(device, fat, offset, nbytes, buffer);
     }
 
     return nbytes;
 }
 
-void ClusterChainFile::Write(Device& device, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
+void ClusterChainFile::Write(Device& device, Fat& fat, uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     uint32_t length = offset + nbytes;
     if (length > this->GetLength()) {
-        this->SetLength(length);
+        this->SetLength(fat, length);
     }
 
-    this->chain.WriteData(device, offset, nbytes, buffer);
+    this->chain.WriteData(device, fat, offset, nbytes, buffer);
 }
 
 ClusterChainFile::ClusterChainFile(const DirectoryEntry& entry, ClusterChain& chain)

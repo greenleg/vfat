@@ -17,7 +17,7 @@ namespace org::vfat::api
     private:
         FileSystem *fs;
         ClusterChainDirectory parentCchDir;
-        DirectoryEntry entry;
+        DirectoryEntry rootEntry;
         Path path;
 
         bool IsRoot() const;
@@ -29,6 +29,7 @@ namespace org::vfat::api
         ClusterChainDirectory GetCchDirectory() const;
         void Init();
         void Cleanup();
+        const DirectoryEntry& GetThisEntry() const;
 
     public:
 //        ClusterChainDirectory* GetParentCchDirectory() const {  return this->parentCchDir; }

@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdexcept>
+#include <iostream>
 #include "../include/Fat.h"
 
 using namespace org::vfat;

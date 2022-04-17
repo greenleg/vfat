@@ -24,9 +24,9 @@ protected:
         fat.Create();
 
         ClusterChainDirectory root;
-        root.CreateRoot(&fat);
+        root.CreateRoot(fat);
 
-        root.Write(device);
+        root.Write(device, fat);
         fat.Write(device);
     }
 
@@ -52,13 +52,13 @@ TEST_F(ClusterChainFileTest, SetLength)
     fat.Read(this->device);
 
     ClusterChainDirectory root;
-    root.ReadRoot(this->device, &fat);
+    root.ReadRoot(this->device, fat);
 
-    DirectoryEntry e = root.AddFile("index.htm", this->device);
-    ClusterChainFile file = ClusterChainDirectory::GetFile(&fat, e);
+    DirectoryEntry e = root.AddFile("index.htm", this->device, fat);
+    ClusterChainFile file = ClusterChainDirectory::GetFile(e);
 
     ASSERT_EQ(0, file.GetLength());
-    file.SetLength(100);
+    file.SetLength(fat, 100);
     ASSERT_EQ(100, file.GetLength());
 }
 
@@ -71,10 +71,10 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     fat.Read(this->device);
 
     ClusterChainDirectory root;
-    root.ReadRoot(this->device, &fat);
+    root.ReadRoot(this->device, fat);
 
-    DirectoryEntry e = root.AddFile("dump.bin", this->device);
-    ClusterChainFile file = ClusterChainDirectory::GetFile(&fat, e);
+    DirectoryEntry e = root.AddFile("dump.bin", this->device, fat);
+    ClusterChainFile file = ClusterChainDirectory::GetFile(e);
 
     uint32_t len = 10000;
     uint8_t writeBuf[len];
@@ -85,10 +85,10 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     }
 
     // Write to device
-    file.Write(this->device, 0, len, writeBuf);
+    file.Write(this->device, fat, 0, len, writeBuf);
 
     // Read from device    
-    uint32_t nread = file.Read(this->device, 0, len, readBuf);
+    uint32_t nread = file.Read(this->device, fat, 0, len, readBuf);
     ASSERT_EQ(len, nread);
 
     for (uint32_t i = 0; i < len; ++i) {
@@ -96,6 +96,6 @@ TEST_F(ClusterChainFileTest, ReadWrite)
     }
 
     // Read too long    
-    nread = file.Read(this->device, 0, len + 1, readBuf);
+    nread = file.Read(this->device, fat, 0, len + 1, readBuf);
     ASSERT_EQ(len, nread);
 }

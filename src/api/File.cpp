@@ -113,8 +113,8 @@ uint32_t File::Read(uint32_t offset, uint32_t nbytes, uint8_t *buffer) const
 {
     const std::string& fileName = this->path.GetLastItem();
     const DirectoryEntry& entry = this->parentCchDir.FindEntry(fileName.c_str());
-    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), entry);
-    uint32_t nread = cchFile.Read(this->fs->GetDevice(), offset, nbytes, buffer);
+    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(entry);
+    uint32_t nread = cchFile.Read(this->fs->GetDevice(), this->fs->GetFat(), offset, nbytes, buffer);
 
     return nread;
 }
@@ -123,13 +123,13 @@ void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer)
 {
     const std::string& fileName = this->path.GetLastItem();
     DirectoryEntry& entry = parentCchDir.FindEntry(fileName.c_str());
-    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(this->fs->GetFat(), entry);
-    cchFile.Write(this->fs->GetDevice(), offset, nbytes, buffer);
+    ClusterChainFile cchFile = ClusterChainDirectory::GetFile(entry);
+    cchFile.Write(this->fs->GetDevice(), this->fs->GetFat(), offset, nbytes, buffer);
     entry = cchFile.GetEntry();
 
     // The parent directory contains information about a file including name, size, creation time etc.
     // This updated information should be stored to a device as well.
-    this->parentCchDir.Write(this->fs->GetDevice());
+    this->parentCchDir.Write(this->fs->GetDevice(), this->fs->GetFat());
 }
 
 std::string File::ReadText(uint32_t offset, uint32_t nchars) const
