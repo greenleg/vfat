@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <time.h>
+#include <iostream>
 
 #include "../include/Common.h"
 #include "../include/BinaryReader.h"
@@ -96,7 +97,7 @@ void DirectoryEntryImpl::Read(uint8_t *buffer)
 
         struct FileNameDirectoryEntry fnde;
         memcpy(fnde.nameBuffer, buffer + FNDE_FILENAME_OFFSET, FNDE_NAME_LENGTH);
-        this->fndeList.push_back(fnde);
+        this->fndeList.push_back(std::move(fnde));
 
         buffer += FAT_DIR_ENTRY_SIZE;
     }

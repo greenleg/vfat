@@ -293,10 +293,8 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
     srcPathObj.Combine(srcPath);
 
     ClusterChainDirectory srcDir = this->fs->GetRootDirectory();
-    DirectoryEntry srcEntry;
-    size_t i = 0;
-    for (; i < srcPathObj.GetItemCount() - 1; ++i) {
-        std::string name = srcPathObj.GetItem(i);
+    for (size_t i = 0; i < srcPathObj.GetItemCount() - 1; ++i) {
+        const std::string& name = srcPathObj.GetItem(i);
         auto srcEntryIdx = srcDir.FindEntryIndex(name.c_str());
         if (srcEntryIdx == -1) {
             std::ostringstream msgStream;
@@ -304,12 +302,12 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
             throw std::runtime_error(msgStream.str());
         }
 
-        srcEntry = srcDir.FindEntry(name.c_str());
+        DirectoryEntry& srcEntry = srcDir.FindEntry(name.c_str());
         ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, srcEntry);
         srcDir = std::move(subDir);
     }
 
-    std::string srcName = srcPathObj.GetItem(i);
+    const std::string& srcName = srcPathObj.GetLastItem();
     auto srcEntryIdx = srcDir.FindEntryIndex(srcName.c_str());
     if (srcEntryIdx == -1) {
         std::ostringstream msgStream;
@@ -317,16 +315,14 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
         throw std::runtime_error(msgStream.str());    
     }
 
-    srcEntry = srcDir.FindEntry(srcName.c_str());
+    DirectoryEntry& srcEntry = srcDir.FindEntry(srcName.c_str());
     
     Path destPathObj(this->path);
     destPathObj.Combine(destPath);
 
     ClusterChainDirectory destDir = this->fs->GetRootDirectory();
-    DirectoryEntry destEntry;
-    i = 0;
-    for (; i < destPathObj.GetItemCount() - 1; ++i) {
-        std::string name = destPathObj.GetItem(i);
+    for (size_t i = 0; i < destPathObj.GetItemCount() - 1; ++i) {
+        const std::string& name = destPathObj.GetItem(i);
         auto destEntryIdx = destDir.FindEntryIndex(name.c_str());
         if (destEntryIdx == -1) {
             std::ostringstream msgStream;
@@ -334,12 +330,12 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
             throw std::runtime_error(msgStream.str());
         }
 
-        destEntry = destDir.FindEntry(name.c_str());
+        DirectoryEntry& destEntry = destDir.FindEntry(name.c_str());
         ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
         destDir = std::move(subDir);
     }    
 
-    std::string destName = destPathObj.GetItem(i);
+    const std::string& destName = destPathObj.GetLastItem();
     auto destEntryIdx = destDir.FindEntryIndex(destName.c_str());
 
     if (srcEntry.IsFile()) {
@@ -347,11 +343,11 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
             // Move the source file with the new name;
             this->Move(srcDir, srcEntry, destDir, destName);
         } else {
-            destEntry = destDir.FindEntry(destName.c_str());
+            DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
             if (destEntry.IsFile()) {
                 destDir.RemoveFile(destName.c_str(), dev, fat);
                 this->Move(srcDir, srcEntry, destDir, destName);
-                cout << "File '" << destPathObj.ToString() << "' has been replaced." << endl;
+                std::cout << "File '" << destPathObj.ToString() << "' has been replaced." << std::endl;
             } else {
                 // Jump to the sub-directory;
                 ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
@@ -368,7 +364,7 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
             throw std::runtime_error(msgStream.str());
         }
         
-        destEntry = destDir.FindEntry(destName.c_str());
+        DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
         if (!destEntry.IsDir()) {
             std::ostringstream msgStream;
             msgStream << "'" << destPathObj.ToString() << "': Not a directory.";
@@ -382,7 +378,7 @@ void Directory::Move(const std::string& srcPath, const std::string& destPath)
         // Get the source directory name;
         Path srcNormalizedPathObj(this->path);
         srcNormalizedPathObj.Combine(srcPath, true);
-        std::string srcDirName = srcNormalizedPathObj.GetItem(srcNormalizedPathObj.GetItemCount() - 1);
+        const std::string& srcDirName = srcNormalizedPathObj.GetLastItem();
 
         // Move the source directory to the destination directory;
         this->Move(srcDir, srcEntry, destDir, srcDirName);
@@ -547,7 +543,7 @@ void Directory::Copy(const std::string& srcPath, const std::string& destPath)
         destDir = std::move(subDir);
     }
 
-    std::string destName = destPathObj.GetLastItem();
+    const std::string& destName = destPathObj.GetLastItem();
     auto destEntryIdx = destDir.FindEntryIndex(destName.c_str());
 
     if (srcEntry.IsFile()) {
@@ -559,7 +555,7 @@ void Directory::Copy(const std::string& srcPath, const std::string& destPath)
             if (destEntry.IsFile()) {
                 destDir.RemoveFile(destName.c_str(), dev, fat);
                 this->CopyFile(srcDir, srcEntry, destDir, destName);
-                cout << "File '" << destPathObj.ToString() << "' has been replaced." << endl;
+                std::cout << "File '" << destPathObj.ToString() << "' has been replaced." << std::endl;
             } else {
                 // Jump to the sub-directory;
                 ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
@@ -590,7 +586,7 @@ void Directory::Copy(const std::string& srcPath, const std::string& destPath)
         // Get the source directory name;
         Path srcNormalizedPathObj(this->path);
         srcNormalizedPathObj.Combine(srcPath, true);
-        std::string srcDirName = srcNormalizedPathObj.GetItem(srcNormalizedPathObj.GetItemCount() - 1);
+        const std::string& srcDirName = srcNormalizedPathObj.GetLastItem();
 
         // Copy the source directory to the destination directory;
         this->CopyDirectory(srcDir, srcEntry, destDir, srcDirName);

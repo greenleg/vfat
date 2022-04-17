@@ -39,7 +39,7 @@ namespace org::vfat
         void ReadRoot(const Device& device, const Fat& fat);
         void Create(ClusterChain& cc, const Fat& fat);
         void CreateRoot(Fat& fat);
-        void AddEntry(DirectoryEntry& e, Fat& fat);
+        DirectoryEntry& AddEntry(DirectoryEntry& e, Fat& fat);
         DirectoryEntry& GetEntry(uint32_t index);
         DirectoryEntry& FindEntry(const char *name);
         const DirectoryEntry& FindEntry(const char *name) const;

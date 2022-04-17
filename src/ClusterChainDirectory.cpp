@@ -65,10 +65,6 @@ ClusterChainDirectory& ClusterChainDirectory::operator=(ClusterChainDirectory&& 
 
 void ClusterChainDirectory::Cleanup()
 {
-    /*for (size_t i = 0; i < this->entries.size(); ++i) {
-        DirectoryEntry e = this->entries[i];
-        delete e;
-    }*/
 }
 
 void ClusterChainDirectory::CheckUniqueName(const char *name)
@@ -93,7 +89,6 @@ void ClusterChainDirectory::ReadEntries(uint8_t *buffer)
         DirectoryEntry e;
         e.Read(buffer + offset);
         offset += e.GetFat32EntryCount() * FAT_DIR_ENTRY_SIZE;
-
         this->entries.push_back(std::move(e));
     }
 }
@@ -120,13 +115,14 @@ uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSiz
 void ClusterChainDirectory::Read(const Device& device, const Fat& fat, uint32_t firstCluster, bool isRoot)
 {
     ClusterChain cc(firstCluster);
-    uint64_t size = cc.GetSizeInBytes(fat);
+    uint64_t size = cc.GetSizeInBytes(fat);    
+    
     uint8_t buffer[size];
     cc.ReadData(device, fat, 0, size, buffer);
 
     this->chain = std::move(cc);
     this->isRoot = isRoot;
-    this->capacity = size / FAT_DIR_ENTRY_SIZE;    
+    this->capacity = size / FAT_DIR_ENTRY_SIZE;
 
     this->ReadEntries(buffer);
 }
@@ -181,7 +177,7 @@ uint32_t ClusterChainDirectory::GetFat32EntryCount() const
     return n;
 }
 
-void ClusterChainDirectory::AddEntry(DirectoryEntry& e, Fat& fat)
+DirectoryEntry& ClusterChainDirectory::AddEntry(DirectoryEntry& e, Fat& fat)
 {
     uint32_t newCount = this->GetFat32EntryCount() + e.GetFat32EntryCount();
     if (newCount > this->capacity) {
@@ -189,6 +185,7 @@ void ClusterChainDirectory::AddEntry(DirectoryEntry& e, Fat& fat)
     }
 
     this->entries.push_back(e);
+    return this->entries.back();
 }
 
 DirectoryEntry& ClusterChainDirectory::GetEntry(uint32_t index)
@@ -403,20 +400,26 @@ void ClusterChainDirectory::Move(Device& device, Fat& fat, DirectoryEntry& e, Cl
 
     char oldName[256];
     e.GetName(oldName);
+
     uint32_t index = this->FindEntryIndex(oldName);
+    
+    // Get a copy of entry before removing
+    DirectoryEntry copyEntry = e;
+    
     this->RemoveEntry(fat, index);
     this->Write(device, fat);
 
-    e.SetName(newName);
-    dest.AddEntry(e, fat);
+    copyEntry.SetName(newName);
+    DirectoryEntry& newEntry = dest.AddEntry(copyEntry, fat);
     dest.Write(device, fat);
 
+
     if (e.IsDir()) {
-        ClusterChainDirectory dir = GetDirectory(device, fat, e);
+        ClusterChainDirectory dir = GetDirectory(device, fat, newEntry);
         DirectoryEntry& dotdot = dir.FindEntry("..");
         assert(dotdot.GetStartCluster() == this->chain.GetStartCluster());
         dotdot.SetStartCluster(dest.chain.GetStartCluster());
-
+        
         // Write changes to the disk;
         dir.Write(device, fat);
     }
