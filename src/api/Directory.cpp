@@ -424,7 +424,7 @@ void Directory::ImportFile(const std::string& path)
 
     Path pathObj;
     pathObj.Combine(path);
-    std::string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
+    const std::string& fileName = pathObj.GetLastItem();
 
     CreateFile(fileName);
     File file = GetFile(fileName);

@@ -4,38 +4,27 @@
 
 using namespace org::vfat::cli;
 
-/*FileSystemHelper::FileSystemHelper(const std::string& deviceName)
-{
-    this->dev = new FileDisk(deviceName.c_str());
-}*/
-
 FileSystemHelper::FileSystemHelper(Device& device)
-   : dev(device)
+   : dev(device), fs(nullptr)
 {
-    //this->dev = new FileDisk(deviceName.c_str());
 }
 
 FileSystemHelper::~FileSystemHelper()
 {
-    if (this->fs != nullptr) {
-        delete this->fs;
-    }
-
     this->dev.Close();
-//    delete this->dev;
 }
 
 void FileSystemHelper::Format(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster)
 {
     this->dev.Create();
-    this->fs = new FileSystem(this->dev);
+    this->fs = std::make_unique<FileSystem>(this->dev);
     this->fs->Format(volumeSize, bytesPerSector, sectorsPerCluster);
 }
 
 void FileSystemHelper::Read()
 {
     this->dev.Open();
-    this->fs = new FileSystem(this->dev);
+    this->fs = std::make_unique<FileSystem>(this->dev);
     this->fs->Read();
 }
 
@@ -45,7 +34,7 @@ void FileSystemHelper::ChangeDirectory(const std::string& path)
     newPath.Combine(path, false);
 
     // Check availability of the new path;
-    Directory newDir(this->fs, newPath);
+    Directory newDir(this->fs.get(), newPath);
 
     Path newNormalizedPath(this->path);
     newNormalizedPath.Combine(path, true);
@@ -56,5 +45,5 @@ void FileSystemHelper::ChangeDirectory(const std::string& path)
 Directory FileSystemHelper::GetCurrentDirectory() const
 {
     Path tmp(this->path);
-    return Directory(this->fs, std::move(tmp));
+    return Directory(this->fs.get(), std::move(tmp));
 }

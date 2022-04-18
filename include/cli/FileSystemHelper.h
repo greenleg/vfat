@@ -10,13 +10,13 @@ using namespace org::vfat::api;
 namespace org::vfat::cli
 {
     /** 
-     * FileSystem CLI helper 
+     * @brief FileSystem CLI helper 
      */
     class FileSystemHelper
     {
     private:
         Device& dev;
-        FileSystem *fs = nullptr;
+        std::unique_ptr<FileSystem> fs;
         Path path;
 
     public:
@@ -28,11 +28,9 @@ namespace org::vfat::cli
 
         void ChangeDirectory(const std::string& path);
 
-        FileSystem* GetFileSystem() const { return this->fs; }
+        FileSystem& GetFileSystem() const { return *(this->fs); }
         Path GetCurrentPath() const { return this->path; }
         Directory GetCurrentDirectory() const;
-        
-//        FileSystemHelper(const std::string& deviceName);
     };
 }
 

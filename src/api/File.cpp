@@ -25,10 +25,9 @@ File::File(FileSystem *fs, Path&& path)
 
 void File::Init()
 {
-    std::queue<ClusterChainDirectory> subDirectories;
     ClusterChainDirectory dir = fs->GetRootDirectory();
     for (size_t i = 0; i < path.GetItemCount() - 1; ++i) {
-        std::string name = this->path.GetItem(i);
+        const std::string& name = this->path.GetItem(i);
         auto eIdx = dir.FindEntryIndex(name.c_str());
         if (eIdx == -1) {
             std::ostringstream msgStream;
@@ -126,7 +125,6 @@ void File::Write(uint32_t offset, uint32_t nbytes, uint8_t *buffer)
     ClusterChainFile cchFile = ClusterChainDirectory::GetFile(entry);
     cchFile.Write(this->fs->GetDevice(), this->fs->GetFat(), offset, nbytes, buffer);
     entry = cchFile.GetEntry();
-
     // The parent directory contains information about a file including name, size, creation time etc.
     // This updated information should be stored to a device as well.
     this->parentCchDir.Write(this->fs->GetDevice(), this->fs->GetFat());

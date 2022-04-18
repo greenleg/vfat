@@ -29,9 +29,9 @@ namespace org::vfat::cli
         {
         }
 
-        std::string GetArg(size_t index) const
+        const std::string& GetArg(size_t index) const
         {
-            return this->args.at(index);
+            return this->args[index];
         }
 
         size_t GetArgCount() const
@@ -39,16 +39,16 @@ namespace org::vfat::cli
             return this->args.size();
         }
 
-        bool HasOption(const std::string& flag)
+        bool HasOption(const std::string& flag) const
         {
             auto iter = std::find(this->args.begin(), this->args.end(), flag);
             return iter != this->args.end();
         }
 
-        std::string TryFetchByPrefix(const std::string& key)
+        std::string TryFetchByPrefix(const std::string& key) const
         {
             for (auto iter = this->args.begin(); iter < this->args.end(); ++iter) {
-                std::string& arg = *iter;
+                const std::string& arg = *iter;
                 if (arg.rfind(key, 0) == 0) {
                     return arg.substr(key.size());
                 }

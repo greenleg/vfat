@@ -42,7 +42,6 @@ ClusterChain& ClusterChain::operator=(ClusterChain&& other)
 
 uint64_t ClusterChain::GetDeviceOffset(const BootSector& bs, uint32_t cluster, uint32_t clusterOffset) const
 {
-//    const BootSector& bs = this->fat->GetBootSector();
     uint32_t dataOffset = bs.GetClusterHeapOffset();
     uint32_t clusterSize = bs.GetBytesPerCluster();
     return dataOffset + cluster * clusterSize + clusterOffset;

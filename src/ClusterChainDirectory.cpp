@@ -80,15 +80,17 @@ void ClusterChainDirectory::CheckUniqueName(const char *name)
 void ClusterChainDirectory::ReadEntries(uint8_t *buffer)
 {
     uint32_t offset = 0;
-    for (uint32_t i = 0; i < this->capacity; ++i) {
+    size_t entryIdx = 0;
+    while (entryIdx < this->capacity) {
         uint8_t entryType = buffer[offset];
         if (entryType == NO_DIR_ENTRY) {
             break;
         }
-        
+
         DirectoryEntry e;
         e.Read(buffer + offset);
         offset += e.GetFat32EntryCount() * FAT_DIR_ENTRY_SIZE;
+        entryIdx += e.GetFat32EntryCount();
         this->entries.push_back(std::move(e));
     }
 }
@@ -114,9 +116,9 @@ uint32_t ClusterChainDirectory::WriteEntries(uint8_t *buffer, uint32_t bufferSiz
 
 void ClusterChainDirectory::Read(const Device& device, const Fat& fat, uint32_t firstCluster, bool isRoot)
 {
+
     ClusterChain cc(firstCluster);
-    uint64_t size = cc.GetSizeInBytes(fat);    
-    
+    uint64_t size = cc.GetSizeInBytes(fat);
     uint8_t buffer[size];
     cc.ReadData(device, fat, 0, size, buffer);
 

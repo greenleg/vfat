@@ -16,9 +16,9 @@ int ProcessCommand(const std::string& input, FileSystemHelper *fsh);
 /**
  * Points to a function that implements a command.
  */
-typedef void (*CmdImplFunc)(CommandLine *cmdLine, FileSystemHelper *fsh);
+typedef void (*CmdImplFunc)(const CommandLine& cmdLine, FileSystemHelper *fsh);
 
-std::map<string, CmdImplFunc> CmdImplMap
+std::map<std::string, CmdImplFunc> CmdImplMap
 {
     { "ls", Commands::Ls },
     { "mkdir", Commands::Mkdir },
@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
 
     while (true) {
         int res = ProcessCommand(input, &fsh);
-        fsh.GetFileSystem()->Write();
+        fsh.GetFileSystem().Write();
         if (res != 0) {
             break;
         }
@@ -94,10 +94,10 @@ int ProcessCommand(const std::string& input, FileSystemHelper *fsh)
             return 0;
         }
 
-        std::string cmdName = cmdLine.GetArg(0);
+        const std::string& cmdName = cmdLine.GetArg(0);
 
         if (cmdName == "exit") {
-            fsh->GetFileSystem()->Write();
+            fsh->GetFileSystem().Write();
             return 1;
         }
 
@@ -105,7 +105,7 @@ int ProcessCommand(const std::string& input, FileSystemHelper *fsh)
         if (iter == CmdImplMap.end()) {
             printf("Unknown command: %s\r\n", input.c_str());
         } else {
-            (*(iter->second))(&cmdLine, fsh);
+            (*(iter->second))(cmdLine, fsh);
         }
 
         return 0;
