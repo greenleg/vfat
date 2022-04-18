@@ -11,12 +11,12 @@
 using namespace org::vfat::api;
 using namespace org::vfat::cli;
 
-int ProcessCommand(const std::string& input, FileSystemHelper *fsh);
+int ProcessCommand(const std::string& input, FileSystemHelper& fsh);
 
 /**
  * Points to a function that implements a command.
  */
-typedef void (*CmdImplFunc)(const CommandLine& cmdLine, FileSystemHelper *fsh);
+typedef void (*CmdImplFunc)(const CommandLine& cmdLine, FileSystemHelper& fsh);
 
 std::map<std::string, CmdImplFunc> CmdImplMap
 {
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
     std::getline(std::cin, input);
 
     while (true) {
-        int res = ProcessCommand(input, &fsh);
+        int res = ProcessCommand(input, fsh);
         fsh.GetFileSystem().Write();
         if (res != 0) {
             break;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int ProcessCommand(const std::string& input, FileSystemHelper *fsh)
+int ProcessCommand(const std::string& input, FileSystemHelper& fsh)
 {
     try {
         CommandLine cmdLine(input);
@@ -97,7 +97,7 @@ int ProcessCommand(const std::string& input, FileSystemHelper *fsh)
         const std::string& cmdName = cmdLine.GetArg(0);
 
         if (cmdName == "exit") {
-            fsh->GetFileSystem().Write();
+            fsh.GetFileSystem().Write();
             return 1;
         }
 

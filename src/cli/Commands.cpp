@@ -3,9 +3,9 @@
 
 using namespace org::vfat::cli;
 
-void Commands::Ls(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Ls(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
 
     std::vector<Directory> directories = currentDir.GetDirectories();
     std::vector<Directory>::iterator dirIter;
@@ -44,8 +44,8 @@ void Commands::Ls(const CommandLine& cmdLine, FileSystemHelper *fsh)
              << Utils::StringPadding(to_string(totalFilesSize) + " bytes", 20)
              << endl;
 
-        uint32_t freeClusterCount = fsh->GetFileSystem().GetFat().GetFreeClusterCount();
-        uint32_t bytesPerCluster = fsh->GetFileSystem().GetBootSector().GetBytesPerCluster();
+        uint32_t freeClusterCount = fsh.GetFileSystem().GetFat().GetFreeClusterCount();
+        uint32_t bytesPerCluster = fsh.GetFileSystem().GetBootSector().GetBytesPerCluster();
         uint32_t freeSpaceInBytes = freeClusterCount * bytesPerCluster;
 
         cout << Utils::StringPadding("", 10)
@@ -65,65 +65,65 @@ void Commands::Ls(const CommandLine& cmdLine, FileSystemHelper *fsh)
         }
 
         if (directories.size() + files.size() > 0) {
-            std::cout << endl;
+            std::cout << std::endl;
         }
     }
 }
 
-void Commands::Mkdir(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Mkdir(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("Directory is not specified.");
     }
 
     const std::string& dirName = cmdLine.GetArg(1);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     currentDir.CreateDirectory(dirName);
 }
 
-void Commands::Cd(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Cd(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     const std::string& dirPath = cmdLine.GetArg(1);
-    fsh->ChangeDirectory(dirPath);
+    fsh.ChangeDirectory(dirPath);
 }
 
-void Commands::Touch(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Touch(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
     }
 
     const std::string& fileName = cmdLine.GetArg(1);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     currentDir.CreateFile(fileName);
 }
 
-void Commands::Cat(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Cat(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
     }
 
     const std::string& fileName = cmdLine.GetArg(1);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     File file = currentDir.GetFile(fileName);
     std::string text = file.ReadText(0, file.GetSize());
 
     std::cout << text << std::endl;
 }
 
-void Commands::Import(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Import(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File or directory to import is not specified.");
     }
 
     const std::string& dirOrFileName = cmdLine.GetArg(1);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     currentDir.Import(dirOrFileName);
 }
 
-void Commands::Mv(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Mv(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -131,11 +131,11 @@ void Commands::Mv(const CommandLine& cmdLine, FileSystemHelper *fsh)
 
     const std::string& srcFileName = cmdLine.GetArg(1);
     const std::string& destFileName = cmdLine.GetArg(2);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     currentDir.Move(srcFileName, destFileName);
 }
 
-void Commands::Cp(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Cp(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
@@ -143,18 +143,18 @@ void Commands::Cp(const CommandLine& cmdLine, FileSystemHelper *fsh)
 
     const std::string& srcFileName = cmdLine.GetArg(1);
     const std::string& destFileName = cmdLine.GetArg(2);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     currentDir.Copy(srcFileName, destFileName);
 }
 
-void Commands::Rm(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Rm(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File or directory is not specified.");
     }
 
     const std::string& fileName = cmdLine.GetArg(1);
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     try {
         currentDir.DeleteFile(fileName);
     } catch (const std::ios_base::failure& error) {
@@ -162,13 +162,13 @@ void Commands::Rm(const CommandLine& cmdLine, FileSystemHelper *fsh)
     }
 }
 
-void Commands::Tree(const CommandLine& cmdLine, FileSystemHelper *fsh)
+void Commands::Tree(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
     if (cmdLine.GetArgCount() > 1) {
         throw std::logic_error("Too many arguments.");
     }
 
-    Directory currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     TreeStat stat;
     stat.totalDir = 0;
     stat.totalFiles = 0;
