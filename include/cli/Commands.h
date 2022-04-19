@@ -81,6 +81,13 @@ namespace org::vfat::cli
          * @param fsh
          */
         static void Tree(const CommandLine& cmdLine, FileSystemHelper& fsh);
+        
+        /**
+         * @brief Displays help
+         * @param cmdLine
+         * @param fsh
+         */
+        static void Help(const CommandLine& cmdLine, FileSystemHelper& fsh);
     };
 
     struct TreeStat

@@ -216,3 +216,19 @@ void Commands::PrintSubTree(Directory& dir, struct TreeStat *stat, int level)
     stat->totalDir += directories.size();
     stat->totalFiles += files.size();
 }
+
+void Commands::Help(const CommandLine& cmdLine, FileSystemHelper& fsh)
+{
+    std::cout << "ls [-all]                   - Lists all files in the given directory;" << std::endl
+              << "mkdir <dir-name>            - Attempts to create a directory;" << std::endl
+              << "cd <dir-path>               - Changes the current directory (the directory in which the user is currently working);" << std::endl
+              << "touch <file-name>           - Creates an empty file;" << std::endl
+              << "cat <file-path>             - Displays text file on screen;" << std::endl
+              << "import <path>               - Imports a file or a directory from native Linux file system;" << std::endl
+              << "mv <src-path> <dest-path>   - Moves a file or a directory;" << std::endl
+              << "cp <src-path> <dest-path>   - Copies a file or a directory;" << std::endl
+              << "rm <name>                   - Deletes a file or a directrory;" << std::endl
+              << "tree                        - Displays the hierarchical structure of the current directory;" << std::endl
+              << "exit                        - Stops the process and goes back to Linux;" << std::endl
+              << "help                        - Shows this help" << std::endl;
+}

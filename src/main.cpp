@@ -30,6 +30,7 @@ std::map<std::string, CmdImplFunc> CmdImplMap
     { "cp", Commands::Cp },
     { "rm", Commands::Rm },
     { "tree", Commands::Tree },
+    { "help", Commands::Help },
 };
 
 
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
 
     // Print the command line prompt;
     std::string fullPath = fsh.GetCurrentPath().ToString(true);
-    cout << fullPath << "$ ";
+    std::cout << fullPath << "$ ";
 
     std::string input;
     std::getline(std::cin, input);
@@ -110,7 +111,7 @@ int ProcessCommand(const std::string& input, FileSystemHelper& fsh)
 
         return 0;
     } catch (const exception& err) {
-        std::cout << err.what() << endl;
+        std::cout << err.what() << std::endl;
         return 0;
     }
 }
