@@ -106,8 +106,8 @@ namespace org::vfat
         void SetDataLength(uint32_t val);
         uint32_t GetStartCluster() const;
         void SetStartCluster(uint32_t val);
-        void GetName(/*out*/ char *name) const;
-        void SetName(const char *name);
+        std::string GetName() const;
+        void SetName(const std::string& name);
         time_t GetLastModifiedTime() const;
         void SetLastModifiedTime(time_t val);
         time_t GetCreatedTime() const;
@@ -137,8 +137,8 @@ namespace org::vfat
         void SetDataLength(uint32_t val) { pImpl->SetDataLength(val); }
         uint32_t GetStartCluster() const { return pImpl->GetStartCluster(); }
         void SetStartCluster(uint32_t val) { pImpl->SetStartCluster(val); }
-        void GetName(/*out*/ char *name) const { pImpl->GetName(name); }
-        void SetName(const char *name) { pImpl->SetName(name); }
+        std::string GetName() const { return pImpl->GetName(); }
+        void SetName(const std::string& name) { pImpl->SetName(name); }
         time_t GetLastModifiedTime() const { return pImpl->GetLastModifiedTime(); }
         void SetLastModifiedTime(time_t val) { pImpl->SetLastModifiedTime(val); }
         time_t GetCreatedTime() const { return pImpl->GetCreatedTime(); }

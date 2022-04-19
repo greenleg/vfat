@@ -172,17 +172,19 @@ void DirectoryEntryImpl::SetStartCluster(uint32_t val)
     this->firstCluster = val;
 }
 
-void DirectoryEntryImpl::GetName(/*out*/ char *name) const
+std::string DirectoryEntryImpl::GetName() const
 {
     uint8_t fndeCount = (this->nameLength + FNDE_NAME_LENGTH - 1) / FNDE_NAME_LENGTH;
     assert(this->fndeList->size() == fndeCount);
+
+    std::string result(this->nameLength, '\0');
 
     uint8_t fndeIdx;
     uint8_t charIdx = 0;
     for (fndeIdx = 0; fndeIdx < fndeCount - 1; ++fndeIdx) {
         const FileNameDirectoryEntry& fnde = this->fndeList[fndeIdx];
         for (uint8_t i = 0; i < FNDE_NAME_LENGTH; ++i) {
-            name[charIdx + i] = fnde.nameBuffer[i];
+            result[charIdx + i] = fnde.nameBuffer[i];
         }
 
         charIdx += FNDE_NAME_LENGTH;
@@ -190,15 +192,15 @@ void DirectoryEntryImpl::GetName(/*out*/ char *name) const
 
     const FileNameDirectoryEntry& fnde = this->fndeList[fndeIdx];
     for (uint8_t i = 0; i < this->nameLength - charIdx; ++i) {
-        name[charIdx + i] = fnde.nameBuffer[i];
+        result[charIdx + i] = fnde.nameBuffer[i];
     }
 
-    name[this->nameLength] = '\0';
+    return result;
 }
 
-void DirectoryEntryImpl::SetName(const char *name)
+void DirectoryEntryImpl::SetName(const std::string& name)
 {
-    uint8_t len = strlen(name);
+    uint8_t len = name.length();
     uint8_t fndeCount = this->fndeList.size();
     uint8_t newFndeCount = (len + (FNDE_NAME_LENGTH - 1)) / FNDE_NAME_LENGTH;
 

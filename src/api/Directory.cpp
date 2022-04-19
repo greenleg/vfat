@@ -165,10 +165,9 @@ std::vector<Directory> Directory::GetDirectories() const
     for (size_t i = 0; i < entries.size(); ++i) {
         DirectoryEntry& e = entries[i];
         if (e.IsDir()) {
-            char nameBuf[256];
-            e.GetName(nameBuf);
+            std:string dirName = e.GetName();
             Path dirPath(this->path);
-            dirPath.Combine(nameBuf);
+            dirPath.Combine(dirName);            
             Directory dir(this->fs, std::move(dirPath));
             result[dirIdx++] = std::move(dir);
         }
@@ -194,10 +193,9 @@ std::vector<File> Directory::GetFiles() const
     for (size_t i = 0; i < entries.size(); ++i) {
         DirectoryEntry& e = entries[i];
         if (e.IsFile()) {
-            char nameBuf[256];
-            e.GetName(nameBuf);
+            std::string entryName = e.GetName();
             Path filePath(this->path);
-            filePath.Combine(nameBuf);
+            filePath.Combine(entryName);
             File file(this->fs, std::move(filePath));
             result[fileIdx++] = std::move(file);
         }
@@ -389,12 +387,12 @@ void Directory::Move(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, Cl
 {
     Device& dev = this->fs->GetDevice();
     Fat& fat = this->fs->GetFat();
-    const char *newName = destName.c_str();
+
     if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Rename file or directory;
-        srcDir.SetName(dev, fat, srcEntry, newName);
+        srcDir.SetName(dev, fat, srcEntry, destName);
     } else {
-        srcDir.Move(dev, fat, srcEntry, destDir, newName);
+        srcDir.Move(dev, fat, srcEntry, destDir, destName);
     }
 }
 

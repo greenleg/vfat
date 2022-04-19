@@ -98,17 +98,16 @@ TEST_F(ClusterChainDirectoryTest, AddSubDirectory)
     ClusterChainDirectory root;
     root.ReadRoot(this->device, fat);
 
-    const char *name = "A nice directory";
+    const std::string name = "A nice directory";
 
     DirectoryEntry e1 = root.AddDirectory(name, this->device, fat);
     DirectoryEntry e2 = root.FindEntry(name);
 
-    char nameBuf[32];
-    e1.GetName(nameBuf);
-    ASSERT_STREQ(name, nameBuf);
+    std::string entryName = e1.GetName();
+    ASSERT_EQ(name, entryName);
 
-    e2.GetName(nameBuf);
-    ASSERT_STREQ(name, nameBuf);
+    entryName = e2.GetName();
+    ASSERT_EQ(name, entryName);
 }
 
 TEST_F(ClusterChainDirectoryTest, AddTooManyDirectories)
@@ -152,7 +151,7 @@ TEST_F(ClusterChainDirectoryTest, RemoveDirectory)
     uint32_t freeBefore = fat.GetFreeClusterCount();
     uint32_t entriesBefore = root.GetEntries().size();
 
-    const char *dirName = "testdir";
+    const std::string& dirName = "testdir";
     root.AddDirectory(dirName, this->device, fat);
     ASSERT_EQ(freeBefore - 1, fat.GetFreeClusterCount());
     ASSERT_EQ(entriesBefore + 1, root.GetEntries().size());

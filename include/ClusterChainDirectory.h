@@ -24,7 +24,7 @@ namespace org::vfat
         uint32_t WriteEntries(uint8_t *buffer, uint32_t bufferSize) const;
         uint32_t GetFat32EntryCount() const;
         void ChangeSize(Fat& fat, uint32_t fat32EntryCount);
-        void CheckUniqueName(const char *name);
+        void CheckUniqueName(const std::string& name);
         void Cleanup();
         
     public:
@@ -41,30 +41,30 @@ namespace org::vfat
         void CreateRoot(Fat& fat);
         DirectoryEntry& AddEntry(DirectoryEntry& e, Fat& fat);
         DirectoryEntry& GetEntry(uint32_t index);
-        DirectoryEntry& FindEntry(const char *name);
-        const DirectoryEntry& FindEntry(const char *name) const;
-        int32_t FindEntryIndex(const char *name);
+        DirectoryEntry& FindEntry(const std::string& name);
+        const DirectoryEntry& FindEntry(const std::string& name) const;
+        int32_t FindEntryIndex(const std::string& name);
         void RemoveEntry(Fat& fat, uint32_t index);
         static void FormatDevice(Device& device, uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorPerCluster);
 
-        void RemoveDirectory(const char *name, Device& device, Fat& fat);
-        void RemoveFile(const char *name, Device& device, Fat& fat);
+        void RemoveDirectory(const std::string& name, Device& device, Fat& fat);
+        void RemoveFile(const std::string& name, Device& device, Fat& fat);
         void RemoveDirectory(uint32_t index, Device& device, Fat& fat);
         void RemoveFile(uint32_t index, Device& device, Fat& fat);
 
-        DirectoryEntry& AddDirectory(const char *name, Device& device, Fat& fat);
-        DirectoryEntry& AddFile(const char *name, Device& device, Fat& fat);
+        DirectoryEntry& AddDirectory(const std::string& name, Device& device, Fat& fat);
+        DirectoryEntry& AddFile(const std::string& name, Device& device, Fat& fat);
 
         static ClusterChainDirectory GetDirectory(const Device& device, const Fat& fat, const DirectoryEntry& e);
         static ClusterChainFile GetFile(const DirectoryEntry& e);
 
-        void SetName(Device& device, Fat& fat, DirectoryEntry& e, const char *name);
-        void Move(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName);
+        void SetName(Device& device, Fat& fat, DirectoryEntry& e, const std::string& name);
+        void Move(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const std::string& newName);
 
         ClusterChainFile CopyFile(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest) const;
-        ClusterChainFile CopyFile(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const;
+        ClusterChainFile CopyFile(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const std::string& newName) const;
         void CopyDirectory(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest) const;
-        void CopyDirectory(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const char *newName) const;
+        void CopyDirectory(Device& device, Fat& fat, DirectoryEntry& e, ClusterChainDirectory& dest, const std::string& newName) const;
 
         std::vector<DirectoryEntry> GetEntries() const { return this->entries; }
         uint32_t GetStartCluster() const { return this->chain.GetStartCluster(); }
