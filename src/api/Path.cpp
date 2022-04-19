@@ -3,42 +3,57 @@
 
 using namespace org::vfat::api;
 
-Path::Path()
-{
-    this->items = new vector<string>();
-}
+Path::Path(const Path& other) :
+    items(other.items) 
+{ }
 
-Path::~Path()
-{
-    delete this->items;
-}
+Path::Path(Path&& other) : 
+    items(std::move(other.items)) 
+{ }
 
-void Path::Combine(std::string path, bool normalize)
+Path& Path::operator=(const Path& other)
 {
-    vector<string> items;
-    Utils::StringSplit(path, items, '/');
-
-    if (!path.empty() && path.at(0) == '/') {
-        // This is an absolute path which starts from root;
-        this->items->clear();
+    if (this != &other) {
+        items = other.items;
     }
 
-    vector<string>::iterator iter;
+    return *this;
+}
+
+Path& Path::operator=(Path&& other)
+{
+    if (this != &other) {
+        items = std::move(other.items);
+    }
+
+    return *this;
+}
+
+void Path::Combine(const std::string& path, bool normalize)
+{
+    if (!path.empty() && path.at(0) == '/') {
+        // This is an absolute path which starts from root;
+        this->items.clear();
+    }
+    
+    std::vector<std::string> items;
+    Utils::StringSplit(path, items, '/');
+
     if (normalize) {
-        for (iter = items.begin(); iter < items.end(); ++iter) {
-            string name = *iter;
+        for (auto iter = items.begin(); iter < items.end(); ++iter) {
+            std::string& name = *iter;
             if (name == ".") {
                 continue;
             } else if (name == "..") {
-                this->items->pop_back();
+                this->items.pop_back();
             } else {
-                this->items->push_back(name);
+                this->items.push_back(name);
             }
         }
     } else {
-        for (iter = items.begin(); iter < items.end(); ++iter) {
-            string name = *iter;
-            this->items->push_back(name);
+        for (auto iter = items.begin(); iter < items.end(); ++iter) {
+            std::string& name = *iter;
+            this->items.push_back(name);
         }
     }
 }
@@ -55,9 +70,8 @@ std::string Path::ToString(bool normalize) const
         return normalizedPath.ToString(false);
     } else {
         // Print as is;
-        string s = "";
-        vector<string>::iterator iter;
-        for (iter = this->items->begin(); iter < this->items->end(); ++iter) {
+        std::string s = "";
+        for (auto iter = this->items.begin(); iter < this->items.end(); ++iter) {
             s.append("/");
             s.append(*iter);
         }
@@ -86,34 +100,27 @@ bool Path::IsRoot() const
 //    return numberOfItems == 0;
 }
 
-string Path::GetItem(size_t index) const
+const std::string& Path::GetItem(size_t index) const
 {
-    return this->items->at(index);
+    return this->items[index];
+}
+
+const std::string& Path::GetLastItem() const
+{
+    return this->items.back();
 }
 
 size_t Path::GetItemCount() const
 {
-    return this->items->size();
+    return this->items.size();
 }
 
-Path* Path::Clone() const
+Path Path::GetParent() const
 {
-    Path *other = new Path();
-    vector<string>::iterator iter;
-    for (iter = this->items->begin(); iter < this->items->end(); ++iter) {
-        other->items->push_back(*iter);
+    Path result;
+    for (auto iter = items.begin(); iter < items.end() - 1; ++iter) {
+        result.items.push_back(*iter);
     }
 
-    return other;
-}
-
-Path* Path::GetParent() const
-{
-    Path *other = new Path();
-    vector<string>::iterator iter;
-    for (iter = this->items->begin(); iter < this->items->end() - 1; ++iter) {
-        other->items->push_back(*iter);
-    }
-
-    return other;
+    return result;
 }

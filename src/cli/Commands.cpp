@@ -1,52 +1,42 @@
 #include <iostream>
 #include "../../include/cli/Commands.h"
 
-using namespace std;
 using namespace org::vfat::cli;
 
-void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Ls(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    Directory *currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
 
-    vector<Directory *> directories;
-    currentDir->GetDirectories(directories);
-    vector<Directory *>::iterator dirIter;
+    std::vector<Directory> directories = currentDir.GetDirectories();
+    std::vector<Directory>::iterator dirIter;
 
-    vector<File *> files;
-    currentDir->GetFiles(files);
-    vector<File *>::iterator fileIter;
+    std::vector<File> files = currentDir.GetFiles();
+    std::vector<File>::iterator fileIter;
 
-    delete currentDir;
-
-    if (cmdLine->HasOption("-all")) {
-        for (dirIter = directories.begin(); dirIter < directories.end(); dirIter++) {
-            Directory *subDir = *dirIter;
-            string created = Utils::FormatDate(subDir->GetCreatedTime());
+    if (cmdLine.HasOption("-all")) {
+        for (dirIter = directories.begin(); dirIter < directories.end(); ++dirIter) {
+            Directory subDir = *dirIter;
+            std::string created = Utils::FormatDate(subDir.GetCreatedTime());
 
             cout << Utils::StringPadding(created, 20)
                  << Utils::StringPadding("<DIR>", 10)
                  << Utils::StringPadding("", 20)
-                 << Utils::StringPadding(subDir->GetName(), 30)
+                 << Utils::StringPadding(subDir.GetName(), 30)
                  << endl;
-
-            delete subDir;
         }
 
         uint32_t totalFilesSize = 0;
-        for (fileIter = files.begin(); fileIter < files.end(); fileIter++) {
-            File *file = *fileIter;
-            string created = Utils::FormatDate(file->GetCreatedTime());
-
+        for (fileIter = files.begin(); fileIter < files.end(); ++fileIter) {
+            File file = *fileIter;
+            string created = Utils::FormatDate(file.GetCreatedTime());
 
             cout << Utils::StringPadding(created, 20)
                  << Utils::StringPadding("", 10)
-                 << Utils::StringPadding(to_string(file->GetSize()) + " bytes", 20)
-                 << Utils::StringPadding(file->GetName(), 30)
+                 << Utils::StringPadding(to_string(file.GetSize()) + " bytes", 20)
+                 << Utils::StringPadding(file.GetName(), 30)
                  << endl;
 
-            totalFilesSize += file->GetSize();
-
-            delete file;
+            totalFilesSize += file.GetSize();
         }
 
         cout << Utils::StringPadding("", 10)
@@ -54,8 +44,8 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
              << Utils::StringPadding(to_string(totalFilesSize) + " bytes", 20)
              << endl;
 
-        uint32_t freeClusterCount = fsh->GetFileSystem()->GetFat()->GetFreeClusterCount();
-        uint32_t bytesPerCluster = fsh->GetFileSystem()->GetBootSector()->GetBytesPerCluster();
+        uint32_t freeClusterCount = fsh.GetFileSystem().GetFat().GetFreeClusterCount();
+        uint32_t bytesPerCluster = fsh.GetFileSystem().GetBootSector().GetBytesPerCluster();
         uint32_t freeSpaceInBytes = freeClusterCount * bytesPerCluster;
 
         cout << Utils::StringPadding("", 10)
@@ -64,182 +54,163 @@ void Commands::Ls(CommandLine *cmdLine, FileSystemHandle *fsh)
              << endl;
     } else {
         // Simple short output
-        for (dirIter = directories.begin(); dirIter < directories.end(); dirIter++) {
-            Directory *subDir = *dirIter;
-            cout << subDir->GetName() << " ";
-            delete subDir;
+        for (dirIter = directories.begin(); dirIter < directories.end(); ++dirIter) {
+            Directory subDir = *dirIter;
+            cout << subDir.GetName() << " ";
         }
 
-        for (fileIter = files.begin(); fileIter < files.end(); fileIter++) {
-            File *file = *fileIter;
-            cout << file->GetName() << " ";
-            delete file;
+        for (fileIter = files.begin(); fileIter < files.end(); ++fileIter) {
+            File file = *fileIter;
+            std::cout << file.GetName() << " ";
         }
 
         if (directories.size() + files.size() > 0) {
-            std::cout << endl;
+            std::cout << std::endl;
         }
     }
 }
 
-void Commands::Mkdir(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mkdir(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 2) {
+    if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("Directory is not specified.");
     }
 
-    string dirName = cmdLine->GetArg(1);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    currentDir->CreateDirectory(dirName);
-    delete currentDir;
+    const std::string& dirName = cmdLine.GetArg(1);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    currentDir.CreateDirectory(dirName);
 }
 
-void Commands::Cd(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cd(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    string dirPath = cmdLine->GetArg(1);
-    fsh->ChangeDirectory(dirPath);
+    const std::string& dirPath = cmdLine.GetArg(1);
+    fsh.ChangeDirectory(dirPath);
 }
 
-void Commands::Touch(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Touch(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 2) {
+    if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
     }
 
-    string fileName = cmdLine->GetArg(1);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    currentDir->CreateFile(fileName);
-    delete currentDir;
+    const std::string& fileName = cmdLine.GetArg(1);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    currentDir.CreateFile(fileName);
 }
 
-void Commands::Cat(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cat(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 2) {
+    if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File is not specified.");
     }
 
-    string fileName = cmdLine->GetArg(1);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    File *file = currentDir->GetFile(fileName);
-    string text = file->ReadText(0, file->GetSize());
-    delete file;
-    delete currentDir;
+    const std::string& fileName = cmdLine.GetArg(1);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    File file = currentDir.GetFile(fileName);
+    std::string text = file.ReadText(0, file.GetSize());
 
-    cout << text <<  endl;
+    std::cout << text << std::endl;
 }
 
-void Commands::Import(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Import(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 2) {
+    if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File or directory to import is not specified.");
     }
 
-    string fileName = cmdLine->GetArg(1);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    currentDir->Import(fileName);
-    delete currentDir;
+    const std::string& dirOrFileName = cmdLine.GetArg(1);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    currentDir.Import(dirOrFileName);
 }
 
-void Commands::Mv(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Mv(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 3) {
+    if (cmdLine.GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
     }
 
-    string srcFileName = cmdLine->GetArg(1);
-    string destFileName = cmdLine->GetArg(2);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    currentDir->Move(srcFileName, destFileName);
-    delete currentDir;
+    const std::string& srcFileName = cmdLine.GetArg(1);
+    const std::string& destFileName = cmdLine.GetArg(2);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    currentDir.Move(srcFileName, destFileName);
 }
 
-void Commands::Cp(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Cp(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 3) {
+    if (cmdLine.GetArgCount() < 3) {
         throw std::logic_error("At least one of the files is not specified.");
     }
 
-    string srcFileName = cmdLine->GetArg(1);
-    string destFileName = cmdLine->GetArg(2);
-    Directory *currentDir = fsh->GetCurrentDirectory();
-    currentDir->Copy(srcFileName, destFileName);
-    delete currentDir;
+    const std::string& srcFileName = cmdLine.GetArg(1);
+    const std::string& destFileName = cmdLine.GetArg(2);
+    Directory currentDir = fsh.GetCurrentDirectory();
+    currentDir.Copy(srcFileName, destFileName);
 }
 
-void Commands::Rm(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Rm(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() < 2) {
+    if (cmdLine.GetArgCount() < 2) {
         throw std::logic_error("File or directory is not specified.");
     }
 
-    string fileName = cmdLine->GetArg(1);
-    Directory *currentDir = fsh->GetCurrentDirectory();
+    const std::string& fileName = cmdLine.GetArg(1);
+    Directory currentDir = fsh.GetCurrentDirectory();
     try {
-        currentDir->DeleteFile(fileName);
+        currentDir.DeleteFile(fileName);
     } catch (const std::ios_base::failure& error) {
-        currentDir->DeleteDirectory(fileName);
+        currentDir.DeleteDirectory(fileName);
     }
-
-    delete currentDir;
 }
 
-void Commands::Tree(CommandLine *cmdLine, FileSystemHandle *fsh)
+void Commands::Tree(const CommandLine& cmdLine, FileSystemHelper& fsh)
 {
-    if (cmdLine->GetArgCount() > 1) {
+    if (cmdLine.GetArgCount() > 1) {
         throw std::logic_error("Too many arguments.");
     }
 
-    Directory *currentDir = fsh->GetCurrentDirectory();
+    Directory currentDir = fsh.GetCurrentDirectory();
     TreeStat stat;
     stat.totalDir = 0;
     stat.totalFiles = 0;
 
     PrintSubTree(currentDir, &stat, 0);
-    delete currentDir;
 
-    cout << endl << stat.totalDir << " directories, " << stat.totalFiles << " files." << endl;
+    std::cout << std::endl << stat.totalDir << " directories, " << stat.totalFiles << " files." << std::endl;
 }
 
-void Commands::PrintSubTree(Directory *dir, struct TreeStat *stat, int level)
+void Commands::PrintSubTree(Directory& dir, struct TreeStat *stat, int level)
 {
-    vector<Directory*> directories;
-    dir->GetDirectories(directories);
+    std::vector<Directory> directories = dir.GetDirectories();
+    std::vector<File> files = dir.GetFiles();
 
-    vector<File*> files;
-    dir->GetFiles(files);
-
-    string gap = "";
-    for (int i = 0; i < level; i++) {
+    std::string gap = "";
+    for (size_t i = 0; i < level; ++i) {
         gap += "│   ";
     }
 
-    string itemIndent = "├── ";
-    string lastItemIndent = "└── ";
-    for (auto iter = directories.begin(); iter < directories.end(); iter++) {
-        Directory *subDir = *iter;
-        string subDirName = subDir->GetName();
+    std::string itemIndent = "├── ";
+    std::string lastItemIndent = "└── ";
+    for (auto iter = directories.begin(); iter < directories.end(); ++iter) {
+        Directory subDir = *iter;
+        std::string subDirName = subDir.GetName();
         if (subDirName != "." && subDirName != "..") {
             if (iter + 1 == directories.end() && files.size() == 0) {
-                cout << gap << lastItemIndent << subDirName << endl;
+                std::cout << gap << lastItemIndent << subDirName << std::endl;
             } else {
-                cout << gap << itemIndent << subDirName << endl;
+                std::cout << gap << itemIndent << subDirName << std::endl;
             }
 
             PrintSubTree(subDir, stat, level + 1);
         }
-
-        delete subDir;
     }
 
-    for (auto iter = files.begin(); iter < files.end(); iter++) {
-        File *file = *iter;
+    for (auto iter = files.begin(); iter < files.end(); ++iter) {
+        File file = *iter;
         if (iter + 1 == files.end()) {
-            cout << gap << lastItemIndent << file->GetName() << endl;
+            std::cout << gap << lastItemIndent << file.GetName() << std::endl;
         } else {
-            cout << gap << itemIndent << file->GetName() << endl;
+            std::cout << gap << itemIndent << file.GetName() << std::endl;
         }
-
-        delete file;
     }
 
     stat->totalDir += directories.size();

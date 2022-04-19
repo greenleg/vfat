@@ -8,7 +8,6 @@
 #include "File.h"
 #include "Path.h"
 
-using namespace std;
 using namespace org::vfat;
 
 namespace org::vfat::api
@@ -17,40 +16,52 @@ namespace org::vfat::api
     {
     private:
         FileSystem *fs;
-        ClusterChainDirectory *parentCchDir;
-        DirectoryEntry *entry;
-        Path *path;
+        ClusterChainDirectory parentCchDir;
+        DirectoryEntry rootEntry;
+        Path path;
 
         bool IsRoot() const;
-        void Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
-        void CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
-        void CopyDirectory(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName);
-        void ImportFile(string path);
-        void ImportDirectory(string path);
-        ClusterChainDirectory* GetCchDirectory() const;
+        void Move(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName);
+        void ImportFile(const std::string& path);
+        void ImportDirectory(const std::string& path);
+        ClusterChainDirectory GetCchDirectory() const;
+        void Init();
+        void Cleanup();
+        const DirectoryEntry& GetThisEntry() const;
 
     public:
-        Directory(FileSystem *fs, Path *path);
-        static Directory* GetRoot(FileSystem *fs);
-        ~Directory();
-        void GetDirectories(std::vector<Directory*>& container) const;
-        void GetFiles(std::vector<File*>& container) const;
-        //void GetItems(std::vector<DirectoryItem*>& container) const;
-        void CreateFile(string name) const;
-        void DeleteFile(string path) const;
-        void CreateDirectory(string name) const;
-        void DeleteDirectory(string path) const;
-        File* GetFile(string path) const;
-        Directory* GetDirectory(string path) const;        
-        Path* GetPath() const { return this->path; }
+//        ClusterChainDirectory* GetParentCchDirectory() const {  return this->parentCchDir; }
+        Directory();
+        Directory(FileSystem *fs, Path& path);
+        Directory(FileSystem *fs, Path&& path);
 
-        void Move(string srcPath, string destPath);
-        void Copy(string srcPath, string destPath);
+        Directory(const Directory& other);
+        Directory(Directory&& other);
+        Directory& operator=(const Directory& other);
+        Directory& operator=(Directory&& other);
+
+        static Directory GetRoot(FileSystem *fs);
+        ~Directory();
+        std::vector<Directory> GetDirectories() const;
+        std::vector<File> GetFiles() const;
+
+        void CreateFile(const std::string& name) const;
+        void DeleteFile(const std::string& path) const;
+        void CreateDirectory(const std::string& name) const;
+        void DeleteDirectory(const std::string& path) const;
+        File GetFile(const std::string& path) const;
+        Directory GetDirectory(const std::string& path) const;        
+        Path GetPath() const { return this->path; }
+
+        void Move(const std::string& srcPath, const std::string& destPath);
+        void Copy(const std::string& srcPath, const std::string& destPath);
         void Write() const;
 
-        void Import(string path);
+        void Import(const std::string& path);
 
-        string GetName() const;
+        std::string GetName() const;
         tm* GetCreatedTime() const;
         tm* GetModifiedTime() const;
     };

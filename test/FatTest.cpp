@@ -1,3 +1,4 @@
+#include <string>
 #include "gtest/gtest.h"
 #include "../include/FileDisk.h"
 #include "../include/BootSector.h"
@@ -8,28 +9,27 @@ using namespace org::vfat;
 class FatTest : public ::testing::Test
 {
 protected:
-    FileDisk *device;
+    FileDisk device;
+    
+    FatTest() : device("disk0") { }     
 
     void SetUp() override
     {
-        this->device = new FileDisk("disk0");
-        this->device->Create();
+        this->device.Create();
 
         BootSector bootSector;
         bootSector.Create(1024 * 1024, 512, 1);
         bootSector.Write(this->device);
 
-        Fat fat(&bootSector);
+        Fat fat(bootSector);
         fat.Create();
         fat.Write(this->device);
     }
 
     void TearDown() override
     {
-        this->device->Close();
-        device->Delete();
-
-        delete this->device;
+        this->device.Close();
+        this->device.Delete();
     }
 };
 
@@ -38,7 +38,7 @@ TEST_F(FatTest, ReadFat)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ASSERT_EQ(FAT_FIRST_CLUSTER - 1, fat.GetLastAllocatedCluster());
@@ -46,7 +46,7 @@ TEST_F(FatTest, ReadFat)
     ASSERT_EQ(FAT_MEDIA_DESCRIPTOR, fat.GetEntry(0));
     ASSERT_EQ(FAT_EOF, fat.GetEntry(1));
 
-    for (uint32_t i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); i++) {
+    for (uint32_t i = FAT_FIRST_CLUSTER; i < bootSector.GetClusterCount(); ++i) {
         ASSERT_EQ(0, fat.GetEntry(i));
     }
 
@@ -58,7 +58,7 @@ TEST_F(FatTest, AllocateCluster)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     uint32_t newCluster = fat.AllocateChain(1);
@@ -70,7 +70,7 @@ TEST_F(FatTest, GetFreeClusterCount)
     BootSector bootSector;
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     ASSERT_EQ(bootSector.GetClusterCount() - FAT_FIRST_CLUSTER, fat.GetFreeClusterCount());
@@ -81,7 +81,7 @@ TEST_F(FatTest, GetFreeClusterCount2)
     BootSector bootSector;    
     bootSector.Read(this->device);
 
-    Fat fat(&bootSector);
+    Fat fat(bootSector);
     fat.Read(this->device);
 
     uint32_t cluster;

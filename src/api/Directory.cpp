@@ -11,222 +11,270 @@
 using namespace org::vfat;
 using namespace org::vfat::api;
 
-Directory::Directory(FileSystem *fs, Path *path)
+Directory::Directory()
+    : fs(nullptr)
+{ }
+
+Directory::Directory(FileSystem *fs, Path&& path)
+    : fs(fs), path(std::move(path))
 {
-    this->fs = fs;
-    this->path = path;
+    Init();
+}
 
-    if (path->IsRoot()) {
-        this->parentCchDir = nullptr;
+Directory::Directory(FileSystem *fs, Path& path)
+    : fs(fs), path(path)
+{
+    Init();
+}
 
+void Directory::Init() 
+{
+   if (path.IsRoot()) {
         time_t now = time(0);
 
         // Fake root entry;
-        this->entry = new DirectoryEntry();
-        this->entry->SetStartCluster(fs->GetBootSector()->GetRootDirFirstCluster());
-        this->entry->SetCreatedTime(now);
-        this->entry->SetLastModifiedTime(now);
-        this->entry->SetIsDir(true);
+        this->rootEntry.SetStartCluster(fs->GetBootSector().GetRootDirFirstCluster());
+        this->rootEntry.SetCreatedTime(now);
+        this->rootEntry.SetLastModifiedTime(now);
+        this->rootEntry.SetIsDir(true);
     } else {
-        ClusterChainDirectory *dir = fs->GetRootDirectory();
-        DirectoryEntry *e;
-        size_t i = 0;
-        for (; i < path->GetItemCount() - 1; i++) {
-            string name = path->GetItem(i);
-            e = dir->FindEntry(name.c_str());
-            if (e == nullptr) {
+        ClusterChainDirectory dir = fs->GetRootDirectory();        
+        for (size_t i = 0; i < path.GetItemCount() - 1; ++i) {
+            std::string name = path.GetItem(i);
+            auto eIdx = dir.FindEntryIndex(name.c_str());
+            if (eIdx == -1) {
                 std::ostringstream msgStream;
-                msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory";
-                throw std::ios_base::failure(msgStream.str());
+                msgStream << "Couldn't find '" << path.ToString(false) << "': No such file or directory";
+                throw std::ios_base::failure(msgStream.str());                
             }
 
-            ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
-            delete dir;
-            dir = subDir;
+            DirectoryEntry& e = dir.FindEntry(name.c_str());
+            ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(fs->GetDevice(), fs->GetFat(), e);
+            dir = std::move(subDir);
         }
 
-        string name = path->GetItem(i);
-        e = dir->FindEntry(name.c_str());
-        if (e == nullptr) {
+        const std::string& name = path.GetLastItem();
+        auto eIdx = dir.FindEntryIndex(name.c_str());
+        if (eIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << path->ToString(false) << "': No such file or directory";
+            msgStream << "Couldn't find '" << path.ToString(false) << "': No such file or directory";
             throw std::ios_base::failure(msgStream.str());
         }
 
-        this->parentCchDir = dir;
-        this->entry = e;
+        this->parentCchDir = std::move(dir);
     }
 }
 
-Directory* Directory::GetRoot(FileSystem *fs)
+Directory::Directory(const Directory& other) :
+    fs(other.fs),
+    parentCchDir(other.parentCchDir),
+    rootEntry(other.rootEntry),
+    path(other.path)
 {
-    return new Directory(fs, new Path());
 }
 
-ClusterChainDirectory* Directory::GetCchDirectory() const
+Directory::Directory(Directory&& other) :
+    fs(std::exchange(other.fs, nullptr)),
+    parentCchDir(std::move(other.parentCchDir)),
+    rootEntry(std::move(other.rootEntry)),
+    path(std::move(other.path))
 {
-    if (path->IsRoot()) {
+}
+
+Directory& Directory::operator=(const Directory& other)
+{
+    if (this != &other) {
+        Cleanup();
+        
+        fs = other.fs;
+        parentCchDir = other.parentCchDir;
+        rootEntry = other.rootEntry;
+        path = other.path;
+    }
+    return *this;
+}
+
+Directory& Directory::operator=(Directory&& other)
+{
+    if (this != &other) {
+        Cleanup();
+
+        fs = std::exchange(other.fs, nullptr);
+        parentCchDir = std::move(other.parentCchDir);
+        rootEntry = std::move(other.rootEntry);
+        path = std::move(other.path);
+    }
+    return *this;
+}
+
+Directory Directory::GetRoot(FileSystem *fs)
+{
+    return Directory(fs, std::move(Path()));
+}
+
+ClusterChainDirectory Directory::GetCchDirectory() const
+{
+    if (path.IsRoot()) {
         return this->fs->GetRootDirectory();
     } else {
-        return ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), this->entry);
+        const DirectoryEntry& thisEntry = GetThisEntry();
+        return ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), thisEntry);
     }
+}
+
+void Directory::Cleanup()
+{
 }
 
 Directory::~Directory()
 {
-    if (this->parentCchDir != nullptr) {
-        delete this->parentCchDir; // delete this->entry;  will be invoked automatically;
-    }
+    Cleanup();
+}
 
-    if (this->path->IsRoot()) {
-        // Deallocate memory occupied by the fake root entry;
-        delete this->entry;
+const DirectoryEntry& Directory::GetThisEntry() const
+{
+    if (this->path.IsRoot()) {
+        return this->rootEntry;
+    } else {
+        const std::string& dirName = this->path.GetLastItem();
+        return parentCchDir.FindEntry(dirName.c_str());
     }
-
-    delete this->path;
 }
 
 bool Directory::IsRoot() const
 {
-    return this->entry == nullptr ||
-            (this->entry->GetStartCluster() == this->fs->GetBootSector()->GetRootDirFirstCluster());
+    const DirectoryEntry& thisEntry = GetThisEntry();
+    return thisEntry.GetStartCluster() == this->fs->GetBootSector().GetRootDirFirstCluster();
 }
 
-void Directory::GetDirectories(std::vector<Directory*>& container) const
+std::vector<Directory> Directory::GetDirectories() const
 {
-    auto cchDir = this->GetCchDirectory();
-    std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
-    for (size_t i = 0; i < entries->size(); i++) {
-        DirectoryEntry *e = entries->at(i);
-        if (e->IsDir()) {
-            char nameBuf[256];
-            e->GetName(nameBuf);
-            Path *dirPath = this->path->Clone();
-            dirPath->Combine(nameBuf);
-            Directory *dir = new Directory(this->fs, dirPath);
-            container.push_back(dir);
+    auto cchDir = GetCchDirectory();
+    std::vector<DirectoryEntry> entries = cchDir.GetEntries();
+    size_t dirCount = 0;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        DirectoryEntry& e = entries[i];
+        if (e.IsDir()) {
+            ++dirCount;
+        }
+    }
+    
+    std::vector<Directory> result(dirCount);
+    
+    size_t dirIdx = 0;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        DirectoryEntry& e = entries[i];
+        if (e.IsDir()) {
+            std:string dirName = e.GetName();
+            Path dirPath(this->path);
+            dirPath.Combine(dirName);            
+            Directory dir(this->fs, std::move(dirPath));
+            result[dirIdx++] = std::move(dir);
         }
     }
 
-    delete cchDir;
+    return result;
 }
 
-void Directory::GetFiles(std::vector<File*>& container) const
+std::vector<File> Directory::GetFiles() const
 {
     auto cchDir = this->GetCchDirectory();
-    std::vector<DirectoryEntry *> *entries = cchDir->GetEntries();
-    for (size_t i = 0; i < entries->size(); i++) {
-        DirectoryEntry *e = entries->at(i);
-        if (e->IsFile()) {
-            char nameBuf[256];
-            e->GetName(nameBuf);
-            Path *filePath = this->path->Clone();
-            filePath->Combine(nameBuf);
-            File *file = new File(this->fs, filePath);
-            container.push_back(file);
+    std::vector<DirectoryEntry> entries = cchDir.GetEntries();
+    size_t fileCount = 0;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        DirectoryEntry& e = entries[i];
+        if (e.IsFile()) {
+            ++fileCount;
         }
     }
 
-    delete cchDir;
+    std::vector<File> result(fileCount);
+    size_t fileIdx = 0;
+    for (size_t i = 0; i < entries.size(); ++i) {
+        DirectoryEntry& e = entries[i];
+        if (e.IsFile()) {
+            std::string entryName = e.GetName();
+            Path filePath(this->path);
+            filePath.Combine(entryName);
+            File file(this->fs, std::move(filePath));
+            result[fileIdx++] = std::move(file);
+        }
+    }
+    
+    return result;
 }
 
-//void Directory::GetItems(std::vector<DirectoryItem*>& container) const
-//{
-//    std::vector<Directory*> directories;
-//    this->GetDirectories(directories);
-//    for (auto iter = directories.begin(); iter != directories.end(); ++iter) {
-//        container.push_back(*iter);
-//    }
-
-//    std::vector<File*> files;
-//    this->GetFiles(files);
-//    for (auto iter = files.begin(); iter != files.end(); ++iter) {
-//        container.push_back(*iter);
-//    }
-//}
-
-string Directory::GetName() const
+std::string Directory::GetName() const
 {
-    char nameBuf[256];
-    if (this->path->IsRoot()) {
+    if (this->path.IsRoot()) {
         return "/";
     }
 
-    this->entry->GetName(nameBuf);
-    string s(nameBuf);
-    return s; // return a copy of the local variable s;
+    return this->path.GetLastItem();
 }
 
-Directory* Directory::GetDirectory(std::string path) const
+Directory Directory::GetDirectory(const std::string& path) const
 {
-    Path *dirPath = this->path->Clone();
-    dirPath->Combine(path);
-    return new Directory(this->fs, dirPath);
+    Path dirPath(this->path);
+    dirPath.Combine(path);
+    return Directory(this->fs, std::move(dirPath));
 }
 
-void Directory::CreateDirectory(std::string name) const
+void Directory::CreateDirectory(const std::string& name) const
 {
-    //const char *cname = name.c_str();
     auto cchDir = this->GetCchDirectory();
-    DirectoryEntry *subEntry = cchDir->AddDirectory(name.c_str(), this->fs->GetDevice());
+    DirectoryEntry& subEntry = cchDir.AddDirectory(name.c_str(), this->fs->GetDevice(), this->fs->GetFat());
 
     // Update Created/Modified time for the '..' directory
-    ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), subEntry);
-    DirectoryEntry *parentEntry = subDir->FindEntry("..");
+    ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(this->fs->GetDevice(), this->fs->GetFat(), subEntry);
+    DirectoryEntry& parentEntry = subDir.FindEntry("..");
 
-    time_t createdTime = this->entry->GetCreatedTime();
-    time_t modifiedTime = this->entry->GetLastModifiedTime();
-    parentEntry->SetCreatedTime(createdTime);
-    parentEntry->SetLastModifiedTime(modifiedTime);
+    const DirectoryEntry& thisEntry = GetThisEntry();
 
-    subDir->Write(this->fs->GetDevice());
+    time_t createdTime = thisEntry.GetCreatedTime();
+    time_t modifiedTime = thisEntry.GetLastModifiedTime();
+    
+    parentEntry.SetCreatedTime(createdTime);
+    parentEntry.SetLastModifiedTime(modifiedTime);
 
-    delete subDir;
-    delete cchDir;
+    subDir.Write(this->fs->GetDevice(), this->fs->GetFat());
 }
 
-void Directory::CreateFile(std::string name) const
+void Directory::CreateFile(const std::string& name) const
 {
     auto cchDir = this->GetCchDirectory();
-    cchDir->AddFile(name.c_str(), this->fs->GetDevice());
-    delete cchDir;
+    cchDir.AddFile(name.c_str(), this->fs->GetDevice(), this->fs->GetFat());
 }
 
-File* Directory::GetFile(string path) const
+File Directory::GetFile(const std::string& path) const
 {
-    Path *filePath = this->path->Clone();
-    filePath->Combine(path);
-    return new File(this->fs, filePath);
+    Path filePath(this->path);
+    filePath.Combine(path);
+    return File(this->fs, std::move(filePath));
 }
 
-void Directory::DeleteDirectory(string path) const
+void Directory::DeleteDirectory(const std::string& path) const
 {
-    Path *pathObj = this->path->Clone();
-    pathObj->Combine(path);
-    Directory *parentDir = new Directory(this->fs, pathObj->GetParent());
-    string dirName = pathObj->GetItem(pathObj->GetItemCount() - 1);
+    Path pathObj(this->path);
+    pathObj.Combine(path);
+    std::string dirName = pathObj.GetItem(pathObj.GetItemCount() - 1);
+    Directory parentDir(this->fs, std::move(pathObj.GetParent()));
 
     // Remove a sub directory;
-    auto parentCchDir = parentDir->GetCchDirectory();
-    parentCchDir->RemoveDirectory(dirName.c_str(), this->fs->GetDevice());
-
-    delete parentCchDir;
-    delete parentDir;
+    auto parentCchDir = parentDir.GetCchDirectory();
+    parentCchDir.RemoveDirectory(dirName.c_str(), this->fs->GetDevice(), this->fs->GetFat());
 }
 
-void Directory::DeleteFile(string path) const
+void Directory::DeleteFile(const std::string& path) const
 {
-    Path *pathObj = this->path->Clone();
-    pathObj->Combine(path);
-    Directory *parentDir = new Directory(this->fs, pathObj->GetParent());
-    string fileName = pathObj->GetItem(pathObj->GetItemCount() - 1);
+    Path pathObj(this->path);
+    pathObj.Combine(path);
+    std::string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
+    Directory parentDir(this->fs, std::move(pathObj.GetParent()));
 
     // Remove;
-    auto parentCchDir = parentDir->GetCchDirectory();
-    parentCchDir->RemoveFile(fileName.c_str(), this->fs->GetDevice());
-
-    delete parentCchDir;
-    delete parentDir;
+    auto parentCchDir = parentDir.GetCchDirectory();
+    parentCchDir.RemoveFile(fileName.c_str(), this->fs->GetDevice(), this->fs->GetFat());
 }
 
 void Directory::Write() const
@@ -234,135 +282,135 @@ void Directory::Write() const
     throw std::runtime_error("The operation is not supported.");
 }
 
-void Directory::Move(string srcPath, string destPath)
+void Directory::Move(const std::string& srcPath, const std::string& destPath)
 {
-    Device *dev = this->fs->GetDevice();
-    Fat *fat = this->fs->GetFat();
+    Device& dev = this->fs->GetDevice();
+    Fat& fat = this->fs->GetFat();
 
-    Path *srcPathObj = this->path->Clone();
-    srcPathObj->Combine(srcPath);
+    Path srcPathObj(this->path);
+    srcPathObj.Combine(srcPath);
 
-    ClusterChainDirectory *srcDir = this->fs->GetRootDirectory();
-    DirectoryEntry *srcEntry = nullptr;
-    size_t i = 0;
-    for (; i < srcPathObj->GetItemCount() - 1; i++) {
-        string name = srcPathObj->GetItem(i);
-        srcEntry = srcDir->FindEntry(name.c_str());
-        if (srcEntry == nullptr) {
+    ClusterChainDirectory srcDir = this->fs->GetRootDirectory();
+    for (size_t i = 0; i < srcPathObj.GetItemCount() - 1; ++i) {
+        const std::string& name = srcPathObj.GetItem(i);
+        auto srcEntryIdx = srcDir.FindEntryIndex(name.c_str());
+        if (srcEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
+            msgStream << "Couldn't find '" << srcPathObj.ToString() << "': No such file or directory.";
             throw std::runtime_error(msgStream.str());
         }
 
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, srcEntry);
-        delete srcDir;
-
-        srcDir = subDir;
+        DirectoryEntry& srcEntry = srcDir.FindEntry(name.c_str());
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, srcEntry);
+        srcDir = std::move(subDir);
     }
 
-    string srcName = srcPathObj->GetItem(i);
-    srcEntry = srcDir->FindEntry(srcName.c_str());
-    if (srcEntry == nullptr) {
+    const std::string& srcName = srcPathObj.GetLastItem();
+    auto srcEntryIdx = srcDir.FindEntryIndex(srcName.c_str());
+    if (srcEntryIdx == -1) {
         std::ostringstream msgStream;
-        msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
-        throw std::runtime_error(msgStream.str());
+        msgStream << "Couldn't find '" << srcPathObj.ToString() << "': No such file or directory.";
+        throw std::runtime_error(msgStream.str());    
     }
 
-    Path *destPathObj = this->path->Clone();
-    destPathObj->Combine(destPath);
+    DirectoryEntry& srcEntry = srcDir.FindEntry(srcName.c_str());
+    
+    Path destPathObj(this->path);
+    destPathObj.Combine(destPath);
 
-    ClusterChainDirectory *destDir = this->fs->GetRootDirectory();
-    DirectoryEntry *destEntry = nullptr;
-    i = 0;
-    for (; i < destPathObj->GetItemCount() - 1; i++) {
-        string name = destPathObj->GetItem(i);
-        destEntry = destDir->FindEntry(name.c_str());
-        if (destEntry == nullptr) {
+    ClusterChainDirectory destDir = this->fs->GetRootDirectory();
+    for (size_t i = 0; i < destPathObj.GetItemCount() - 1; ++i) {
+        const std::string& name = destPathObj.GetItem(i);
+        auto destEntryIdx = destDir.FindEntryIndex(name.c_str());
+        if (destEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << destPathObj->ToString() << "': No such file or directory.";
+            msgStream << "Couldn't find '" << destPathObj.ToString() << "': No such file or directory.";
             throw std::runtime_error(msgStream.str());
         }
 
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-        delete destDir;
-        destDir = subDir;
+        DirectoryEntry& destEntry = destDir.FindEntry(name.c_str());
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+        destDir = std::move(subDir);
     }    
 
-    string destName = destPathObj->GetItem(i);
-    destEntry = destDir->FindEntry(destName.c_str());
+    const std::string& destName = destPathObj.GetLastItem();
+    auto destEntryIdx = destDir.FindEntryIndex(destName.c_str());
 
-    if (srcEntry->IsFile()) {
-        if (destEntry == nullptr) {
+    if (srcEntry.IsFile()) {
+        if (destEntryIdx == -1) {
             // Move the source file with the new name;
             this->Move(srcDir, srcEntry, destDir, destName);
-        } else if (destEntry->IsFile()) {
-            destDir->RemoveFile(destName.c_str(), dev);
-            this->Move(srcDir, srcEntry, destDir, destName);
-            cout << "File '" << destPathObj->ToString() << "' has been replaced." << endl;
         } else {
-            // Jump to the sub-directory;
-            ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-            delete destDir;
-            destDir = subDir;
+            DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
+            if (destEntry.IsFile()) {
+                destDir.RemoveFile(destName.c_str(), dev, fat);
+                this->Move(srcDir, srcEntry, destDir, destName);
+                std::cout << "File '" << destPathObj.ToString() << "' has been replaced." << std::endl;
+            } else {
+                // Jump to the sub-directory;
+                ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+                destDir = std::move(subDir);
 
-            // Move the source file with the original name;
-            this->Move(srcDir, srcEntry, destDir, srcName);
+                // Move the source file with the original name;
+                this->Move(srcDir, srcEntry, destDir, srcName);
+            }
         }
     } else {
-        if (destEntry == nullptr || !destEntry->IsDir()) {
+        if (destEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << destPathObj->ToString() << "': No such directory.";
+            msgStream << "Couldn't find '" << destPathObj.ToString() << "': No such directory.";
+            throw std::runtime_error(msgStream.str());
+        }
+        
+        DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
+        if (!destEntry.IsDir()) {
+            std::ostringstream msgStream;
+            msgStream << "'" << destPathObj.ToString() << "': Not a directory.";
             throw std::runtime_error(msgStream.str());
         }
 
         // Jump to the sub-directory;
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-        delete destDir;
-        destDir = subDir;
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+        destDir = std::move(subDir);
 
         // Get the source directory name;
-        Path *srcNormalizedPathObj = this->path->Clone();
-        srcNormalizedPathObj->Combine(srcPath, true);
-        string srcDirName = srcNormalizedPathObj->GetItem(srcNormalizedPathObj->GetItemCount() - 1);
+        Path srcNormalizedPathObj(this->path);
+        srcNormalizedPathObj.Combine(srcPath, true);
+        const std::string& srcDirName = srcNormalizedPathObj.GetLastItem();
 
         // Move the source directory to the destination directory;
         this->Move(srcDir, srcEntry, destDir, srcDirName);
-
-        delete srcNormalizedPathObj;
     }
-
-    delete srcPathObj;
-    delete destPathObj;
-
-    delete srcDir;
-    delete destDir;
 }
 
-void Directory::Move(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
+void Directory::Move(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
-    const char *newName = destName.c_str();
-    if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
+    Device& dev = this->fs->GetDevice();
+    Fat& fat = this->fs->GetFat();
+
+    if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Rename file or directory;
-        srcDir->SetName(dev, srcEntry, newName);
+        srcDir.SetName(dev, fat, srcEntry, destName);
     } else {
-        srcDir->Move(dev, srcEntry, destDir, newName);
+        srcDir.Move(dev, fat, srcEntry, destDir, destName);
     }
 }
 
 tm* Directory::GetCreatedTime() const
 {
-    time_t time = this->entry->GetCreatedTime();
+    const DirectoryEntry& thisEntry = GetThisEntry();
+    time_t time = thisEntry.GetCreatedTime();
     return localtime(&time);
 }
 
 tm* Directory::GetModifiedTime() const
 {
-    time_t time = this->entry->GetLastModifiedTime();
+    const DirectoryEntry& thisEntry = GetThisEntry();
+    time_t time = thisEntry.GetLastModifiedTime();
     return localtime(&time);
 }
 
-void Directory::ImportFile(string path)
+void Directory::ImportFile(const std::string& path)
 {
     FILE *fp = fopen(path.c_str(), "r+b");
     if (fp == nullptr) {
@@ -374,10 +422,10 @@ void Directory::ImportFile(string path)
 
     Path pathObj;
     pathObj.Combine(path);
-    string fileName = pathObj.GetItem(pathObj.GetItemCount() - 1);
+    const std::string& fileName = pathObj.GetLastItem();
 
-    this->CreateFile(fileName);
-    File *file = this->GetFile(fileName);
+    CreateFile(fileName);
+    File file = GetFile(fileName);
 
     const size_t BUFFER_SIZE = 4096;
     uint8_t buf[BUFFER_SIZE];
@@ -386,16 +434,15 @@ void Directory::ImportFile(string path)
     fseek(fp, 0, SEEK_SET);
     size_t nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
     while (nread > 0) {
-        file->Write(offset, nread, buf);
+        file.Write(offset, nread, buf);
         offset += nread;
         nread = fread(buf, sizeof(char), BUFFER_SIZE, fp);
     }
 
     fclose(fp);
-    delete file;
 }
 
-void Directory::ImportDirectory(string path)
+void Directory::ImportDirectory(const std::string& path)
 {
     DIR *dir = opendir(path.c_str());
     if (dir == NULL) {
@@ -409,16 +456,15 @@ void Directory::ImportDirectory(string path)
         try {
             if (ent->d_type == DT_REG) {
                 // Import a regular file;
-                string filePath = path + "/" + ent->d_name;
+                std::string filePath = path + "/" + ent->d_name;
                 this->ImportFile(filePath);
             } else if (ent->d_type == DT_DIR) {
                 if (strcmp(ent->d_name, ".") != 0 && strcmp(ent->d_name, "..") != 0) {
                     // Import a sub-directory;
                     this->CreateDirectory(ent->d_name);
-                    Directory *subDir = this->GetDirectory(ent->d_name);
-                    string subDirPath = path + "/" + ent->d_name;
-                    subDir->ImportDirectory(subDirPath);
-                    delete subDir;
+                    Directory subDir = this->GetDirectory(ent->d_name);
+                    std::string subDirPath = path + "/" + ent->d_name;
+                    subDir.ImportDirectory(subDirPath);
                 }
             }
         } catch (const std::ios_base::failure& error) {
@@ -429,7 +475,7 @@ void Directory::ImportDirectory(string path)
     closedir(dir);
 }
 
-void Directory::Import(string path)
+void Directory::Import(const std::string& path)
 {
     struct stat info;
     stat(path.c_str(), &info);
@@ -444,131 +490,131 @@ void Directory::Import(string path)
     }
 }
 
-void Directory::Copy(string srcPath, string destPath)
+void Directory::Copy(const std::string& srcPath, const std::string& destPath)
 {
-    Device *dev = this->fs->GetDevice();
-    Fat *fat = this->fs->GetFat();
+    Device& dev = this->fs->GetDevice();
+    Fat& fat = this->fs->GetFat();
 
-    Path *srcPathObj = this->path->Clone();
-    srcPathObj->Combine(srcPath);
+    Path srcPathObj(this->path);
+    srcPathObj.Combine(srcPath);
 
-    ClusterChainDirectory *srcDir = this->fs->GetRootDirectory();
-    DirectoryEntry *srcEntry = nullptr;
-    size_t i = 0;
-    for (; i < srcPathObj->GetItemCount() - 1; i++) {
-        string name = srcPathObj->GetItem(i);
-        srcEntry = srcDir->FindEntry(name.c_str());
-        if (srcEntry == nullptr) {
+    ClusterChainDirectory srcDir = this->fs->GetRootDirectory();
+    for (size_t i = 0; i < srcPathObj.GetItemCount() - 1; ++i) {
+        std::string name = srcPathObj.GetItem(i);
+        auto srcEntryIdx = srcDir.FindEntryIndex(name.c_str());
+        if (srcEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
+            msgStream << "Couldn't find '" << srcPathObj.ToString() << "': No such file or directory.";
             throw std::runtime_error(msgStream.str());
         }
 
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, srcEntry);
-        delete srcDir;
-
-        srcDir = subDir;
+        DirectoryEntry& srcEntry = srcDir.FindEntry(name.c_str());
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, srcEntry);
+        srcDir = std::move(subDir);
     }
 
-    string srcName = srcPathObj->GetItem(i);
-    srcEntry = srcDir->FindEntry(srcName.c_str());
-    if (srcEntry == nullptr) {
+    std::string srcName = srcPathObj.GetLastItem();
+    auto srcEntryIdx = srcDir.FindEntryIndex(srcName.c_str());
+    if (srcEntryIdx == -1) {
         std::ostringstream msgStream;
-        msgStream << "Couldn't find '" << srcPathObj->ToString() << "': No such file or directory.";
+        msgStream << "Couldn't find '" << srcPathObj.ToString() << "': No such file or directory.";
         throw std::runtime_error(msgStream.str());
     }
+    
+    DirectoryEntry& srcEntry = srcDir.FindEntry(srcName.c_str());
 
-    Path *destPathObj = this->path->Clone();
-    destPathObj->Combine(destPath);
+    Path destPathObj(this->path);
+    destPathObj.Combine(destPath);
 
-    ClusterChainDirectory *destDir = this->fs->GetRootDirectory();
-    DirectoryEntry *destEntry = nullptr;
-    i = 0;
-    for (; i < destPathObj->GetItemCount() - 1; i++) {
-        string name = destPathObj->GetItem(i);
-        destEntry = destDir->FindEntry(name.c_str());
-        if (destEntry == nullptr) {
+    ClusterChainDirectory destDir = this->fs->GetRootDirectory();   
+    for (size_t i = 0; i < destPathObj.GetItemCount() - 1; ++i) {
+        std::string name = destPathObj.GetItem(i);
+        auto destEntryIdx = destDir.FindEntryIndex(name.c_str());
+        if (destEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << destPathObj->ToString() << "': No such file or directory.";
+            msgStream << "Couldn't find '" << destPathObj.ToString() << "': No such file or directory.";
             throw std::runtime_error(msgStream.str());
         }
 
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-        delete destDir;
-        destDir = subDir;
+        DirectoryEntry& destEntry = destDir.FindEntry(name.c_str());
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+        destDir = std::move(subDir);
     }
 
-    string destName = destPathObj->GetItem(i);
-    destEntry = destDir->FindEntry(destName.c_str());
+    const std::string& destName = destPathObj.GetLastItem();
+    auto destEntryIdx = destDir.FindEntryIndex(destName.c_str());
 
-    if (srcEntry->IsFile()) {
-        if (destEntry == nullptr) {
+    if (srcEntry.IsFile()) {
+        if (destEntryIdx == -1) {
             // Copy the source file with the new name;
             this->CopyFile(srcDir, srcEntry, destDir, destName);
-        } else if (destEntry->IsFile()) {
-            destDir->RemoveFile(destName.c_str(), dev);
-            this->CopyFile(srcDir, srcEntry, destDir, destName);
-            cout << "File '" << destPathObj->ToString() << "' has been replaced." << endl;
         } else {
-            // Jump to the sub-directory;
-            ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-            delete destDir;
-            destDir = subDir;
+            DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
+            if (destEntry.IsFile()) {
+                destDir.RemoveFile(destName.c_str(), dev, fat);
+                this->CopyFile(srcDir, srcEntry, destDir, destName);
+                std::cout << "File '" << destPathObj.ToString() << "' has been replaced." << std::endl;
+            } else {
+                // Jump to the sub-directory;
+                ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+                destDir = std::move(subDir);
 
-            // Copy the source file with its original name;
-            this->CopyFile(srcDir, srcEntry, destDir, srcName);
+                // Copy the source file with its original name;
+                this->CopyFile(srcDir, srcEntry, destDir, srcName);
+            }
         }
     } else {
-        if (destEntry == nullptr || !destEntry->IsDir()) {
+        if (destEntryIdx == -1) {
             std::ostringstream msgStream;
-            msgStream << "Couldn't find '" << destPathObj->ToString() << "': No such directory.";
+            msgStream << "Couldn't find '" << destPathObj.ToString() << "': No such directory.";
             throw std::runtime_error(msgStream.str());
+        }
+        
+        DirectoryEntry& destEntry = destDir.FindEntry(destName.c_str());
+        if (!destEntry.IsDir()) {
+            std::ostringstream msgStream;
+            msgStream << "'" << destPathObj.ToString() << "': Not a directory.";
+            throw std::runtime_error(msgStream.str());        
         }
 
         // Jump to the sub-directory;
-        ClusterChainDirectory *subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
-        delete destDir;
-        destDir = subDir;
+        ClusterChainDirectory subDir = ClusterChainDirectory::GetDirectory(dev, fat, destEntry);
+        destDir = std::move(subDir);
 
         // Get the source directory name;
-        Path *srcNormalizedPathObj = this->path->Clone();
-        srcNormalizedPathObj->Combine(srcPath, true);
-        string srcDirName = srcNormalizedPathObj->GetItem(srcNormalizedPathObj->GetItemCount() - 1);
+        Path srcNormalizedPathObj(this->path);
+        srcNormalizedPathObj.Combine(srcPath, true);
+        const std::string& srcDirName = srcNormalizedPathObj.GetLastItem();
 
         // Copy the source directory to the destination directory;
         this->CopyDirectory(srcDir, srcEntry, destDir, srcDirName);
-
-        delete srcNormalizedPathObj;
     }
-
-    delete destPathObj;
-    delete srcPathObj;
-
-    delete srcDir;
-    delete destDir;
 }
 
-void Directory::CopyFile(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
+void Directory::CopyFile(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
+    Fat& fat = this->fs->GetFat();
     const char *newName = destName.c_str();
-    if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
+    if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Copy to the same directory;
         destDir = srcDir;
     }
 
-    srcDir->CopyFile(dev, srcEntry, destDir, newName);
-    destDir->Write(this->fs->GetDevice());
+    srcDir.CopyFile(dev, fat, srcEntry, destDir, newName);
+    destDir.Write(dev, fat);
 }
 
-void Directory::CopyDirectory(ClusterChainDirectory *srcDir, DirectoryEntry *srcEntry, ClusterChainDirectory *destDir, string destName)
+void Directory::CopyDirectory(ClusterChainDirectory& srcDir, DirectoryEntry& srcEntry, ClusterChainDirectory& destDir, const std::string& destName)
 {
-    Device *dev = this->fs->GetDevice();
+    Device& dev = this->fs->GetDevice();
+    Fat& fat = this->fs->GetFat();
+    
     const char *newName = destName.c_str();
-    if (srcDir->GetStartCluster() == destDir->GetStartCluster()) {
+    if (srcDir.GetStartCluster() == destDir.GetStartCluster()) {
         // Copy to the same directory;
         destDir = srcDir;
     }
 
-    srcDir->CopyDirectory(dev, srcEntry, destDir, newName);
+    srcDir.CopyDirectory(dev, fat, srcEntry, destDir, newName);
 }

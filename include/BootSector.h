@@ -49,8 +49,8 @@ namespace org::vfat
         }
 
         void Create(uint64_t volumeSize, uint16_t bytesPerSector, uint16_t sectorsPerCluster);
-        void Read(Device *device);
-        void Write(Device *device) const;
+        void Read(const Device& device);
+        void Write(Device& device) const;
 
         /**
          * @brief Gets the total size of the device in bytes.

@@ -63,10 +63,10 @@ void BootSector::Create(uint64_t deviceSizeInBytes, uint16_t bytesPerSector, uin
     this->rootDirFirstCluster = 2;
 }
 
-void BootSector::Read(Device *device)
+void BootSector::Read(const Device& device)
 {
     uint8_t buffer[BS_HEADER_SIZE];
-    device->Read(buffer, 0, BS_HEADER_SIZE);
+    device.Read(buffer, 0, BS_HEADER_SIZE);
 
     this->deviceSizeInBytes = BinaryReader::ReadUInt64(buffer, BS_VOLUMELENGTH_OFFSET);
     this->bytesPerSector = BinaryReader::ReadUInt16(buffer, BS_BYTESPERSECTOR_OFFSET);
@@ -79,7 +79,7 @@ void BootSector::Read(Device *device)
 }
 
 
-void BootSector::Write(Device *device) const
+void BootSector::Write(Device& device) const
 {
     uint8_t buffer[BS_HEADER_SIZE];
 
@@ -92,5 +92,5 @@ void BootSector::Write(Device *device) const
     BinaryReader::WriteUInt32(buffer, BS_CLUSTERHEAPOFFSET_OFFSET, this->clusterHeapOffset);
     BinaryReader::WriteUInt32(buffer, BS_ROOTDIRFIRSTCLUSTER_OFFSET, this->rootDirFirstCluster);
 
-    device->Write(buffer, 0, BS_HEADER_SIZE);
+    device.Write(buffer, 0, BS_HEADER_SIZE);
 }

@@ -2,48 +2,47 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdexcept>
+#include <iostream>
 #include "../include/Fat.h"
 
 using namespace org::vfat;
 
-Fat::Fat(BootSector *bootSector)
+Fat::Fat(BootSector& bootSector)
+  : bootSector(bootSector), entries(bootSector.GetClusterCount()), lastAllocatedCluster(0)
 {
-    this->bootSector = bootSector;
-    this->entries = new uint32_t[bootSector->GetClusterCount()];
 }
 
 Fat::~Fat()
 {
-    delete[] this->entries;
 }
 
 void Fat::Create()
 {
     this->lastAllocatedCluster = FAT_FIRST_CLUSTER - 1;
-    uint32_t clusterCount = this->bootSector->GetClusterCount();
-    memset((void*)this->entries, 0, sizeof(uint32_t) * clusterCount);
+    std::fill(this->entries.begin() + 2, this->entries.end(), FAT_FREE);
+    
     this->entries[0] = FAT_MEDIA_DESCRIPTOR;
     this->entries[1] = FAT_EOF;
 }
 
-void Fat::Read(Device *device)
+void Fat::Read(const Device& device)
 {
     this->lastAllocatedCluster = FAT_FIRST_CLUSTER - 1;
-    uint32_t fatOffset = this->bootSector->GetFatOffset();
-    uint32_t clusterCount = this->bootSector->GetClusterCount();
-    device->Read((uint8_t *)this->entries, fatOffset, sizeof(uint32_t) * clusterCount);
+    uint32_t fatOffset = this->bootSector.GetFatOffset();
+    uint32_t clusterCount = this->bootSector.GetClusterCount();
+    device.Read((uint8_t *)this->entries.data(), fatOffset, sizeof(uint32_t) * clusterCount);
 }
 
-void Fat::Write(Device *device) const
+void Fat::Write(Device& device) const
 {
-    uint32_t fatOffset = this->bootSector->GetFatOffset();
-    uint32_t clusterCount = this->bootSector->GetClusterCount();
-    device->Write((uint8_t *)this->entries, fatOffset, sizeof(uint32_t) * clusterCount);
+    uint32_t fatOffset = this->bootSector.GetFatOffset();
+    uint32_t clusterCount = this->bootSector.GetClusterCount();
+    device.Write((uint8_t *)this->entries.data(), fatOffset, sizeof(uint32_t) * clusterCount);
 }
 
 uint32_t Fat::AllocateCluster()
 {
-    for (uint32_t i = this->lastAllocatedCluster + 1; i < this->bootSector->GetClusterCount(); i++) {
+    for (uint32_t i = this->lastAllocatedCluster + 1; i < this->bootSector.GetClusterCount(); ++i) {
         if (this->entries[i] == FAT_FREE) {
             this->entries[i] = FAT_EOF;
             this->lastAllocatedCluster = i;
@@ -51,7 +50,7 @@ uint32_t Fat::AllocateCluster()
         }
     }
 
-    for (uint32_t i = FAT_FIRST_CLUSTER; i < this->lastAllocatedCluster; i++) {
+    for (uint32_t i = FAT_FIRST_CLUSTER; i < this->lastAllocatedCluster; ++i) {
         if (this->entries[i] == FAT_FREE) {
             this->entries[i] = FAT_EOF;
             this->lastAllocatedCluster = i;
@@ -75,7 +74,7 @@ uint32_t Fat::AllocateChain(uint32_t length)
     return startCluster;
 }
 
-void Fat::AppendChain(uint32_t startCluster1, uint32_t startCluster2) const
+void Fat::AppendChain(uint32_t startCluster1, uint32_t startCluster2)
 {
     uint32_t cluster = startCluster1;
 
@@ -111,12 +110,12 @@ void Fat::GetChain(uint32_t startCluster, uint32_t *chain) const
     }
 }
 
-void Fat::SetEof(uint32_t cluster) const
+void Fat::SetEof(uint32_t cluster)
 {
     this->entries[cluster] = FAT_EOF;
 }
 
-void Fat::SetFree(uint32_t cluster) const
+void Fat::SetFree(uint32_t cluster)
 {
     this->entries[cluster] = FAT_FREE;
 }
@@ -129,7 +128,7 @@ uint32_t Fat::GetEntry(int i) const
 uint32_t Fat::GetFreeClusterCount() const
 {
     uint32_t count = 0;
-    for (uint32_t i = FAT_FIRST_CLUSTER; i < this->bootSector->GetClusterCount(); i++) {
+    for (uint32_t i = FAT_FIRST_CLUSTER; i < this->bootSector.GetClusterCount(); ++i) {
         if (this->entries[i] == FAT_FREE) {
             count++;
         }

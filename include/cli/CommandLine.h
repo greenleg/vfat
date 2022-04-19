@@ -5,14 +5,12 @@
 #include <vector>
 #include "../Common.h"
 
-using namespace std;
-
 namespace org::vfat::cli
 {
     class CommandLine
     {
     private:
-        vector<string> args;
+        std::vector<std::string> args;
 
     public:
         CommandLine(int argc, char *argv[])
@@ -22,7 +20,7 @@ namespace org::vfat::cli
             }
         }
 
-        CommandLine(string command)
+        CommandLine(const std::string& command)
         {
             Utils::StringSplit(command, this->args, ' ');
         }
@@ -31,9 +29,9 @@ namespace org::vfat::cli
         {
         }
 
-        string GetArg(size_t index) const
+        const std::string& GetArg(size_t index) const
         {
-            return this->args.at(index);
+            return this->args[index];
         }
 
         size_t GetArgCount() const
@@ -41,30 +39,16 @@ namespace org::vfat::cli
             return this->args.size();
         }
 
-        bool HasOption(string flag)
+        bool HasOption(const std::string& flag) const
         {
-            vector<string>::iterator iter = std::find(this->args.begin(), this->args.end(), flag);
+            auto iter = std::find(this->args.begin(), this->args.end(), flag);
             return iter != this->args.end();
         }
 
-//        string FetchByPrefix(string key)
-//        {
-//            vector<string>::iterator iter;
-//            for (iter = this->args.begin(); iter < this->args.end(); iter++) {
-//                string arg = *iter;
-//                if (arg.rfind(key, 0) == 0) {
-//                    return arg.substr(key.size());
-//                }
-//            }
-
-//            throw new std::logic_error("Parameter not found.");
-//        }
-
-        string TryFetchByPrefix(string key)
+        std::string TryFetchByPrefix(const std::string& key) const
         {
-            vector<string>::iterator iter;
-            for (iter = this->args.begin(); iter < this->args.end(); iter++) {
-                string arg = *iter;
+            for (auto iter = this->args.begin(); iter < this->args.end(); ++iter) {
+                const std::string& arg = *iter;
                 if (arg.rfind(key, 0) == 0) {
                     return arg.substr(key.size());
                 }
